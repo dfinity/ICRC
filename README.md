@@ -1,2 +1,2 @@
 # ICRC
-Repository to ICRC proposals 
+Repository for ICRC proposals 
