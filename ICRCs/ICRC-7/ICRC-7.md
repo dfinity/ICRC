@@ -39,14 +39,14 @@ type Metadata = variant { Nat : nat; Int : int; Text : text; Blob : blob };
 icrc7_metadata : (nat) -> (vec record { text; Metadata }) query;
 ```
 
+### icrc7_owner_of
 
-### icrc7_minting_account
-
-Returns the [minting account](#minting_account) if this ledger supports minting tokens. Sending an NFT to the minting account burns it.
+Returns the owner of a tokenId.
 
 ```candid "Methods" +=
-icrc7_minting_account : () -> (opt principal) query;
+icrc7_balance_of : (nat) -> (principal) query;
 ```
+
 
 ### icrc7_balance_of
 
@@ -72,17 +72,19 @@ Returns the balance of the account given as an argument.
 icrc7_balance_of : (Account) -> (nat) query;
 ```
 
+
+
 ### icrc7_transfer <span id="transfer_method"></span>
 
-Transfers `amount` of tokens from account `record { of = caller; subaccount = from_subaccount }` to the `to` account.
-The caller pays `fee` tokens for the transfer.
+Transfers `amount` of tokens from account `record { of = caller }` to the `to` account.
 
 ```candid "Type definitions" +=
 type TransferArgs = record {
-    from_subaccount : opt Subaccount;
-    to : Account;
-    amount : nat;
-    fee : opt nat;
+    from_principal : opt principal;     // if supplied and not caller then is permit transfer
+    to : principal;
+    tokenIds : vec nat;
+    // type? leave open for now
+    // royalty : opt nat;               // fee in ICP(ICRC-2) ? price? -> leave out of the standard
     memo : opt blob;
     created_at_time : opt nat64;
 };
@@ -116,6 +118,28 @@ The ledger SHOULD reject transactions that have `created_at_time` argument too f
 
 The result is either the transaction index of the transfer or an error.
 
+### icrc7_approve
+
+```candid "Type definitions" +=
+type ApprovalArgs = record {
+    to : principal;
+    tokenIds : opt vec nat;            // if no tokenIds given then approve entire collection
+    fee : opt nat;                     // fee in ICP(ICRC-2) ?
+};
+
+type ApprovalError = variant {
+    BadFee : record { expected_fee : nat };
+    NotYourTokens : vec nat;
+    TooOld;
+    TemporarilyUnavailable;
+    GenericError : record { error_code : nat; message : text };
+};
+```
+
+```candid "Methods" +=
+icrc7_approve : (ApprovalArgs) -> (variant { Ok: nat; Err: ApprovalError; });
+```
+
 ### icrc7_supported_standards
 
 Returns the list of standards this ledger implements.
@@ -128,7 +152,7 @@ icrc7_supported_standards : () -> (vec record { name : text; url : text }) query
 The result of the call should always have at least one entry,
 
 ```candid
-record { name = "ICRC-1"; url = "https://github.com/dfinity/ICRC-1" }
+record { name = "ICRC-7"; url = "https://github.com/dfinity/ICRC-7" }
 ```
 
 ## Extensions <span id="extensions"></span>
@@ -142,11 +166,7 @@ The base standard intentionally excludes some ledger functions essential for bui
 The standard defines the `icrc7_supported_standards` endpoint to accommodate these and other future extensions.
 This endpoint returns names of all specifications (e.g., `"ICRC-42"` or `"DIP-20"`) implemented by the ledger.
 
-## Metadata
 
-A ledger can expose metadata to simplify integration with wallets and improve user experience.
-The client can use the [`icrc7_metadata`](#metadata_method) method to fetch the metadata entries. 
-All the metadata entries are optional.
 
 ### Key format
 
@@ -162,6 +182,9 @@ Namespace `icrc7` is reserved for keys defined in this standard.
 | `icrc7:fee` | The default transfer fee. When present, should be the same as the result of the [`icrc7_fee`](#fee_method) query call. |  `variant { Nat = 10_000 }` |
 | `icrc7:logo` | The URL of the token logo. The value can contain the actual image if it's a [Data URL](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/Data_URLs).  | `variant { Text = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InJlZCIvPjwvc3ZnPg==" }` | 
 
+
+## WIP
+==================
 
 ## Transaction deduplication <span id="transfer_deduplication"></span>
 
