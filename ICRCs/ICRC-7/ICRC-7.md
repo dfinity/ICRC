@@ -4,10 +4,24 @@
 
 
 
-# ICRC-7: Minimal Non-Fungible Token (NFT) Standard
+# ICRC-7: Base Non-Fungible Token (NFT) Standard
 
-The ICRC-7 is a standard for the minimal implementaion of Non-Fungible Tokens (NFTs) on the [Internet Computer](https://internetcomputer.org).
+The ICRC-7 is a standard for the base implementaion of Non-Fungible Tokens (NFTs) on the [Internet Computer](https://internetcomputer.org).
 
+## Data
+
+### account
+
+A `principal` can have multiple accounts. Each account of a `principal` is identified by a 32-byte string called `subaccount`. Therefore an account corresponds to a pair `(principal, subaccount)`.
+
+The account identified by the subaccount with all bytes set to 0 is the _default account_ of the `principal`.
+
+```candid "Type definitions" +=
+type Subaccount = blob;
+type Account = record { owner : principal; subaccount : opt Subaccount; };
+```
+
+The canonical textual representation of the account follows the definition in ICRC-1.
 
 ## Methods
 
@@ -15,19 +29,85 @@ The ICRC-7 is a standard for the minimal implementaion of Non-Fungible Tokens (N
 Returns all the collection-level metadata of the NFT collection in a single query.
 ```candid "Methods" +=
 icrc7_collection_metadata : () -> record { 
-  icrc1_name : text; 
+  icrc7_name : text; 
   icrc7_symbol : text;
-  icrcX_royalties : opt nat; 
-  icrcX_royalty_recipient : opt principal;
-  icrcX_description : opt text;
-  icrcX_image : opt blob;
-  icrcX_total_supply : nat;
+  icrc7_royalties : opt nat16; 
+  icrc7_royalty_recipient : opt Account;
+  icrc7_description : opt text;
+  icrc7_image : opt blob;  // TBD
+  icrc7_total_supply : nat;
+  icrc7_supply_cap : opt nat;
 } query;
 ```
+### icrc7_name
 
+Returns the name of the NFT collection (e.g., `My Super NFT`).
 
+```candid "Methods" +=
+icrc7_name : () -> (text) query;
+```
 
-### icrc7_metadata <span id="metadata_method"></span>
+### icrc7_symbol
+
+Returns the symbol of the collection (e.g., `MS`).
+
+```candid "Methods" +=
+icrc7_symbol : () -> (text) query;
+```
+
+### icrc7_royalties
+
+Returns the default royalty percentage in bps (i.e 150 means 1.50%). Note that 
+only one royalty can be specified. For more complex use cases please consider using a fee splitter.
+
+```candid "Methods" +=
+icrc7_royalties : () -> (opt nat16) query;
+```
+
+### icrc7_royalty_recipient
+
+Returns the default royalty percentage. Note that only one royalty recipient can be specified. For 
+more complex use cases please consider using a fee splitter. The account specified must be able to
+handle arbitrary ICRC-1 tokens as royalties might be paid in any token.
+
+```candid "Methods" +=
+icrc7_royalty_recipient : () -> (opt Account) query;
+```
+
+### icrc7_description
+
+Returns the text description of the collection.
+
+```candid "Methods" +=
+icrc7_description : () -> (opt text) query;
+```
+
+### icrc7_image
+
+Returns the image of the collection.
+
+```candid "Methods" +=
+icrc7_image : () -> (opt blob) query;
+```
+
+### icrc7_total_supply
+
+Returns the total number of NFTs on all accounts.
+
+```candid "Methods" +=
+icrc7_total_supply : () -> (nat) query;
+```
+
+### icrc7_supply_cap
+
+Returns the maximum number of NFTs possible for this collection. Any attempt to mint more NFTs 
+than this supply cap shall be rejected.
+
+```candid "Methods" +=
+icrc7_supply_cap : () -> (opt nat) query;
+```
+
+### icrc7_metadata
 
 Returns the token metadata for a particular tokenId.
 
@@ -44,24 +124,7 @@ icrc7_metadata : (nat) -> (vec record { text; Metadata }) query;
 Returns the owner of a tokenId.
 
 ```candid "Methods" +=
-icrc7_balance_of : (nat) -> (principal) query;
-```
-
-
-### icrc7_balance_of
-
-Returns the balance of the account given as an argument.
-
-```candid "Methods" +=
-icrc7_balance_of : (principal) -> (vec nat) query;
-```
-
-### icrc7_tokens_of
-
-Returns the list of tokenIds of the account given as an argument.
-
-```candid "Methods" +=
-icrc7_balance_of : (principal) -> (nat) query;
+icrc7_owner_of : (nat) -> (Account) query;
 ```
 
 ### icrc7_balance_of
@@ -72,27 +135,31 @@ Returns the balance of the account given as an argument.
 icrc7_balance_of : (Account) -> (nat) query;
 ```
 
+### icrc7_tokens_of
 
+Returns the list of tokenIds of the account given as an argument.
 
-### icrc7_transfer <span id="transfer_method"></span>
+```candid "Methods" +=
+icrc7_tokens_of : (Account) -> (vec nat) query;
+```
 
-Transfers `amount` of tokens from account `record { of = caller }` to the `to` account.
+### icrc7_transfer
+
+Transfers one or more tokens from account to the `to` account.
 
 ```candid "Type definitions" +=
 type TransferArgs = record {
-    from_principal : opt principal;     // if supplied and not caller then is permit transfer
-    to : principal;
-    tokenIds : vec nat;
-    // type? leave open for now
-    // royalty : opt nat;               // fee in ICP(ICRC-2) ? price? -> leave out of the standard
+    from : opt Account;     /* if supplied and is not caller then is permit transfer, if not supplied defaults to subaccount 0 of the caller principal */
+    to : Account;
+    token_ids : vec nat;
+    // type: leave open for now
     memo : opt blob;
     created_at_time : opt nat64;
+    is_atomic : opt bool;
 };
 
 type TransferError = variant {
-    BadFee : record { expected_fee : nat };
-    BadBurn : record { min_burn_amount : nat };
-    InsufficientFunds : record { balance : nat };
+    Unauthorized: record { token_ids : vec nat };
     TooOld;
     CreatedInFuture : record { ledger_time: nat64 };
     Duplicate : record { duplicate_of : nat };
@@ -105,9 +172,8 @@ type TransferError = variant {
 icrc7_transfer : (TransferArgs) -> (variant { Ok: nat; Err: TransferError; });
 ```
 
-The caller pays the `fee`.
-If the caller does not set the `fee` argument, the ledger applies the default transfer fee.
-If the `fee` argument does not agree with the ledger fee, the ledger MUST return `variant { BadFee = record { expected_fee = ... } }` error.
+If a tokenId doesn't exist or if the caller principal is not permitted to act on the tokenId, then the 
+tokenId would be added to the `Unauthorized` list. If `is_atomic` is true (default), then the transfer of tokens in the `token_ids` list must all succeed or all fail. 
 
 The `memo` parameter is an arbitrary blob that has no meaning to the ledger.
 The ledger SHOULD allow memos of at least 32 bytes in length.
@@ -122,14 +188,16 @@ The result is either the transaction index of the transfer or an error.
 
 ```candid "Type definitions" +=
 type ApprovalArgs = record {
+    from_subaccount : opt blob;
     to : principal;
     tokenIds : opt vec nat;            // if no tokenIds given then approve entire collection
-    fee : opt nat;                     // fee in ICP(ICRC-2) ?
+    expires_at : opt nat64;
+    memo : opt blob;
+    created_at : opt nat64; 
 };
 
 type ApprovalError = variant {
-    BadFee : record { expected_fee : nat };
-    NotYourTokens : vec nat;
+    Unauthorized : vec nat;
     TooOld;
     TemporarilyUnavailable;
     GenericError : record { error_code : nat; message : text };
@@ -152,7 +220,7 @@ icrc7_supported_standards : () -> (vec record { name : text; url : text }) query
 The result of the call should always have at least one entry,
 
 ```candid
-record { name = "ICRC-7"; url = "https://github.com/dfinity/ICRC-7" }
+record { name = "ICRC-7"; url = "https://github.com/dfinity/ICRC/ICRCs/ICRC-7" }
 ```
 
 ## Extensions <span id="extensions"></span>
@@ -168,23 +236,7 @@ This endpoint returns names of all specifications (e.g., `"ICRC-42"` or `"DIP-20
 
 
 
-### Key format
 
-The metadata keys are arbitrary Unicode strings and must follow the pattern `<namespace>:<key>`, where `<namespace>` is a string not containing colons.
-Namespace `icrc7` is reserved for keys defined in this standard.
-
-### Standard metadata entries
-| Key | Semantics | Example value
-| --- | ------------- | --------- |
-| `icrc7:symbol` | The token currency code (see [ISO-4217](https://en.wikipedia.org/wiki/ISO_4217)). When present, should be the same as the result of the [`icrc7_symbol`](#symbol_method) query call. | `variant { Text = "XTKN" }` | 
-| `icrc7:name` | The name of the token. When present, should be the same as the result of the [`icrc7_name`](#name_method) query call. | `variant { Text = "Test Token" }` | 
-| `icrc7:decimals` |  The number of decimals the token uses. For example, 8 means to divide the token amount by 10<sup>8</sup> to get its user representation. When present, should be the same as the result of the [`icrc7_decimals`](#decimals_method) query call. | `variant { Nat = 8 }` |
-| `icrc7:fee` | The default transfer fee. When present, should be the same as the result of the [`icrc7_fee`](#fee_method) query call. |  `variant { Nat = 10_000 }` |
-| `icrc7:logo` | The URL of the token logo. The value can contain the actual image if it's a [Data URL](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/Data_URLs).  | `variant { Text = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InJlZCIvPjwvc3ZnPg==" }` | 
-
-
-## WIP
-==================
 
 ## Transaction deduplication <span id="transfer_deduplication"></span>
 
@@ -210,84 +262,6 @@ The ledger SHOULD use the following algorithm for transaction deduplication if t
 
 If the client did not set the `created_at_time` field, the ledger SHOULD NOT deduplicate the transaction.
 
-## Minting account <span id="minting_account"></span>
-
-The minting account is a unique account that can create new tokens and acts as the receiver of burnt tokens.
-
-Transfers _from_ the minting account act as _mint_ transactions depositing fresh tokens on the destination account.
-Mint transactions have no fee.
-
-Transfers _to_ the minting account act as _burn_ transactions, removing tokens from the token supply.
-Burn transactions have no fee but might have minimal burn amount requirements.
-If the client tries to burn an amount that is too small, the ledger SHOULD reply with
-
-```
-variant { Err = variant { BadBurn = record { min_burn_amount = ... } } }
-```
-
-The minting account is also the receiver of the fees burnt in regular transfers.
-
-## Textual representation of accounts
-
-We specify a _canonical textual format_ that all applications should use to display ICRC-1 accounts.
-This format relies on the textual encoding of principals specified in the [Internet Computer Interface Specification](https://internetcomputer.org/docs/current/references/ic-interface-spec/#textual-ids), referred to as `Principal.toText` and `Principal.fromText` below.
-The format has the following desirable properties:
-
-1. A textual encoding of any non-reserved principal is a valid textual encoding of the default account of that principal on the ledger.
-2. The decoding function is injective (i.e., different valid encodings correspond to different accounts).
-   This property enables applications to use text representation as a key.
-3. A typo in the textual encoding invalidates it with a high probability.
-
-### Encoding
-
-Applications SHOULD encode accounts as follows:
-
-  1. The encoding of the default account (the subaccount is null or a blob with 32 zeros) is the encoding of the owner principal.
-  2. The encoding of accounts with a non-default subaccount is the textual principal encoding of the concatenation of the owner principal bytes, the subaccount bytes with the leading zeros omitted, the length of the subaccount without the leading zeros (a single byte), and an extra byte `7F`<sub>16</sub>.
-
-In pseudocode:
-
-```sml
-encodeAccount({ owner; subaccount }) = case subaccount of
-  | None ⇒ Principal.toText(owner)
-  | Some([32; 0]) ⇒ Principal.toText(owner)
-  | Some(bytes) ⇒ Principal.toText(owner · shrink(bytes) · [|shrink(bytes)|, 0x7f])
-
-shrink(bytes) = case bytes of
-  | 0x00 :: rest ⇒ shrink(rest)
-  | bytes ⇒ bytes
-```
-
-### Decoding
-
-Applications SHOULD decode textual representation as follows:
-
-  1. Decode the text as if it was a principal into `raw_bytes`, ignoring the principal length check (some decoders allow the principal to be at most 29 bytes long).
-  2. If `raw_bytes` do not end with byte `7F`<sub>16</sub>, return an account with `raw_bytes` as the owner and an empty subaccount.
-  3. If `raw_bytes` end with `7F`<sub>16</sub>:
-     1. Drop the last `7F`<sub>16</sub> byte.
-     2. Read the last byte `N` and drop it. If `N > 32` or `N = 0`, raise an error.
-     3. Take the last N bytes and strip them from the input.
-        If the first byte in the stripped sequence is zero, raise an error.
-        Prepend the bytes with (32 - N) zeros on the left to get a 32-byte subaccount.
-     4. Return an account with the owner being the rest of the input sequence as the owner and the subaccount being the byte array constructed in the previous step.
-
-In pseudocode:
-
-```sml
-decodeAccount(text) = case Principal.fromText(text) of
-  | (prefix · [n, 0x7f]) where Blob.size(prefix) < n ⇒ raise Error
-  | (prefix · [n, 0x7f]) where n > 32 orelse n = 0 ⇒ raise Error
-  | (prefix · suffix · [n, 0x7f]) where Blob.size(suffix) = n ⇒
-    if suffix[0] = 0
-    then raise Error
-    else { owner = Principal.fromBlob(prefix); subaccount = Some(expand(suffix)) }
-  | raw_bytes ⇒ { owner = Principal.fromBlob(raw_bytes); subaccount = None }
-
-expand(bytes) = if Blob.size(bytes) < 32
-                then expand(0x00 :: bytes)
-                else bytes
-```
 
 <!--
 ```candid ICRC-1.did +=
