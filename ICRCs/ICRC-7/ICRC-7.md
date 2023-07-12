@@ -34,7 +34,7 @@ icrc7_collection_metadata : () -> record {
   icrc7_royalties : opt nat16; 
   icrc7_royalty_recipient : opt Account;
   icrc7_description : opt text;
-  icrc7_image : opt blob;  // TBD
+  icrc7_image : opt text;  // The URL of the token logo. The value can contain the actual image if it's a Data URL.
   icrc7_total_supply : nat;
   icrc7_supply_cap : opt nat;
 } query;
