@@ -149,7 +149,8 @@ Transfers one or more tokens from account to the `to` account.
 
 ```candid "Type definitions" +=
 type TransferArgs = record {
-    from : opt Account;     /* if supplied and is not caller then is permit transfer, if not supplied defaults to subaccount 0 of the caller principal */
+    spender_subaccount: opt blob; // the subaccount of the caller (used to identify the spender)
+    from : Account;
     to : Account;
     token_ids : vec nat;
     // type: leave open for now
@@ -189,11 +190,11 @@ The result is either the transaction index of the transfer or an error.
 ```candid "Type definitions" +=
 type ApprovalArgs = record {
     from_subaccount : opt blob;
-    to : principal;
-    tokenIds : opt vec nat;            // if no tokenIds given then approve entire collection
+    spender : Account;    // Approval is given to an ICRC Account
+    token_ids : opt vec nat;            // TBD: change into variant?
     expires_at : opt nat64;
     memo : opt blob;
-    created_at : opt nat64; 
+    created_at_time : opt nat64; 
 };
 
 type ApprovalError = variant {
@@ -207,6 +208,8 @@ type ApprovalError = variant {
 ```candid "Methods" +=
 icrc7_approve : (ApprovalArgs) -> (variant { Ok: nat; Err: ApprovalError; });
 ```
+### icrc7_approve
+TBD
 
 ### icrc7_supported_standards
 
