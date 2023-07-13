@@ -87,7 +87,7 @@ icrc7_description : () -> (opt text) query;
 Returns the image of the collection.
 
 ```candid "Methods" +=
-icrc7_image : () -> (opt blob) query;
+icrc7_image : () -> (opt text) query;
 ```
 
 ### icrc7_total_supply
