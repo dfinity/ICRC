@@ -84,7 +84,7 @@ icrc7_description : () -> (opt text) query;
 
 ### icrc7_image
 
-Returns the image of the collection.
+Returns a link to the image of the collection. It may be a [DataURL](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/Data_URLs) that contains the image itself.
 
 ```candid "Methods" +=
 icrc7_image : () -> (opt text) query;
