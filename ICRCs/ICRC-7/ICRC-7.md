@@ -112,7 +112,16 @@ icrc7_supply_cap : () -> (opt nat) query;
 Returns the token metadata for a particular tokenId.
 
 ```candid "Type definitions" +=
-type Metadata = variant { Nat : nat; Int : int; Text : text; Blob : blob };
+// Generic value in accordance with ICRC-3
+type Value = variant { 
+    Blob : blob; 
+    Text : text; 
+    Nat : nat;
+    Int : int;
+    Array : vec Value; 
+    Map : vec record { text; Value }; 
+};
+type Metadata = vec record { text; Value };
 ```
 
 ```candid "Methods" +=
@@ -135,12 +144,20 @@ Returns the balance of the account given as an argument.
 icrc7_balance_of : (Account) -> (nat) query;
 ```
 
-### icrc7_tokens_of
+### icrc7_tokens  // TO REVIEW
 
-Returns the list of tokenIds of the account given as an argument.
+Returns the list of existing tokens sorted by tokenId. The result is paginated.
 
 ```candid "Methods" +=
-icrc7_tokens_of : (Account) -> (vec nat) query;
+icrc7_tokens : (skip: nat32, take: nat32) -> (vec nat) query;
+```
+
+### icrc7_tokens_of  // TO REVIEW
+
+Returns the list of tokenIds of the account given as an argument. The result is paginated.
+
+```candid "Methods" +=
+icrc7_tokens_of : (Account, skip: nat32, take: nat32) -> (vec nat) query;
 ```
 
 ### icrc7_transfer
@@ -198,7 +215,7 @@ type ApprovalArgs = record {
     created_at_time : opt nat64; 
 };
 
-type ApprovalError = variant {
+type ApprovalError = variant {  // TO REVIEW
     Unauthorized;
     TooOld;
     TemporarilyUnavailable;
@@ -225,12 +242,12 @@ type RevokeError = variant {
 icrc7_revoke_approval: (token_ids: variant { Collection; TokenIds: vec nat }, spender: opt Account) -> (vec variant { Ok: nat; Err: RevokeError; });
 ```
 
-### icrc7_get_approvals // TBD
+### icrc7_get_approvals   // TO REVIEW
 ```candid "Methods" +=
 icrc7_get_approvals: (token_ids: vec nat ) -> (vec record {token_id: nat; spender: Account; expires_at: opt nat64; created_at_time: opt nat64});
 ```
 
-### icrc7_get_collection_approvals // TBD
+### icrc7_get_collection_approvals   // TO REVIEW
 ```candid "Methods" +=
 icrc7_get_collection_approvals: (owner: Account) -> (vec record {spender: Account; expires_at: opt nat64; created_at_time: opt nat64});
 ```
