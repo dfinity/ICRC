@@ -121,10 +121,10 @@ icrc7_metadata : (nat) -> (vec record { text; Metadata }) query;
 
 ### icrc7_owner_of
 
-Returns the owner of a tokenId.
+Returns the owner of a tokenId. Return `null` if the tokenId doesn't exist.
 
 ```candid "Methods" +=
-icrc7_owner_of : (nat) -> (Account) query;
+icrc7_owner_of : (nat) -> (opt Account) query;
 ```
 
 ### icrc7_balance_of
@@ -198,7 +198,7 @@ type ApprovalArgs = record {
 };
 
 type ApprovalError = variant {
-    Unauthorized : vec nat;
+    Unauthorized;
     TooOld;
     TemporarilyUnavailable;
     GenericError : record { error_code : nat; message : text };
@@ -206,10 +206,12 @@ type ApprovalError = variant {
 ```
 
 ```candid "Methods" +=
-icrc7_approve : (ApprovalArgs) -> (variant { Ok: nat; Err: ApprovalError; });
+icrc7_approve : (ApprovalArgs) -> (vec variant { Ok: nat; Err: ApprovalError; });
 ```
-### icrc7_approve
-TBD
+### icrc7_revoke_approval
+```candid "Methods" +=
+icrc7_revoke_approval: (token_ids: variant, spender: opt Account) -> (vec variant { Ok: nat; Err: ApprovalError; });
+```
 
 ### icrc7_supported_standards
 
