@@ -55,13 +55,13 @@ Returns the symbol of the collection (e.g., `MS`).
 icrc7_symbol : () -> (text) query;
 ```
 
-### icrc7_royalties
+### icrc7_suggested_royalties
 
 Returns the default royalty percentage in bps (i.e 150 means 1.50%). Note that 
 only one royalty can be specified. For more complex use cases please consider using a fee splitter.
 
 ```candid "Methods" +=
-icrc7_royalties : () -> (opt nat16) query;
+icrc7_suggested_royalties : () -> (opt nat16) query;
 ```
 
 ### icrc7_royalty_recipient
@@ -160,7 +160,7 @@ type TransferArgs = record {
 };
 
 type TransferError = variant {
-    Unauthorized: record { token_ids : vec nat };
+    Unauthorized;
     TooOld;
     CreatedInFuture : record { ledger_time: nat64 };
     Duplicate : record { duplicate_of : nat };
@@ -170,7 +170,7 @@ type TransferError = variant {
 ```
 
 ```candid "Methods" +=
-icrc7_transfer : (TransferArgs) -> (variant { Ok: nat; Err: TransferError; });
+icrc7_transfer : (TransferArgs) -> (vec variant { Ok: nat; Err: TransferError; });
 ```
 
 If a tokenId doesn't exist or if the caller principal is not permitted to act on the tokenId, then the 
@@ -186,12 +186,13 @@ The ledger SHOULD reject transactions that have `created_at_time` argument too f
 The result is either the transaction index of the transfer or an error.
 
 ### icrc7_approve
+Behavior of multiple approvals: in accordance with ICRC-2, multiple approvals can exist for the same tokenId but for different spenders. For the same tokenId and spender, the new approval shall always overwrite the old one. 
 
 ```candid "Type definitions" +=
 type ApprovalArgs = record {
     from_subaccount : opt blob;
     spender : Account;    // Approval is given to an ICRC Account
-    token_ids : opt vec nat;            // TBD: change into variant?
+    token_ids : variant { Collection; TokenIds: vec nat }; 
     expires_at : opt nat64;
     memo : opt blob;
     created_at_time : opt nat64; 
@@ -209,8 +210,39 @@ type ApprovalError = variant {
 icrc7_approve : (ApprovalArgs) -> (vec variant { Ok: nat; Err: ApprovalError; });
 ```
 ### icrc7_revoke_approval
+Revoking an approval for a tokenId does not affect the collection level approval. Revoking a collection // TBD: also revokes all tokenId approvals for tokens owned or not??
+```candid "Type definitions" +=
+type RevokeError = variant {
+    Unauthorized;
+    ApprovalDoesNotExist;  // TBD: Ok or Error?
+    ApprovalExpired;       // TBD: Ok or Error?
+    TooOld;
+    TemporarilyUnavailable;
+    GenericError : record { error_code : nat; message : text };
+};
+```
 ```candid "Methods" +=
-icrc7_revoke_approval: (token_ids: variant, spender: opt Account) -> (vec variant { Ok: nat; Err: ApprovalError; });
+icrc7_revoke_approval: (token_ids: variant { Collection; TokenIds: vec nat }, spender: opt Account) -> (vec variant { Ok: nat; Err: RevokeError; });
+```
+
+### icrc7_get_approvals // TBD
+```candid "Methods" +=
+icrc7_get_approvals: (token_ids: vec nat ) -> (vec record {token_id: nat; spender: Account; expires_at: opt nat64; created_at_time: opt nat64});
+```
+
+### icrc7_get_collection_approvals // TBD
+```candid "Methods" +=
+icrc7_get_collection_approvals: (owner: Account) -> (vec record {spender: Account; expires_at: opt nat64; created_at_time: opt nat64});
+```
+
+### icrc7_list_approvals // TBD
+```candid "Methods" +=
+icrc7_list_approvals: (???; skip: nat32; take: nat32) -> (vec record {token_id: nat; spender: Account; expires_at: opt nat64; created_at_time: opt nat64}) // How are approvals indexed? What happens if some records are deleted?
+```
+
+### icrc7_list_collection_approvals // TBD
+```candid "Methods" +=
+icrc7_list_collection_approvals: (???; skip: nat32; take: nat32) -> (vec record {spender: Account; expires_at: opt nat64; created_at_time: opt nat64}) // How are collection approvals indexed?
 ```
 
 ### icrc7_supported_standards
