@@ -29,6 +29,8 @@ Tokens in ICRC-7 are identified through token identifiers, or token ids. A token
 
 ## Methods
 
+//FIXME: specify error codes
+
 ### icrc7_collection_metadata
 
 Returns all the collection-level metadata of the NFT collection in a single query.
@@ -39,7 +41,7 @@ icrc7_collection_metadata : () -> record {
   icrc7_royalties : opt nat16; 
   icrc7_royalty_recipient : opt Account;
   icrc7_description : opt text;
-  icrc7_image : opt text;  // The URL of the token logo. The value can contain the actual image if it's a Data URL.
+  icrc7_logo : opt text;  // The URL of the token logo. The value can contain the actual image if it's a Data URL.
   icrc7_total_supply : nat;
   icrc7_supply_cap : opt nat;
 } query;
@@ -88,12 +90,12 @@ Returns the text description of the collection.
 icrc7_description : () -> (opt text) query;
 ```
 
-### icrc7_image
+### icrc7_logo
 
-Returns a link to the image of the collection. It may be a [DataURL](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/Data_URLs) that contains the image itself.
+Returns a link to the logo of the collection. It may be a [DataURL](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/Data_URLs) that contains the logo image itself.
 
 ```candid "Methods" +=
-icrc7_image : () -> (opt text) query;
+icrc7_logo : () -> (opt text) query;
 ```
 
 ### icrc7_total_supply
@@ -170,6 +172,8 @@ icrc7_tokens_of : (Account, skip: nat32, take: nat32) -> (vec nat) query;
 
 Transfers one or more tokens from the `from` account to the `to` account.
 
+A transfer clears all approvals for the successfully transferred tokens. This only clears token_id-based approvals and never touches collection-level approvals.
+
 The return value is a vector whose elements correspond to the elements of the token_ids vector in the method's arguments, i.e., the i-th element in the response vector is the response corresponding to the i-th element in the token_ids vector.
 
 ```candid "Type definitions" +=
@@ -216,12 +220,11 @@ This method entitles the spender to transfer NFTs on behalf of the caller from `
 The ledger SHOULD reject the call if the spender account owner is equal to the caller account owner.
 
 In accordance with ICRC-2, multiple approvals can exist for the same tokenId but for different spenders. For the same tokenId and spender, the new approval shall always overwrite the old one. The ledger should limit the number of approvals possible per token. Such limit is exposed as additional metadata.
-// FIXME: decide where to put this metadata, e.g., in icrc7_metadata, analogout to how IRCR-1 handles this
-// FIXME: decide on whether a transfer_from should clear the corresponding approval
+// FIXME: decide where to put this metadata, e.g., in icrc7_metadata, analogous to how IRCR-1 handles this
 
- In case of token_ids being of the Collection variant, the response contains only a single element indicating the success of the collection-level approval. In case of token_ids being a vector of token ids, the response is a vector whose elements correspond to the elements of the token_ids vector in the method's arguments, i.e., the i-th element in the response vector is the response corresponding to the i-th element in the token_ids vector.
+In case of token_ids being of the Collection variant, the response contains only a single element indicating the success of the collection-level approval. In case of token_ids being a vector of token ids, the response is a vector whose elements correspond to the elements of the token_ids vector in the method's arguments, i.e., the i-th element in the response vector is the response corresponding to the i-th element in the token_ids vector.
 
-An ICRC-7 ledger implementation does not need to keep track of expired approvals. // t.b.d.
+An ICRC-7 ledger implementation does not need to keep track of expired approvals. This is important to help constrain growth of ledger memory over time.
 
 ```candid "Type definitions" +=
 type ApprovalArgs = record {
@@ -250,31 +253,48 @@ Revokes the specified approvals from the active approvals.
 
 In case of token_ids being of the Collection variant, the response contains only a single element indicating the success of the collection-level approval. In case of token_ids being a vector of token ids, the response is a vector whose elements correspond to the elements of the token_ids vector in the method's arguments, i.e., the i-th element in the response vector is the response corresponding to the i-th element in the token_ids vector.
 
-Revoking an approval for a tokenId does not affect the collection level approval. Revoking a collection // TBD: also revokes all tokenId approvals for tokens owned or not?? Revoking the collection meaning to also revoke approvals on token ids would be hard to model in the response and would deviate from the approach that collection-level and individual approvals are separate. We could introduce an icrc7_revoke_all_approvals to have this feature available.
+Revoking an approval for a tokenId does not affect the collection level approval. Revoking a collection does not affect the approval for individual token ids.
 
 An ICRC-7 ledger implementation does not need to keep track of revoked approvals. // t.b.d.
 
 ```candid "Type definitions" +=
 type RevokeError = variant {
     Unauthorized;
-    ApprovalDoesNotExist;  // TBD: Ok or Error?
+    ApprovalDoesNotExist;
     TooOld;
     TemporarilyUnavailable;
     GenericError : record { error_code : nat; message : text };
 };
 ```
 ```candid "Methods" +=
-icrc7_revoke_approval: (token_ids: variant { Collection; TokenIds: vec nat }, spender: opt Account) -> (vec variant { Ok: nat; Err: RevokeError; });
+icrc7_revoke_approval: (from_subaccount : opt blob, spender: opt Account, token_ids: variant { Collection; TokenIds: vec nat }) -> (vec variant { Ok: nat; Err: RevokeError; });
+```
+
+### icrc7_revoke_all_approvals
+
+Revokes all approvals pertaining to tokens of the user.
+
+The return value is the Ok variant in case all approvals could be successfully removed and an error code otherwise. In case of success, the result is the number of revoked approvals.
+
+```candid "Type definitions" +=
+type RevokeError = variant {
+    Unauthorized;
+    TemporarilyUnavailable;
+    GenericError : record { error_code : nat; message : text };
+};
+```
+```candid "Methods" +=
+icrc7_revoke_all_approvals: () -> (variant { Ok: nat; Err: RevokeError; });
 ```
 
 ### icrc7_get_approvals   // TO REVIEW
 
 Returns the approvals that exist for the given token ids.
 
-The response is a vector of approval records.
+The response is a vector whose elements correspond to the elements of the token_ids vector in the method's arguments, i.e., the i-th element in the response vector is the response corresponding to the i-th element in the token_ids vector. Flatting the response gives a single list with all approvals for the token_ids in the request.
 
 ```candid "Methods" +=
-icrc7_get_approvals: (token_ids: vec nat ) -> (vec record {token_id: nat; spender: Account; expires_at: opt nat64; created_at_time: opt nat64});
+icrc7_get_approvals: (token_ids: vec nat; skip: nat32; take: nat32) -> (vec vec (record {token_id: nat; spender: Account; expires_at: opt nat64; created_at_time: opt nat64}));
 ```
 
 ### icrc7_get_collection_approvals   // TO REVIEW
@@ -284,27 +304,7 @@ Returns the collection-level approvals that exist for all collections of the spe
 The response is a vector of approval records.
 
 ```candid "Methods" +=
-icrc7_get_collection_approvals: (owner: Account) -> (vec record {spender: Account; expires_at: opt nat64; created_at_time: opt nat64});
-```
-
-### icrc7_list_approvals // TBD
-
-Returns approvals with pagination.
-
-The response is a vector of approval records based on the pagination settings.
-
-```candid "Methods" +=
-icrc7_list_approvals: (???; skip: nat32; take: nat32) -> (vec record {token_id: nat; spender: Account; expires_at: opt nat64; created_at_time: opt nat64}) // How are approvals indexed? What happens if some records are deleted?
-```
-
-### icrc7_list_collection_approvals // TBD
-
-Returns collection-level approvals with pagination.
-
-The response is a vector of approval records based on the pagination settings.
-
-```candid "Methods" +=
-icrc7_list_collection_approvals: (???; skip: nat32; take: nat32) -> (vec record {spender: Account; expires_at: opt nat64; created_at_time: opt nat64}) // How are collection approvals indexed?
+icrc7_get_collection_approvals: (owner: Account; skip: nat32; take: nat32) -> (vec record {spender: Account; expires_at: opt nat64; created_at_time: opt nat64});
 ```
 
 ### icrc7_supported_standards
