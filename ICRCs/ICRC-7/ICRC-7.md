@@ -6,6 +6,9 @@
 
 # ICRC-7: Base Non-Fungible Token (NFT) Standard
 
+//Open issues
+//- specify error codes
+
 The ICRC-7 is a standard for the base implementation of Non-Fungible Tokens (NFTs) on the [Internet Computer](https://internetcomputer.org).
 
 ## Data
@@ -29,11 +32,10 @@ Tokens in ICRC-7 are identified through token identifiers, or token ids. A token
 
 ## Methods
 
-//FIXME: specify error codes
-
 ### icrc7_collection_metadata
 
 Returns all the collection-level metadata of the NFT collection in a single query.
+
 ```candid "Methods" +=
 icrc7_collection_metadata : () -> record { 
   icrc7_name : text; 
@@ -138,10 +140,10 @@ icrc7_metadata : (nat) -> (vec record { text; Metadata }) query;
 
 ### icrc7_owner_of
 
-Returns the owner of a tokenId. Return `null` if the tokenId doesn't exist.
+Returns the owner of a token identified by `tokenId`. Return `null` if the token doesn't exist.
 
 ```candid "Methods" +=
-icrc7_owner_of : (nat) -> (opt Account) query;
+icrc7_owner_of : (tokenId: nat) -> (opt Account) query;
 ```
 
 ### icrc7_balance_of
@@ -170,7 +172,7 @@ icrc7_tokens_of : (Account, skip: nat32, take: nat32) -> (vec nat) query;
 
 ### icrc7_transfer
 
-Transfers one or more tokens from the `from` account to the `to` account.
+Transfers one or more tokens from the `from` account to the `to` account. The transfer can be initiated either by the holder of the tokens or a party that has been authorized by the holder to execute transfers using `icrc7_approve`. The `spender_subaccount` is used to identify the spender as the spender is an account comprised of the principal calling this method and the specified `spender_subaccount`.
 
 A transfer clears all approvals for the successfully transferred tokens. This only clears token_id-based approvals and never touches collection-level approvals.
 
@@ -215,7 +217,7 @@ The result is either the transaction index of the transfer or an error.
 
 ### icrc7_approve
 
-This method entitles the spender to transfer NFTs on behalf of the caller from `account { owner = caller; subaccount = from_subaccount }`, where `from_subaccount` is used to further identify the spender in a transfer. The call resets the expiration date for the spender account to the given value in case an approval for the spender account already exists. token_ ids can either specify the approval for the whole collection (Collection variant) or for a list of tokens (TokenIds variant).
+This method entitles the spender to transfer NFTs on behalf of the caller from `account { owner = caller; subaccount = from_subaccount }`, where `from_subaccount` is the subaccount of the token owner principal the approval pertains to. The call resets the expiration date for the spender account to the given value in case an approval for the spender account already exists. `token_ids` can either specify the approval for the whole collection (`Collection` variant) or for a list of tokens (`TokenIds` variant).
 
 The ledger SHOULD reject the call if the spender account owner is equal to the caller account owner.
 
@@ -249,13 +251,13 @@ icrc7_approve : (ApprovalArgs) -> (vec variant { Ok: nat; Err: ApprovalError; })
 ```
 ### icrc7_revoke_approval
 
-Revokes the specified approvals from the active approvals.
+Revokes the specified approvals from the active approvals. The parameter `from_subaccount` specifies the owner's subaccount to which the approval applies, the `spender` the party that is approved.
 
-In case of token_ids being of the Collection variant, the response contains only a single element indicating the success of the collection-level approval. In case of token_ids being a vector of token ids, the response is a vector whose elements correspond to the elements of the token_ids vector in the method's arguments, i.e., the i-th element in the response vector is the response corresponding to the i-th element in the token_ids vector.
+In case of `token_ids`` being of the `Collection`` variant, the response contains only a single element indicating the success of the collection-level approval. In case of `token_ids`` being a vector of token ids, the response is a vector whose elements correspond to the elements of the `token_ids`` vector in the method's arguments, i.e., the i-th element in the response vector is the response corresponding to the i-th element in the `token_ids`` vector.
 
 Revoking an approval for a tokenId does not affect the collection level approval. Revoking a collection does not affect the approval for individual token ids.
 
-An ICRC-7 ledger implementation does not need to keep track of revoked approvals. // t.b.d.
+An ICRC-7 ledger implementation does not need to keep track of revoked approvals.
 
 ```candid "Type definitions" +=
 type RevokeError = variant {
@@ -270,11 +272,11 @@ type RevokeError = variant {
 icrc7_revoke_approval: (from_subaccount : opt blob, spender: opt Account, token_ids: variant { Collection; TokenIds: vec nat }) -> (vec variant { Ok: nat; Err: RevokeError; });
 ```
 
-### icrc7_revoke_all_approvals
+### icrc7_revoke_all_approvals   // TO REVIEW
 
-Revokes all approvals pertaining to tokens of the user.
+Revokes all approvals pertaining to tokens of the user. This includes approvals related to specific token ids as well as a collection-level approval.
 
-The return value is the Ok variant in case all approvals could be successfully removed and an error code otherwise. In case of success, the result is the number of revoked approvals.
+The return value is the `Ok`` variant in case all approvals could be successfully removed and an error otherwise. In case of success, the result is the number of revoked approvals.
 
 ```candid "Type definitions" +=
 type RevokeError = variant {
@@ -291,10 +293,10 @@ icrc7_revoke_all_approvals: () -> (variant { Ok: nat; Err: RevokeError; });
 
 Returns the approvals that exist for the given token ids.
 
-The response is a vector whose elements correspond to the elements of the token_ids vector in the method's arguments, i.e., the i-th element in the response vector is the response corresponding to the i-th element in the token_ids vector. Flatting the response gives a single list with all approvals for the token_ids in the request.
+The response is a vector whose elements correspond to the elements of the `token_ids`` vector in the method's arguments, i.e., the i-th element in the response vector is the response corresponding to the i-th element in the `token_ids`` vector. Flatting the response results in a list with all approvals for the `token_ids` in the request.
 
 ```candid "Methods" +=
-icrc7_get_approvals: (token_ids: vec nat; skip: nat32; take: nat32) -> (vec vec (record {token_id: nat; spender: Account; expires_at: opt nat64; created_at_time: opt nat64}));
+icrc7_get_approvals: (token_ids: vec nat, skip: nat32, take: nat32) -> (vec vec (record {token_id: nat; spender: Account; expires_at: opt nat64; created_at_time: opt nat64}));
 ```
 
 ### icrc7_get_collection_approvals   // TO REVIEW
@@ -304,7 +306,7 @@ Returns the collection-level approvals that exist for all collections of the spe
 The response is a vector of approval records.
 
 ```candid "Methods" +=
-icrc7_get_collection_approvals: (owner: Account; skip: nat32; take: nat32) -> (vec record {spender: Account; expires_at: opt nat64; created_at_time: opt nat64});
+icrc7_get_collection_approvals: (owner: Account, skip: nat32, take: nat32) -> (vec record {spender: Account; expires_at: opt nat64; created_at_time: opt nat64});
 ```
 
 ### icrc7_supported_standards
