@@ -36,15 +36,6 @@ Tokens in ICRC-7 are identified through _token identifiers_, or _token ids_. A t
 
 Unless specified explicitly otherwise, the ordering of response elements is not defined. The methods, both queries and update calls, that operate on token ids are batch methods that can receive vectors of token ids as input. The output of such a method is a vector with records comprising a token id and a response belonging to this token id. This pattern does not require the caller to correlate the response elements to the input, but the response is self contained. For batch calls, the lenght of the output vector may be shorter than that of the input vector, e.g., in case of duplicate token ids in the input.
 
-// FIX Do we need an error type for queries or can we skip this and only rely on generic IC errors? Currently, `icrc7_owner_of` is the only query method that has the error applied to the type signature and it is more complicated. If not needed, we should remove this, otherwise add to all queries. Using this error as part of a response variant complicates the API quite a bit.
-
-```
-type QueryError = variant {  // TO REVIEW
-    TemporarilyUnavailable;
-    GenericError : record { error_code : nat; message : text };
-};
-```
-
 ### icrc7_collection_metadata
 
 Returns all the collection-level metadata of the NFT collection in a single query.
@@ -152,49 +143,48 @@ type Metadata = Value;
 ```
 
 ```candid "Methods" +=
-icrc7_metadata : (vec token_ids : nat) -> (vec record { token_id : nat; metadata : Metadata; }) query;
+icrc7_metadata : (token_ids : vec nat) -> (vec record { token_id : nat; metadata : Metadata; }) query;
 ```
 
 ### icrc7_owner_of
 
-Returns the owner of a list of tokens identified by `token_ids`. Non-existing tokens result in a `QueryError`.
-// FIX If we use this form of error handling, we need to define an error code for this. Either in QueryError or as generic error code.
+Returns the owner of a list of tokens identified by `token_ids`. For non-existing tokens, an empty value is returned.
 
 ```candid "Methods" +=
-icrc7_owner_of : (vec token_ids : nat) -> (vec record { token_id : nat; variant { Ok : Account; Err : QueryError; } }) query;
+icrc7_owner_of : (token_ids : vec nat) -> (vec record { token_id : nat; opt Account; }) query;
 ```
 
 ### icrc7_balance_of
 
-Returns the balance of the `account` provided as an argument.
+Returns the balance of the `account` provided as an argument. For a non-existing account, an empty value is returned.
 
 ```candid "Methods" +=
-icrc7_balance_of : (account : Account) -> (nat) query;
+icrc7_balance_of : (account : Account) -> (opt nat) query;
 ```
 
 ### icrc7_tokens
 
-Returns the list of tokens in this ledger sorted by their token id. The result is paginated where pagination is controlled via `skip` and `take`: The response results in at most `take` many tokenIds, starting with the smallest id following `skip`. The tokenIds in the response are sorted in ascending order. For retrieving all tokens, the pagination API is used such that the first call leaves `skip` empty and specifies any `take` value, the token id of the last response is used as `skip` value for the next call to the method.
+Returns the list of tokens in this ledger sorted by their token id. The result is paginated where pagination is controlled via `skip` and `take`: The response results in at most `take` many token ids, starting with the smallest id following `skip`. The token ids in the response are sorted in ascending order. For retrieving all tokens, the pagination API is used such that the first call leaves `skip` empty and specifies a suitable `take` value, the token id of the last response is used as `skip` value for the next call to the method.
 
 ```candid "Methods" +=
-icrc7_tokens : (skip : opt nat, take : nat32) -> (vec nat) query;
+icrc7_tokens : (skip : opt nat, take : nat32) -> (token_ids : vec nat) query;
 ```
 
 ### icrc7_tokens_of
 
-Returns a vector of `token_id`s of all tokens held by `account`. The result is paginated, the mechanics of pagination is the same as for `icrc7_tokens`.
+Returns a vector of `token_id`s of all tokens held by `account`. The result is paginated, the mechanics of pagination is the same as for `icrc7_tokens` using `skip` and `take` to control pagination.
 
 ```candid "Methods" +=
-icrc7_tokens_of : (account : Account, skip : opt nat, take : nat32) -> (vec token_id : nat) query;
+icrc7_tokens_of : (account : Account, skip : opt nat, take : nat32) -> (token_ids : vec nat) query;
 ```
 
 ### icrc7_approve
 
-Entitles a `spender`, indicated through an `Account`, to transfer NFTs on behalf of the caller of this method from `account { owner = caller; subaccount = from_subaccount; }`, where `caller` is the caller of this method (and the token owner principal) and `from_subaccount` is the subaccount of the token owner principal the approval should pertain to. The call resets the expiration date for the spender account to the given value in case an approval for the spender account already exists. `tokens` can either specify the approval to be for the whole collection (`Collection` variant option) or for a list of tokens (`TokenIds` variant option).
+Entitles a `spender`, indicated through an `Account`, to transfer NFTs on behalf of the caller of this method from `account { owner = caller; subaccount = from_subaccount; }`, where `caller` is the caller of this method (and the token owner principal) and `from_subaccount` is the subaccount of the token owner principal the approval should apply to. The call resets the expiration date for the spender account to the given value in case an approval for the spender account already exists. The parameter `tokens` can either specify the approval to be for the whole collection (`Collection` variant) or for a list of tokens (`TokenIds` variant).
 
 The ledger SHOULD reject the call if the spender account owner is equal to the caller account owner.
 
-In accordance with ICRC-2, multiple approvals can exist for the same tokenId but for different spenders. For the same token id and spender, a new approval shall always overwrite the old one. The ledger should limit the number of approvals that can be active per token. Such limit is exposed as additional metadata through the metadata attribute `max_approvals_per_token`.
+In accordance with ICRC-2, multiple approvals can exist for the same `token_id` but for different `spender`s and respective `subaccount`s. For the same token id and spender, a new approval shall always overwrite the old one. The ledger should limit the number of approvals that can be active per token. Such limit is exposed as additional metadata through the metadata attribute `max_approvals_per_token`.
 // FIXME: decide where to put this metadata, e.g., in an icrc7_metadata map, analogous to how IRCR-1 handles this
 
 In case of `tokens` being of the `Collection` variant, the response contains only a single element without a token id indicating the success of the collection-level approval. In case of `tokens` being a vector of token ids, the response is a vector comprising records with a `token_id` as first element and an `Ok` variant with the token id for the success case or an error variant `Err` as second element.
@@ -225,7 +215,7 @@ icrc7_approve : (ApprovalArgs) -> (vec record { token_id : opt nat; approval_res
 
 ### icrc7_transfer
 
-Transfers one or more tokens from the `from` account to the `to` account. The transfer can be initiated either by the holder of the tokens or a party that has been authorized by the holder to execute transfers using `icrc7_approve`. The `spender_subaccount` is used to identify the spender. The spender is an account comprised of the principal calling this method and the paramter `spender_subaccount`.
+Transfers one or more tokens from the `from` account to the `to` account. The transfer can be initiated either by the holder of the tokens or a party that has been authorized by the holder to execute transfers using `icrc7_approve`. The `spender_subaccount` is used to identify the spender. The spender is an account comprised of the principal calling this method and the parameter `spender_subaccount`.
 
 The response is a vector of records each comprising a `token_id` and a corresponding variant indicating success or error. In the success case, `Ok` indicates the token id.
 //FIX does it make sense to encode the token id (again) as part of the `Ok` reponse? applies in multiple cases
@@ -302,7 +292,7 @@ icrc7_revoke_approval: (RevokeArgs) -> (vec record { token_id : opt nat; revoke_
 
 ### icrc7_revoke_all_approvals
 
-Revokes all approvals pertaining to tokens of the sender. This includes collection-level approvals as well as approvals related to specific token ids.
+Revokes all approvals applying to tokens of the sender. This includes collection-level approvals as well as approvals related to specific token ids.
 
 The return value is the `Ok` variant in case all approvals could be successfully removed and an error `Err` otherwise. In case of success, the result is the number of revoked approvals, where each collection-level approval and each per-token-id approval count as an approval. For example, if two collection-level approvals and 3 token-id-level approvals are revoked, the `Ok` value is 5.
 
@@ -337,7 +327,7 @@ The response is a vector of approval records.
 
 ```candid "Methods" +=
 icrc7_get_collection_approvals : (owner : Account)
-    -> (vec record {spender : Account; expires_at : opt nat64; created_at_time : opt nat64; });
+    -> (vec record { spender : Account; expires_at : opt nat64; created_at_time : opt nat64; });
 ```
 
 As ledgers are recommended to limit the number of approvals per token, pagination is not required for this method.
