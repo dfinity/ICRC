@@ -209,44 +209,24 @@ icrc7_balance_of : (account : Account) -> (balance : opt nat) query;
 
 ### icrc7_tokens
 
-Returns the list of tokens in this ledger, sorted by their token id. The result is paginated and pagination is controlled via the `skip` and `take` parameters: The response to a request results in at most `take` many token ids, starting with the smallest id following `skip`. The token ids in the response are sorted in any consistent sorting order used by the ledger. If `take` is omitted, a reasonable value is assumed.
+Returns the list of tokens in this ledger, sorted by their token id. The result is paginated and pagination is controlled via the `prev` and `take` parameters: The response to a request results in at most `take` many token ids, starting with the next id following `prev`. The token ids in the response are sorted in any consistent sorting order used by the ledger. If `take` is omitted, a reasonable value is assumed.
 
-For retrieving all tokens of the ledger, the pagination API is used such that the first call with `skip = null` and specifies a suitable `take` value, then the method is called repeatedly such that the greatest token id of the previous response is used as `skip` value for the next call to the method. This way all tokens can be enumerated in ascending order, provided token ids are not inserted during normal operation. 
+For retrieving all tokens of the ledger, the pagination API is used such that the first call with `prev = null` and specifies a suitable `take` value, then the method is called repeatedly such that the greatest token id of the previous response is used as `prev` value for the next call to the method. This way all tokens can be enumerated in ascending order, provided token ids are not inserted during normal operation. 
 
 Each invocation is executed on the current memory state of the ledger.
 
 // take is now optional
 
 ```candid "Methods" +=
-icrc7_tokens : (skip : opt nat, take : opt nat32) -> (token_ids : vec nat) query;
-```
-
-### icrc7_tokens_following_id
-
-Returns the list of tokens in this ledger, sorted by their token id. The result is paginated and pagination is controlled via the `prev_id` and `take` parameters: The response to a request results in at most `take` many token ids, starting with the smallest id following token id `prev_id`. The token ids in the response are sorted in ascending order. If `take` is omitted, a reasonable value is assumed.
-
-For retrieving all tokens of the ledger, the pagination API is used such that the first call with `prev_id = null` and specifies a suitable `take` value, then the method is called repeatedly such that the last token id of the previous response is used as `prev_id` value for the next call to the method. This way all tokens can be enumerated in ascending order.
-
-Each invocation is executed on the current memory state of the ledger.
-
-```candid "Methods" +=
-icrc7_tokens_following_id : (prev_id : opt nat, take : opt nat32) -> (token_ids : vec nat) query;
+icrc7_tokens : (prev : opt nat, take : opt nat32) -> (token_ids : vec nat) query;
 ```
 
 ### icrc7_tokens_of
 
-Returns a vector of `token_id`s of all tokens held by `account`, sorted by their token id. The result is paginated, the mechanics of pagination is the same as for `icrc7_tokens` using `skip` and `take` to control pagination.
+Returns a vector of `token_id`s of all tokens held by `account`, sorted by their token id. The result is paginated, the mechanics of pagination is the same as for `icrc7_tokens` using `prev` and `take` to control pagination.
 
 ```candid "Methods" +=
-icrc7_tokens_of : (account : Account, skip : opt nat, take : opt nat32) -> (token_ids : vec nat) query;
-```
-
-### icrc7_tokens_of_following_id
-
-Returns a vector of `token_id`s of all tokens held by `account`, sorted by their token id. The result is paginated, the mechanics of pagination is the same as for `icrc7_tokens` using `prev_id` and `take` to control pagination.
-
-```candid "Methods" +=
-icrc7_tokens_of_following_id : (account : Account, prev_id : opt nat, take : opt nat32) -> (token_ids : vec nat) query;
+icrc7_tokens_of : (account : Account, prev : opt nat, take : opt nat32) -> (token_ids : vec nat) query;
 ```
 
 ### icrc7_approve
