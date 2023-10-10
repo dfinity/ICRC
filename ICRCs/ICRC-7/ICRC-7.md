@@ -186,8 +186,17 @@ icrc7_token_metadata : (token_ids : vec nat) -> (vec record { token_id : nat; me
 
 Returns the owner of a list of tokens identified by `token_ids`. For non-existing token ids, the `null` value is returned for the `account`. The ordering of the response elements is arbitrary.
 
+The `TemporarilyUnavailable` error type is used to help migration of NFT ledgers of other standards using ICP AccountId instead of ICRC-1 Account to store the owners. See section Migration Path for Ledgers Using ICP AccountId.
+
+```candid "Type definitions" +=
+type GetOwnerError = variant {
+    NonExistingTokenId;
+    TemporarilyUnavailable;
+    GenericError : record { error_code : nat; message : text };
+};
+```
 ```candid "Methods" +=
-icrc7_owner_of : (token_ids : vec nat) -> (vec record { token_id : nat; account : opt Account; }) query;
+icrc7_owner_of : (token_ids : vec nat) -> (vec record { token_id : nat; account : variant { Ok : Account; Err : GetOwnerError; }; }) query;
 ```
 
 ### icrc7_balance_of
@@ -200,9 +209,9 @@ icrc7_balance_of : (account : Account) -> (balance : opt nat) query;
 
 ### icrc7_tokens
 
-Returns the list of tokens in this ledger, sorted by their token id. The result is paginated and pagination is controlled via the `skip` and `take` parameters: The response to a request results in at most `take` many token ids, starting with the smallest id following `skip`. The token ids in the response are sorted in ascending order. If `take` is omitted, a reasonable value is assumed.
+Returns the list of tokens in this ledger, sorted by their token id. The result is paginated and pagination is controlled via the `skip` and `take` parameters: The response to a request results in at most `take` many token ids, starting with the smallest id following `skip`. The token ids in the response are sorted in any consistent sorting order used by the ledger. If `take` is omitted, a reasonable value is assumed.
 
-For retrieving all tokens of the ledger, the pagination API is used such that the first call leaves `skip` empty and specifies a suitable `take` value, then the method is called repeatedly such that the greatest token id of the previous response is used as `skip` value for the next call to the method. This way all tokens can be enumerated in ascending order.
+For retrieving all tokens of the ledger, the pagination API is used such that the first call with `skip = null` and specifies a suitable `take` value, then the method is called repeatedly such that the greatest token id of the previous response is used as `skip` value for the next call to the method. This way all tokens can be enumerated in ascending order, provided token ids are not inserted during normal operation. 
 
 Each invocation is executed on the current memory state of the ledger.
 
@@ -212,12 +221,32 @@ Each invocation is executed on the current memory state of the ledger.
 icrc7_tokens : (skip : opt nat, take : opt nat32) -> (token_ids : vec nat) query;
 ```
 
+### icrc7_tokens_following_id
+
+Returns the list of tokens in this ledger, sorted by their token id. The result is paginated and pagination is controlled via the `prev_id` and `take` parameters: The response to a request results in at most `take` many token ids, starting with the smallest id following token id `prev_id`. The token ids in the response are sorted in ascending order. If `take` is omitted, a reasonable value is assumed.
+
+For retrieving all tokens of the ledger, the pagination API is used such that the first call with `prev_id = null` and specifies a suitable `take` value, then the method is called repeatedly such that the last token id of the previous response is used as `prev_id` value for the next call to the method. This way all tokens can be enumerated in ascending order.
+
+Each invocation is executed on the current memory state of the ledger.
+
+```candid "Methods" +=
+icrc7_tokens_following_id : (prev_id : opt nat, take : opt nat32) -> (token_ids : vec nat) query;
+```
+
 ### icrc7_tokens_of
 
 Returns a vector of `token_id`s of all tokens held by `account`, sorted by their token id. The result is paginated, the mechanics of pagination is the same as for `icrc7_tokens` using `skip` and `take` to control pagination.
 
 ```candid "Methods" +=
 icrc7_tokens_of : (account : Account, skip : opt nat, take : opt nat32) -> (token_ids : vec nat) query;
+```
+
+### icrc7_tokens_of_following_id
+
+Returns a vector of `token_id`s of all tokens held by `account`, sorted by their token id. The result is paginated, the mechanics of pagination is the same as for `icrc7_tokens` using `prev_id` and `take` to control pagination.
+
+```candid "Methods" +=
+icrc7_tokens_of_following_id : (account : Account, prev_id : opt nat, take : opt nat32) -> (token_ids : vec nat) query;
 ```
 
 ### icrc7_approve
@@ -273,7 +302,6 @@ type TransferArgs = record {
     // type: leave open for now
     memo : opt blob;
     created_at_time : opt nat64;
-    is_atomic : opt bool;
 };
 
 type TransferError = variant {
@@ -290,7 +318,7 @@ type TransferError = variant {
 icrc7_transfer : (TransferArgs) -> (vec record { token_id : nat; transfer_result : variant { Ok : nat; Err : TransferError; }; });
 ```
 
-If a token id doesn't exist or if the caller principal is not permitted to act on a token id, then the token id receives the `Unauthorized` error response. If `is_atomic` is true (default), then the transfer of tokens in the `token_ids` vector must all succeed, otherwise no transfer must be executed.
+If a token id doesn't exist or if the caller principal is not permitted to act on a token id, then the token id receives the `Unauthorized` error response.
 
 The `memo` parameter is an arbitrary blob that is not interpreted by the ledger.
 The ledger SHOULD allow memos of at least 32 bytes in length.
@@ -392,6 +420,10 @@ The result of the call should always have at least one entry,
 ```candid
 record { name = "ICRC-7"; url = "https://github.com/dfinity/ICRC/ICRCs/ICRC-7"; }
 ```
+
+## Migration Path for Ledgers Using ICP AccountId
+
+For historical reasons, many NFT standards such as the EXT used ICP AccountId instead of ICRC-1 Account to store the owners. Since ICP AccountId can be calculated from ICRC-1 Account, but not in the inverse direction, there is no way for a ledger implementing ICP AccountId to display `icrc7_owner_of` data. To help with the transition, ledgers using ICP AccountId can return error type `TemporarilyUnavailable` for tokens that exist, but have not migrated to ICRC-1 Account yet (the owner of the NFT token would need to call a migration endpoint in the canister as part of the migration process, which may take an arbitrary amount of time).
 
 ## Extensions <span id="extensions"></span>
 
