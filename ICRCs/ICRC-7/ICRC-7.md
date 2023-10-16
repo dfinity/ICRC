@@ -35,11 +35,9 @@ Unless specified explicitly otherwise, the ordering of response elements for bat
 
 ### icrc7_collection_metadata
 
-Returns the generic metadata for this ledger. The data model for metadata is based on the generic `Value` type, which allows for encoding arbitrarily complex data.
+Returns all the collection-level metadata of the NFT collection in a single query. The data model for metadata is based on the generic `Value` type which allows for encoding arbitrarily complex data for each metadata element.
 
-The elements contained in the metadata depends on the implementation of the ledger. Some examples of elements follow in the list below:
-
-Returns all the collection-level metadata of the NFT collection in a single query.
+Which elements are contained in a specific ledger's metadata depends on the given ledger implementation.
 
 The following metadata fields are defined by ICRC-7, starting with general collection-specific metadata fields:
   * `name : text`: The name of the token.
@@ -66,7 +64,7 @@ type Value = variant {
 ```
 
 ```candid "Methods" +=
-icrc7_metadata : () -> (metadata : vec Value) query;
+icrc7_collection_metadata : () -> (metadata : vec Value) query;
 ```
 
 ### icrc7_name
@@ -147,7 +145,6 @@ type Value = variant {
     Array : vec Value; 
     Map : vec record { text; Value }; 
 };
-type Metadata = Value;
 ```
 
 ```candid "Methods" +=
@@ -158,7 +155,7 @@ icrc7_token_metadata : (token_ids : vec nat) -> (vec record { token_id : nat; me
 
 Returns the owner of each token in a list of tokens identified by `token_ids`. For non-existing token ids, the `null` value is returned for the `account`. The ordering of the response elements is arbitrary.
 
-The `TemporarilyUnavailable` error type is used to help migration of NFT ledgers of other standards using ICP AccountId instead of ICRC-1 Account to store the owners. See section Migration Path for Ledgers Using ICP AccountId.
+The `TemporarilyUnavailable` error type is used to help migration of NFT ledgers of other standards using ICP AccountId instead of ICRC-1 Account to store the owners. See section [Migration Path for Ledgers Using ICP AccountId](#migration_path_for_ledgers_using_icp_accountid).
 
 ```candid "Type definitions" +=
 type GetOwnerError = variant {
@@ -180,7 +177,6 @@ icrc7_balance_of : (account : Account) -> (balance : opt nat) query;
 ```
 
 ### icrc7_tokens
-
 
 Returns the list of tokens in this ledger, sorted by their token id. The result is paginated and pagination is controlled via the `prev` and `take` parameters: The response to a request results in at most `take` many token ids, starting with the next id following `prev`. If the response contains no token ids, there are no further tokens following prev. The token ids in the response are sorted in any consistent sorting order used by the ledger. If `take` is omitted, a reasonable value is assumed.
 
@@ -449,7 +445,7 @@ An ICRC-1 ledger SHOULD implement transfer deduplication to simplify the error r
 The deduplication covers all transactions submitted within a pre-configured time window `TX_WINDOW` (for example, last 24 hours).
 The ledger MAY extend the deduplication window into the future by the `PERMITTED_DRIFT` parameter (for example, 2 minutes) to account for the time drift between the client and the Internet Computer.
 
-The client can control the deduplication algorithm using the `created_at_time` and `memo` fields of the [`transfer`](#transfer_method) call argument:
+The client can control the deduplication algorithm using the `created_at_time` and `memo` fields of the [`transfer`](#icrc7_transfer) call argument:
   * The `created_at_time` field sets the transaction construction time as the number of nanoseconds from the UNIX epoch in the UTC timezone.
   * The `memo` field does not have any meaning to the ledger, except that the ledger will not deduplicate transfers with different values of the `memo` field.
 
