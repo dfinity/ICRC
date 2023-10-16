@@ -393,7 +393,7 @@ The response is a vector the elements of which comprise a `token_id` and a corre
 The ordering of the elements of the response vector approval records is undefined. An implementation of the ledger can use any internal sorting order for the elements of the response to implement pagination.
 
 ```candid "Methods" +=
-icrc7_get_approvals: (token_ids : vec nat, prev : opt ApprovalInfo; take : opt nat)
+icrc7_get_approvals: (token_ids : vec nat, prev : opt ApprovalInfo; take : opt nat32)
     -> (vec record { token_id : nat; approval : ApprovalInfo; });
 ```
 
@@ -406,7 +406,7 @@ The response is a vector of `ApprovalInfo` records.
 The ordering of the elements of the response vector approval records is undefined. An implementation of the ledger can use any internal sorting order for the elements of the response to implement pagination.
 
 ```candid "Methods" +=
-icrc7_get_collection_approvals : (owner : Account, prev : opt ApprovalInfo, take : opt nat)
+icrc7_get_collection_approvals : (owner : Account, prev : opt ApprovalInfo, take : opt nat32)
     -> (vec ApprovalInfo);
 ```
 
