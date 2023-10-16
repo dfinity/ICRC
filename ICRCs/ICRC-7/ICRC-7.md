@@ -4,7 +4,7 @@
 
 
 
-# ICRC-7: Base Non-Fungible Token (NFT) Standard
+# ICRC-7: Minimal Non-Fungible Token (NFT) Standard
 
 The ICRC-7 is the base standard for the implementation of Non-Fungible Tokens (NFTs) on the [Internet Computer](https://internetcomputer.org).
 
@@ -32,6 +32,8 @@ Tokens in ICRC-7 are identified through _token identifiers_, or _token ids_. A t
 ### Conventions
 
 Unless specified explicitly otherwise, the ordering of response elements for batch calls is not defined, i.e., is arbitrary. The methods, both queries and update calls, that operate on token ids are batch methods that can receive vectors of token ids as input. The output of such a method is a vector with records comprising a token id and a response belonging to this token id. The ordering of the response elements is undefined. This API pattern does not require the caller to correlate the response elements to the input, but the response is self contained. For batch calls, the lenght of the output vector may be shorter than that of the input vector, e.g., in case of duplicate token ids in the input and a deduplication being performed by the method's implementation logic.
+
+Methods that modify the state of the ledger have responses that comprise transaction indices as part of the response in the success case. Such a transaction index is an index into the chain of transactions that have been made for this ledger and therefore refers a specific block created for this ledger.
 
 ### icrc7_collection_metadata
 
