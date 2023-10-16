@@ -383,7 +383,7 @@ icrc7_is_approved : (spender : Account; from_subaccount : blob; token_id : nat) 
 
 ### icrc7_get_approvals
 
-Returns the approvals that exist for the given vector of `token_ids`. The result is paginated, the mechanics of pagination is the same as for `icrc7_tokens` using `prev` and `take` to control pagination.
+Returns the approvals that exist for the given vector of `token_ids`.  The result is paginated, the mechanics of pagination is the same as for `icrc7_tokens` using `prev` and `take` to control pagination. The `prev` parameter is an `ApprovalInfo` with the meaning that `ApprovalInfo`s following the provided one are returned, based on a sorting order over `ApprovalInfo`s implemented by the ledger.
 
 The response is a vector the elements of which comprise a `token_id` and a corresponding approval. If multiple approvals exist for a `token_id`, multiple entries with the same `token_id` are returned.
 
@@ -396,7 +396,7 @@ icrc7_get_approvals: (token_ids : vec nat, prev : opt ApprovalInfo; take : opt n
 
 ### icrc7_get_collection_approvals
 
-Returns all collection-level approvals that exist for the specified `owner`.  The result is paginated, the mechanics of pagination is the same as for `icrc7_tokens` using `prev` and `take` to control pagination.
+Returns all collection-level approvals that exist for the specified `owner`.  The result is paginated, the mechanics of pagination is the same as for `icrc7_tokens` using `prev` and `take` to control pagination. The `prev` parameter is an `ApprovalInfo` with the meaning that `ApprovalInfo`s following the provided one are returned, based on a sorting order over `ApprovalInfo`s implemented by the ledger.
 
 The response is a vector of `ApprovalInfo` records.
 
