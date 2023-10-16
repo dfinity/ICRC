@@ -167,7 +167,8 @@ type GetOwnerError = variant {
 };
 ```
 ```candid "Methods" +=
-icrc7_owner_of : (token_ids : vec nat) -> (vec record { token_id : nat; account : variant { Ok : Account; Err : GetOwnerError; }; }) query;
+icrc7_owner_of : (token_ids : vec nat)
+    -> (vec record { token_id : nat; account : variant { Ok : Account; Err : GetOwnerError; }; }) query;
 ```
 
 ### icrc7_balance_of
@@ -329,7 +330,8 @@ type RevokeError = variant {
 };
 ```
 ```candid "Methods" +=
-icrc7_revoke_token_approvals: (RevokeTokensArgs) -> (vec record { token_id : nat; revoke_response : variant { Ok : nat; Err : RevokeError; }; } );
+icrc7_revoke_token_approvals: (RevokeTokensArgs)
+    -> (vec record { token_id : nat; revoke_response : variant { Ok : nat; Err : RevokeError; }; } );
 ```
 
 ### icrc7_revoke_collection_approvals
@@ -350,7 +352,8 @@ type RevokeCollectionArgs = record {
 };
 
 ```candid "Methods" +=
-icrc7_revoke_collection_approvals: (RevokeCollectionArgs) -> (vec record { token_id : nat; revoke_response : variant { Ok : nat; Err : RevokeError; }; } );
+icrc7_revoke_collection_approvals: (RevokeCollectionArgs)
+    -> (vec record { token_id : nat; revoke_response : variant { Ok : nat; Err : RevokeError; }; } );
 ```
 
 ### icrc7_revoke_all_token_approvals
