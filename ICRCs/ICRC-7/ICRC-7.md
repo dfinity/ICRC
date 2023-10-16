@@ -228,7 +228,8 @@ type ApprovalError = variant {
 ```
 
 ```candid "Methods" +=
-icrc7_approve : (token_ids : vec nat, approval : ApprovalInfo) -> (vec record { token_id : opt nat; approval_response : variant { Ok : nat; Err : ApprovalError; } } );
+icrc7_approve : (token_ids : vec nat, approval : ApprovalInfo)
+    -> (vec record { token_id : opt nat; approval_response : variant { Ok : nat; Err : ApprovalError; } } );
 ```
 
 ### icrc7_approve_collection
@@ -285,16 +286,17 @@ type TransferError = variant {
 ```
 
 ```candid "Methods" +=
-icrc7_transfer : (TransferArgs) -> (vec record { token_id : nat; transfer_result : variant { Ok : nat; Err : TransferError; }; });
+icrc7_transfer : (TransferArgs)
+    -> (vec record { token_id : nat; transfer_result : variant { Ok : nat; Err : TransferError; }; });
 ```
 
 If a token id doesn't exist or if the caller principal is not permitted to act on a token id, then the token id receives the `Unauthorized` error response.
 
 The `memo` parameter is an arbitrary blob that is not interpreted by the ledger.
 The ledger SHOULD allow memos of at least 32 bytes in length.
-The ledger SHOULD use the `memo` argument for [transaction deduplication](#transaction_deduplication).
+The ledger SHOULD use the `memo` argument for [transaction deduplication](#transaction-deduplication).
 
-The ledger SHOULD reject transactions with the `Duplicate` error variant in case the transaction is found to be a duplicate based on the [transaction deduplication](#transaction_deduplication).
+The ledger SHOULD reject transactions with the `Duplicate` error variant in case the transaction is found to be a duplicate based on the [transaction deduplication](#transaction-deduplication).
 
 The `created_at_time` parameter indicates the time (as nanoseconds since the UNIX epoch in the UTC timezone) at which the client constructed the transaction.
 The ledger SHOULD reject transactions that have `created_at_time` argument too far in the past or the future, returning `variant { TooOld }` and `variant { CreatedInFuture = record { ledger_time = ... } }` errors correspondingly.
@@ -356,7 +358,8 @@ Revokes all active token-level approvals for the specified `token_ids` list of t
 The response is a vector comprising records with a `token_id` and a corresponding variant with `Ok` containing a transaction index indicating the success case or an `Err` variant indicating the error case.
 
 ```candid "Methods" +=
-icrc7_revoke_all_token_approvals: (token_ids : opt nat) -> (vec record { token_id : nat; revoke_response : variant { Ok : nat; Err : RevokeError; }; } );
+icrc7_revoke_all_token_approvals: (token_ids : opt nat)
+    -> (vec record { token_id : nat; revoke_response : variant { Ok : nat; Err : RevokeError; }; } );
 ```
 
 ### icrc7_revoke_all_collection_approvals
@@ -366,7 +369,8 @@ Revokes all active collection-level approvals of the caller.
 The response is a vector of elements, each containing either an `Ok` variant with a transaction index indicating success or an `Err` variant indicating an error for a collection-level approval.
 
 ```candid "Methods" +=
-icrc7_revoke_all_collection_approvals: () -> (vec variant { Ok : nat; Err : RevokeError; }; );
+icrc7_revoke_all_collection_approvals: ()
+    -> (vec variant { Ok : nat; Err : RevokeError; }; );
 ```
 
 ### icrc7_is_approved
@@ -374,7 +378,8 @@ icrc7_revoke_all_collection_approvals: () -> (vec variant { Ok : nat; Err : Revo
 Returns true if ac active approval exists that allows the `spender` to transfer `token` from the given `from_subaccount`.
 
 ```candid "Methods" +=
-icrc7_is_approved : (spender : Account; from_subaccount : blob; token_id : nat) -> (bool) query;
+icrc7_is_approved : (spender : Account; from_subaccount : blob; token_id : nat)
+    -> (bool) query;
 ```
 
 ### icrc7_get_approvals
