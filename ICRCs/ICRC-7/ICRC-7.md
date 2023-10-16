@@ -155,7 +155,7 @@ icrc7_token_metadata : (token_ids : vec nat) -> (vec record { token_id : nat; me
 
 Returns the owner of each token in a list of tokens identified by `token_ids`. For non-existing token ids, the `null` value is returned for the `account`. The ordering of the response elements is arbitrary.
 
-The `TemporarilyUnavailable` error type is used to help migration of NFT ledgers of other standards using ICP AccountId instead of ICRC-1 Account to store the owners. See section [Migration Path for Ledgers Using ICP AccountId](#migration_path_for_ledgers_using_icp_accountid).
+The `TemporarilyUnavailable` error type is used to help migration of NFT ledgers of other standards using ICP AccountId instead of ICRC-1 Account to store the owners. See section [Migration Path for Ledgers Using ICP AccountId](#migration-path-for-ledgers-using-icp-accountid).
 
 ```candid "Type definitions" +=
 type GetOwnerError = variant {
