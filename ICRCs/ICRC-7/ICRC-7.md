@@ -10,7 +10,7 @@ The ICRC-7 is the base standard for the implementation of Non-Fungible Tokens (N
 
 ## Data
 
-### account
+### Account
 
 A `principal` can have multiple accounts. Each account of a `principal` is identified by a 32-byte string called `subaccount`. Therefore, an account corresponds to a pair `(principal, subaccount)`.
 
@@ -21,9 +21,9 @@ type Subaccount = blob;
 type Account = record { owner : principal; subaccount : opt Subaccount; };
 ```
 
-The canonical textual representation of the account follows the definition in [ICRC-1](https://github.com/dfinity/ICRC-1/blob/main/standards/ICRC-1/TextualEncoding.md). Note that ICRC-7 accounts have the same structure and follow the same overall principles as ICRC-1 accounts.
+The canonical textual representation of the account follows the [definition in ICRC-1](https://github.com/dfinity/ICRC-1/blob/main/standards/ICRC-1/TextualEncoding.md). Note that ICRC-7 accounts have the same structure and follow the same overall principles as ICRC-1 accounts.
 
-### Token identifiers
+### Token Identifiers
 
 Tokens in ICRC-7 are identified through _token identifiers_, or _token ids_. A token id is a natural number value. Token identifiers do not need to be allocated in a contiguous manner. Non-contiguous, i.e., sparse, allocations are, for example, useful for mapping string-based identifiers to token ids.
 
@@ -422,7 +422,7 @@ record { name = "ICRC-7"; url = "https://github.com/dfinity/ICRC/ICRCs/ICRC-7"; 
 
 For historical reasons, multiple NFT standards such as the EXT standard uses the ICP AccountId (a hash of the principal and subaccount) instead of ICRC-1 Account (a pair of principal and subaccount) to store the owners. Since the ICP AccountId can be calculated from an ICRC-1 Account, but computability does not hold in the inverse direction, there is no way for a ledger implementing ICP AccountId to display `icrc7_owner_of` data. To help with the transition, ledgers using ICP AccountId can return error type `TemporarilyUnavailable` for tokens that exist, but have not migrated to ICRC-1 Account yet (the owner of the NFT token would need to call a migration endpoint in the canister as part of the migration process, which may take an arbitrary amount of time).
 
-## Extensions <span id="extensions"></span>
+## Extensions
 
 The base standard intentionally excludes some ledger functions essential for building a rich DeFi ecosystem, for example:
 
@@ -433,7 +433,7 @@ The base standard intentionally excludes some ledger functions essential for bui
 The standard defines the `icrc7_supported_standards` endpoint to accommodate these and other future extensions.
 This endpoint returns names of all specifications (e.g., `"ICRC-42"` or `"DIP-20"`) implemented by the ledger.
 
-## Transaction deduplication <span id="transfer_deduplication"></span>
+## Transaction Deduplication
 
 Consider the following scenario:
 
