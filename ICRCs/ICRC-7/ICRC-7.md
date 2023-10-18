@@ -56,7 +56,7 @@ The following metadata fields are defined by ICRC-7, starting with general colle
 The following are the more technical, implementation-oriented, fields:
   * `icrc7:max_approvals_per_token : nat` (optional): The maximum number of active approvals this ledger implementation allows per token.
   * `icrc7:max_update_batch_size : nat` (optional): The maximum batch size for update batch calls this ledger implementation supports.
-  * `icrc7:default_take : nat` (optional): The default value this ledger uses for the `take` pagination parameter.
+  * `icrc7:default_take_value : nat` (optional): The default value this ledger uses for the `take` pagination parameter.
 
 ```candid "Type definitions" +=
 // Generic value in accordance with ICRC-3
@@ -138,6 +138,14 @@ Returns the maximum number of token ids allowed for being used as input in a bat
 icrc7_max_update_batch_size : () -> (opt nat) query;
 ```
 
+### icrc7_default_take_value
+
+Returns the default parameter the ledger uses for `take` in case the parameter is left out in paginated methods.
+
+```candid "Methods" +=
+icrc7_default_take_value : () -> (opt nat) query;
+```
+
 ### icrc7_token_metadata
 
 Returns the token metadata for `token_ids`, a list of token ids. Each element of the response vector comprises a `token_id` and the `metadata` corresponding to this token.
@@ -199,7 +207,7 @@ icrc7_tokens : (prev : opt nat, take : opt nat32) -> (token_ids : vec nat) query
 
 ### icrc7_tokens_of
 
-Returns a vector of `token_id`s of all tokens held by `account`, sorted by their token id. The result is paginated, the mechanics of pagination is the same as for `icrc7_tokens` using `prev` and `take` to control pagination.
+Returns a vector of `token_id`s of all tokens held by `account`, sorted by `token_id``. The result is paginated, the mechanics of pagination is the same as for `icrc7_tokens` using `prev` and `take` to control pagination.
 
 ```candid "Methods" +=
 icrc7_tokens_of : (account : Account, prev : opt nat, take : opt nat32)
@@ -340,6 +348,7 @@ type RevokeError = variant {
     GenericError : record { error_code : nat; message : text; };
 };
 ```
+
 ```candid "Methods" +=
 icrc7_revoke_token_approvals: (RevokeTokensArgs)
     -> (vec record { token_id : nat; revoke_response : variant { Ok : nat; Err : RevokeError; }; } );
@@ -347,7 +356,7 @@ icrc7_revoke_token_approvals: (RevokeTokensArgs)
 
 ### icrc7_revoke_collection_approvals
 
-Revokes collection-level approvals from the set of active approvals. The `from_subaccount` parameter specifies the token owner's subaccount to which the approval to be revoked applies, the `spender` the party for which the approval is to be revoked. Not providing either of the `from_subaccount` or `spender` or both means to revoke approvals with any value for the not provided parameter.
+Revokes collection-level approvals from the set of active approvals. The `from_subaccount` parameter specifies the token owner's subaccount to which the approval to be revoked applies, the `spender` the party for which the approval is to be revoked. Not providing the `from_subaccount` or `spender` means to revoke approvals with any value for the omitted parameter(s). By not specifying any of `from_subaccount` and `spender`, all collection-level approvals for the caller are removed.
 
 // FIX: t.b.d.: the return value assumes that each revocation for a collection generates its own block / transaction; OK to assume this?
 
@@ -359,11 +368,12 @@ Revoking a collection-level approval does not affect approvals for individual to
 
 An ICRC-7 ledger implementation does not need to keep track of revoked approvals.
 
+```candid "Type definitions" +=
 type RevokeCollectionArgs = record {
     from_subaccount : opt blob;
     spender : opt Account;
 };
-
+```
 ```candid "Methods" +=
 icrc7_revoke_collection_approvals: (RevokeCollectionArgs)
     -> (vec variant { Ok : nat; Err : RevokeError; }; );
