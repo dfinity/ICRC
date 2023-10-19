@@ -6,7 +6,7 @@
 
 # ICRC-7: Minimal Non-Fungible Token (NFT) Standard
 
-The ICRC-7 is the base standard for the implementation of Non-Fungible Tokens (NFTs) on the [Internet Computer](https://internetcomputer.org).
+ICRC-7 is the minimal standard for the implementation of Non-Fungible Tokens (NFTs) on the [Internet Computer](https://internetcomputer.org).
 
 // FIX: t.b.d. Pattern for expressing response values regarding error handling for query calls: (1) As is for most query calls currently that no error is specified and non-existing tokens are handled with a null or (2) using an explicit error type
 
@@ -41,22 +41,24 @@ Methods that modify the state of the ledger have responses that comprise transac
 
 Returns all the collection-level metadata of the NFT collection in a single query. The data model for metadata is based on the generic `Value` type which allows for encoding arbitrarily complex data for each metadata element.
 
+Analogous to [ICRC-1 metadata](https://github.com/dfinity/ICRC-1/tree/main/standards/ICRC-1#metadata), metadata keys are arbitrary Unicode strings and must follow the pattern <namespace>:<key>, where <namespace> is a string not containing colons. Namespace `icrc7` is reserved for keys defined in the ICRC-7 standard.
+
 Which elements are contained in a specific ledger's metadata depends on the given ledger implementation.
 
 // FIX: added namespacing as in ICRC-1. Should name, symbol, logo use the icrc1 namespace because of being defined there?
 
 The following metadata fields are defined by ICRC-7, starting with general collection-specific metadata fields:
-  * `icrc7:name : text`: The name of the token.
-  * `icrc7:symbol : text`: The symbol of the token.
-  * `icrc7:description : text` (optional): A textual description of the token.
-  * `icrc7:logo : text` (optional): A logo for the token.
-  * `icrc7:total_supply : nat`: The current total supply of the token, i.e., the number of tokens in existance.
-  * `icrc7:supply_cap : nat` (optional): The current maximum supply for the token beyond which minting new tokens is not possible.
+  * `icrc7:name` of type `text`: The name of the token.
+  * `icrc7:symbol` of type `text`: The symbol of the token.
+  * `icrc7:description` of type `text` (optional): A textual description of the token.
+  * `icrc7:logo` of type `text` (optional): A logo for the token.
+  * `icrc7:total_supply` of type `nat`: The current total supply of the token, i.e., the number of tokens in existance.
+  * `icrc7:supply_cap` of type `nat` (optional): The current maximum supply for the token beyond which minting new tokens is not possible.
 
 The following are the more technical, implementation-oriented, fields:
-  * `icrc7:max_approvals_per_token : nat` (optional): The maximum number of active approvals this ledger implementation allows per token.
-  * `icrc7:max_update_batch_size : nat` (optional): The maximum batch size for update batch calls this ledger implementation supports.
-  * `icrc7:default_take_value : nat` (optional): The default value this ledger uses for the `take` pagination parameter.
+  * `icrc7:max_approvals_per_token` of type `nat` (optional): The maximum number of active approvals this ledger implementation allows per token.
+  * `icrc7:max_update_batch_size` of type `nat` (optional): The maximum batch size for update batch calls this ledger implementation supports.
+  * `icrc7:default_take_value` of type `nat` (optional): The default value this ledger uses for the `take` pagination parameter.
 
 ```candid "Type definitions" +=
 // Generic value in accordance with ICRC-3
@@ -169,7 +171,7 @@ icrc7_token_metadata : (token_ids : vec nat)
 
 ### icrc7_owner_of
 
-Returns the owner of each token in a list of tokens identified by `token_ids`. For non-existing token ids, the `null` value is returned for the `account`. The ordering of the response elements is arbitrary.
+Returns the owner `Account` of each token identified by a list of `token_ids`. // FIX t.b.d. For non-existing token ids, the `null` value is returned for the `account`. The ordering of the response elements is arbitrary.
 
 The `TemporarilyUnavailable` error type is used to help migration of NFT ledgers of other standards using ICP AccountId instead of ICRC-1 Account to store the owners. See section [Migration Path for Ledgers Using ICP AccountId](#migration-path-for-ledgers-using-icp-accountid).
 
@@ -207,7 +209,7 @@ icrc7_tokens : (prev : opt nat, take : opt nat32) -> (token_ids : vec nat) query
 
 ### icrc7_tokens_of
 
-Returns a vector of `token_id`s of all tokens held by `account`, sorted by `token_id``. The result is paginated, the mechanics of pagination is the same as for `icrc7_tokens` using `prev` and `take` to control pagination.
+Returns a vector of `token_id`s of all tokens held by `account`, sorted by `token_id`. The result is paginated, the mechanics of pagination is the same as for `icrc7_tokens` using `prev` and `take` to control pagination.
 
 ```candid "Methods" +=
 icrc7_tokens_of : (account : Account, prev : opt nat, take : opt nat32)
@@ -264,13 +266,13 @@ An approval that has been created, is not expired, and has not been replaced wit
 
 In accordance with ICRC-2, multiple approvals can exist for the same `collection` but different `spender`s and `from_subaccount`s. For the same token, spender, and subaccount triple a new approval shall always overwrite the old one. The ledger should limit the number of approvals that can be active per token. Such limit is exposed as ledger metadata through the metadata attribute `max_approvals_per_token`.
 
-The response contains a single element with the `Ok` variant containing the transaction index in the success case or an error `Err` of the collection-level approval.
+The response contains a single element with the `Ok` variant containing the transaction index of the collection-level approval in the success case or an error `Err` otherwise.
 
 An ICRC-7 ledger implementation does not need to keep track of expired approvals in its memory. This is important to help constrain unlimited growth of ledger memory over time. Of course, all historic approvals are contained in the block history the ledger creates.
 
-Note: This method is analogous to `icrc7_approve_tokens` for approving whole collections. `ApprovalInfo` defines the approval to be made for the whole collection.
+Note: This method is analogous to `icrc7_approve_tokens`, but for approving whole collections. `ApprovalInfo` defines the approval to be made for the collection.
 
-Note that collection-level approvals MUST be managed by the ledger as such and MUST NOT be translated into token-level approvals for all tokens the caller owns.
+Note that collection-level approvals MUST be managed by the ledger as collection-level approvals and MUST NOT be translated into token-level approvals for all tokens the caller owns.
 
 See the [#icrc7_approve_tokens](icrc7_approve_tokens) for the Candid types.
 
@@ -381,20 +383,20 @@ icrc7_revoke_collection_approvals: (RevokeCollectionArgs)
 
 ### icrc7_is_approved
 
-Returns true if an active approval exists that allows the `spender` to transfer `token` from the given `from_subaccount`.
+Returns `true` if an active approval exists that allows the `spender` to transfer the token `token_id` from the given `from_subaccount`, `false` otherwise.
 
 ```candid "Methods" +=
 icrc7_is_approved : (spender : Account; from_subaccount : blob; token_id : nat)
     -> (bool) query;
 ```
 
-### icrc7_get_approvals
+### icrc7_get_token_approvals
 
-Returns the approvals that exist for the given vector of `token_ids`.  The result is paginated, the mechanics of pagination is the same as for `icrc7_tokens` using `prev` and `take` to control pagination. The `prev` parameter is an `ApprovalInfo` with the meaning that `ApprovalInfo`s following the provided one are returned, based on a sorting order over `ApprovalInfo`s implemented by the ledger.
+Returns the token-level approvals that exist for the given vector of `token_ids`.  The result is paginated, the mechanics of pagination is the same as for `icrc7_tokens` using `prev` and `take` to control pagination. The `prev` parameter is an `ApprovalInfo` with the meaning that `ApprovalInfo`s following the provided one are returned, based on a sorting order over `ApprovalInfo`s implemented by the ledger.
 
-The response is a vector the elements of which comprise a `token_id` and a corresponding approval. If multiple approvals exist for a `token_id`, multiple entries with the same `token_id` are returned.
+The response is a vector the elements of which comprise a `token_id` and a corresponding `approval`. If multiple approvals exist for a `token_id`, multiple entries with the same `token_id` are returned.
 
-The ordering of the elements of the response vector approval records is undefined. An implementation of the ledger can use any internal sorting order for the elements of the response to implement pagination.
+The ordering of the elements in the response is undefined. An implementation of the ledger can use any internal sorting order for the elements of the response to implement pagination.
 
 ```candid "Methods" +=
 icrc7_get_approvals: (token_ids : vec nat, prev : opt ApprovalInfo; take : opt nat32)
@@ -403,11 +405,11 @@ icrc7_get_approvals: (token_ids : vec nat, prev : opt ApprovalInfo; take : opt n
 
 ### icrc7_get_collection_approvals
 
-Returns all collection-level approvals that exist for the specified `owner`.  The result is paginated, the mechanics of pagination is the same as for `icrc7_tokens` using `prev` and `take` to control pagination. The `prev` parameter is an `ApprovalInfo` with the meaning that `ApprovalInfo`s following the provided one are returned, based on a sorting order over `ApprovalInfo`s implemented by the ledger.
+Returns the collection-level approvals that exist for the specified `owner`.  The result is paginated, the mechanics of pagination is the same as for `icrc7_tokens` using `prev` and `take` to control pagination. The `prev` parameter is an `ApprovalInfo` with the meaning that `ApprovalInfo`s following the provided one are returned, based on a sorting order over `ApprovalInfo`s implemented by the ledger.
 
 The response is a vector of `ApprovalInfo` records.
 
-The ordering of the elements of the response vector approval records is undefined. An implementation of the ledger can use any internal sorting order for the elements of the response to implement pagination.
+The ordering of the elements in the response is undefined. An implementation of the ledger can use any internal sorting order for the elements of the response to implement pagination.
 
 ```candid "Methods" +=
 icrc7_get_collection_approvals : (owner : Account, prev : opt ApprovalInfo, take : opt nat32)
