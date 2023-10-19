@@ -171,14 +171,16 @@ icrc7_token_metadata : (token_ids : vec nat)
 
 ### icrc7_owner_of
 
-Returns the owner `Account` of each token identified by a list of `token_ids`. // FIX t.b.d. For non-existing token ids, the `null` value is returned for the `account`. The ordering of the response elements is arbitrary.
+Returns the owner `Account` of each token identified by a list of `token_ids`. The ordering of the response elements is arbitrary.
 
-The `TemporarilyUnavailable` error type is used to help migration of NFT ledgers of other standards using ICP AccountId instead of ICRC-1 Account to store the owners. See section [Migration Path for Ledgers Using ICP AccountId](#migration-path-for-ledgers-using-icp-accountid).
+For non-existing token ids, the `NonExistingTokenId` error variant is returned.
+
+The `NotMigrated` error type is used to help migration of NFT ledgers of other standards using ICP AccountId instead of ICRC-1 Account to store the owners. See section [Migration Path for Ledgers Using ICP AccountId](#migration-path-for-ledgers-using-icp-accountid).
 
 ```candid "Type definitions" +=
 type GetOwnerError = variant {
     NonExistingTokenId;
-    TemporarilyUnavailable;
+    NotMigrated;
     GenericError : record { error_code : nat; message : text };
 };
 ```
@@ -189,10 +191,10 @@ icrc7_owner_of : (token_ids : vec nat)
 
 ### icrc7_balance_of
 
-Returns the balance of the `account` provided as an argument. For a non-existing account, the `null` value is returned.
+Returns the balance of the `account` provided as an argument. For a non-existing account, the value `0` is returned.
 
 ```candid "Methods" +=
-icrc7_balance_of : (account : Account) -> (balance : opt nat) query;
+icrc7_balance_of : (account : Account) -> (balance : nat) query;
 ```
 
 ### icrc7_tokens
@@ -333,6 +335,8 @@ Only the owner of tokens can revoke approvals.
 
 The response is a vector comprising records with a `token_id` and a corresponding variant with `Ok` containing a transaction index indicating the success case or an `Err` variant indicating the error case.
 
+Note that the response size on ICP is limited. Callers of this method should take care to not exceed the response limit with their inputs.
+
 Revoking an approval for one or more token ids does not affect collection-level approvals.
 
 An ICRC-7 ledger implementation does not need to keep track of revoked approvals.
@@ -347,7 +351,6 @@ type RevokeTokensArgs = record {
 type RevokeError = variant {
     Unauthorized;
     ApprovalDoesNotExist;
-    TooOld;
     TemporarilyUnavailable;
     GenericError : record { error_code : nat; message : text; };
 };
@@ -355,7 +358,7 @@ type RevokeError = variant {
 
 ```candid "Methods" +=
 icrc7_revoke_token_approvals: (RevokeTokensArgs)
-    -> (vec record { token_id : nat; revoke_response : variant { Ok : nat; Err : RevokeError; }; } );
+    -> (vec record { token_id : nat; from_subaccount : blob; spender : Account; revoke_response : variant { Ok : nat; Err : RevokeError; }; } );
 ```
 
 ### icrc7_revoke_collection_approvals
@@ -394,7 +397,7 @@ icrc7_is_approved : (spender : Account; from_subaccount : blob; token_id : nat)
 
 ### icrc7_get_token_approvals
 
-Returns the token-level approvals that exist for the given vector of `token_ids`.  The result is paginated, the mechanics of pagination is the same as for `icrc7_tokens` using `prev` and `take` to control pagination. The `prev` parameter is an `ApprovalInfo` with the meaning that `ApprovalInfo`s following the provided one are returned, based on a sorting order over `ApprovalInfo`s implemented by the ledger.
+Returns the token-level approvals that exist for the given vector of `token_ids`.  The result is paginated, the mechanics of pagination is the same as for `icrc7_tokens` using `prev` and `take` to control pagination. Note that `take` refers to the number of returned elements tp be requested. The `prev` parameter is an `ApprovalInfo` with the meaning that `ApprovalInfo`s following the provided one are returned, based on a sorting order over `ApprovalInfo`s implemented by the ledger.
 
 The response is a vector the elements of which comprise a `token_id` and a corresponding `approval`. If multiple approvals exist for a `token_id`, multiple entries with the same `token_id` are returned.
 
