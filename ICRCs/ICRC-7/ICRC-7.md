@@ -400,7 +400,7 @@ The ordering of the elements in the response is undefined. An implementation of 
 
 ```candid "Methods" +=
 icrc7_get_approvals: (token_ids : vec nat, prev : opt ApprovalInfo; take : opt nat32)
-    -> (vec record { token_id : nat; approval : ApprovalInfo; });
+    -> (vec record { token_id : nat; approval : ApprovalInfo; }) query;
 ```
 
 ### icrc7_get_collection_approvals
@@ -413,7 +413,7 @@ The ordering of the elements in the response is undefined. An implementation of 
 
 ```candid "Methods" +=
 icrc7_get_collection_approvals : (owner : Account, prev : opt ApprovalInfo, take : opt nat32)
-    -> (vec ApprovalInfo);
+    -> (vec ApprovalInfo) query;
 ```
 
 ### icrc7_supported_standards
