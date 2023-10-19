@@ -327,7 +327,9 @@ The ledger SHOULD reject transactions that have `created_at_time` argument too f
 
 ### icrc7_revoke_token_approvals
 
-Revokes the specified approvals for specific tokens `token_ids` from the set of active approvals. The `from_subaccount` parameter specifies the token owner's subaccount to which the approval applies, the `spender` the party for which the approval is to be revoked. Only the owner of tokens can revoke approvals.
+Revokes the specified approvals for specific tokens `token_ids` from the set of active approvals. The `from_subaccount` parameter specifies the token owner's subaccount to which the approval applies, the `spender` the party for which the approval is to be revoked. Not providing the `from_subaccount` or `spender` means to revoke approvals with any value for the omitted parameter(s). By not specifying both `from_subaccount` and `spender`, all token-level approvals of the caller for the given `token_ids` are revoked.
+
+Only the owner of tokens can revoke approvals.
 
 The response is a vector comprising records with a `token_id` and a corresponding variant with `Ok` containing a transaction index indicating the success case or an `Err` variant indicating the error case.
 
@@ -358,7 +360,7 @@ icrc7_revoke_token_approvals: (RevokeTokensArgs)
 
 ### icrc7_revoke_collection_approvals
 
-Revokes collection-level approvals from the set of active approvals. The `from_subaccount` parameter specifies the token owner's subaccount to which the approval to be revoked applies, the `spender` the party for which the approval is to be revoked. Not providing the `from_subaccount` or `spender` means to revoke approvals with any value for the omitted parameter(s). By not specifying any of `from_subaccount` and `spender`, all collection-level approvals for the caller are removed.
+Revokes collection-level approvals from the set of active approvals. The `from_subaccount` parameter specifies the token owner's subaccount to which the approval to be revoked applies, the `spender` the party for which the approval is to be revoked. Not providing the `from_subaccount` or `spender` means to revoke approvals with any value for the omitted parameter(s). By not specifying both `from_subaccount` and `spender`, all collection-level approvals of the caller are revoked.
 
 // FIX: t.b.d.: the return value assumes that each revocation for a collection generates its own block / transaction; OK to assume this?
 
