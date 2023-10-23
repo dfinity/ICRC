@@ -8,8 +8,6 @@
 
 ICRC-7 is the minimal standard for the implementation of Non-Fungible Tokens (NFTs) on the [Internet Computer](https://internetcomputer.org).
 
-// FIX: t.b.d. Pattern for expressing response values regarding error handling for query calls: (1) As is for most query calls currently that no error is specified and non-existing tokens are handled with a null or (2) using an explicit error type
-
 ## Data
 
 ### Account
@@ -23,7 +21,7 @@ type Subaccount = blob;
 type Account = record { owner : principal; subaccount : opt Subaccount; };
 ```
 
-The canonical textual representation of the account follows the [definition in ICRC-1](https://github.com/dfinity/ICRC-1/blob/main/standards/ICRC-1/TextualEncoding.md). Note that ICRC-7 accounts have the same structure and follow the same overall principles as ICRC-1 accounts.
+The canonical textual representation of the account follows the [definition in ICRC-1](https://github.com/dfinity/ICRC-1/blob/main/standards/ICRC-1/TextualEncoding.md). ICRC-7 accounts have the same structure and follow the same overall principles as ICRC-1 accounts.
 
 ### Token Identifiers
 
@@ -37,28 +35,30 @@ Unless specified explicitly otherwise, the ordering of response elements for bat
 
 Methods that modify the state of the ledger have responses that comprise transaction indices as part of the response in the success case. Such a transaction index is an index into the chain of transactions that have been made for this ledger and therefore refers a specific block created for this ledger.
 
+The response size for messages sent to a canister is constrained currently at 2MB of size. For calls that could result in larger response messages, the caller needs to ensure to constrain the input accordingly so that the response remains below the maximum allowed size. If the maximum size of a response is hit, the ledger canister traps.
+
 ### icrc7_collection_metadata
 
 Returns all the collection-level metadata of the NFT collection in a single query. The data model for metadata is based on the generic `Value` type which allows for encoding arbitrarily complex data for each metadata element.
 
-Analogous to [ICRC-1 metadata](https://github.com/dfinity/ICRC-1/tree/main/standards/ICRC-1#metadata), metadata keys are arbitrary Unicode strings and must follow the pattern <namespace>:<key>, where <namespace> is a string not containing colons. Namespace `icrc7` is reserved for keys defined in the ICRC-7 standard.
+Analogous to [ICRC-1 metadata](https://github.com/dfinity/ICRC-1/tree/main/standards/ICRC-1#metadata), metadata keys are arbitrary Unicode strings and must follow the pattern `<namespace>:<key>`, where `<namespace>` is a string not containing colons. Namespace `icrc7` is reserved for keys defined in the ICRC-7 standard.
 
-Which elements are contained in a specific ledger's metadata depends on the given ledger implementation.
-
-// FIX: added namespacing as in ICRC-1. Should name, symbol, logo use the icrc1 namespace because of being defined there?
+The set of elements contained in a specific ledger's metadata depends on the given ledger implementation, the list below established the currently defined fields.
 
 The following metadata fields are defined by ICRC-7, starting with general collection-specific metadata fields:
-  * `icrc7:name` of type `text`: The name of the token.
-  * `icrc7:symbol` of type `text`: The symbol of the token.
-  * `icrc7:description` of type `text` (optional): A textual description of the token.
-  * `icrc7:logo` of type `text` (optional): A logo for the token.
-  * `icrc7:total_supply` of type `nat`: The current total supply of the token, i.e., the number of tokens in existance.
-  * `icrc7:supply_cap` of type `nat` (optional): The current maximum supply for the token beyond which minting new tokens is not possible.
+  * `icrc7:symbol` of type `text`: The token currency code (see [ISO-4217](https://en.wikipedia.org/wiki/ISO_4217)). When present, should be the same as the result of the [`icrc1_symbol`](#symbol_method) query call.
+  * `icrc7:name` of type `text`: The name of the token. Should be the same as the result of the [`icrc7_name`](#icrc7_name) query call.
+  * `icrc7:description` of type `text` (optional): A textual description of the token. When present, should be the same as the result of the [`icrc7_description`](#icrc7_description) query call.
+  * `icrc7:logo` of type `text` (optional): The URL of the token logo. It may be a [DataURL](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/Data_URLs) that contains the logo image itself. When present, should be the same as the result of the [`icrc7_logo`](#icrc7_logo) query call.
+  * `icrc7:total_supply` of type `nat`: The current total supply of the token, i.e., the number of tokens in existence. Should be the same as the result of the [`icrc7_total_supply`](#icrc7_total_supply) query call.
+  * `icrc7:supply_cap` of type `nat` (optional): The current maximum supply for the token beyond which minting new tokens is not possible. When present, should be the same as the result of the [`icrc7_supply_cap`](#icrc7_supply_cap) query call.
 
-The following are the more technical, implementation-oriented, fields:
-  * `icrc7:max_approvals_per_token` of type `nat` (optional): The maximum number of active approvals this ledger implementation allows per token.
-  * `icrc7:max_update_batch_size` of type `nat` (optional): The maximum batch size for update batch calls this ledger implementation supports.
-  * `icrc7:default_take_value` of type `nat` (optional): The default value this ledger uses for the `take` pagination parameter.
+The following are the more technical, implementation-oriented, metadata elements:
+  * `icrc7:max_approvals_per_token` of type `nat` (optional): The maximum number of active approvals this ledger implementation allows per token. When present, should be the same as the result of the [`icrc7_max_approvals_per_token`](#icrc7_max_approvals_per_token) query call.
+  * `icrc7:max_update_batch_size` of type `nat` (optional): The maximum batch size for update batch calls this ledger implementation supports. When present, should be the same as the result of the [`icrc7_max_update_batch_size`](#icrc7_max_update_batch_size) query call.
+  * `icrc7:default_take_value` of type `nat` (optional): The default value this ledger uses for the `take` pagination parameter. When present, should be the same as the result of the [`icrc7_default_take_value`](#icrc7_default_take_value) query call.
+
+// FIX t.b.d. Add maximum input sizes for the query methods to ensure response sizes are in bound.
 
 ```candid "Type definitions" +=
 // Generic value in accordance with ICRC-3
@@ -76,6 +76,14 @@ type Value = variant {
 icrc7_collection_metadata : () -> (metadata : vec record { text; Value }; ) query;
 ```
 
+### icrc7_symbol
+
+Returns the symbol of the collection (e.g., `MS`).
+
+```candid "Methods" +=
+icrc7_symbol : () -> (text) query;
+```
+
 ### icrc7_name
 
 Returns the name of the NFT collection (e.g., `My Super NFT`).
@@ -84,13 +92,6 @@ Returns the name of the NFT collection (e.g., `My Super NFT`).
 icrc7_name : () -> (text) query;
 ```
 
-### icrc7_symbol
-
-Returns the symbol of the collection (e.g., `MS`).
-
-```candid "Methods" +=
-icrc7_symbol : () -> (text) query;
-```
 ### icrc7_description
 
 Returns the text description of the collection.
@@ -438,7 +439,7 @@ record { name = "ICRC-7"; url = "https://github.com/dfinity/ICRC/ICRCs/ICRC-7"; 
 
 ## Migration Path for Ledgers Using ICP AccountId
 
-For historical reasons, multiple NFT standards such as the EXT standard uses the ICP AccountId (a hash of the principal and subaccount) instead of ICRC-1 Account (a pair of principal and subaccount) to store the owners. Since the ICP AccountId can be calculated from an ICRC-1 Account, but computability does not hold in the inverse direction, there is no way for a ledger implementing ICP AccountId to display `icrc7_owner_of` data. To help with the transition, ledgers using ICP AccountId can return error type `TemporarilyUnavailable` for tokens that exist, but have not migrated to ICRC-1 Account yet (the owner of the NFT token would need to call a migration endpoint in the canister as part of the migration process, which may take an arbitrary amount of time).
+For historical reasons, multiple NFT standards, such as the EXT standard, use the ICP AccountId (a hash of the principal and subaccount) instead of the ICRC-1 Account (a pair of principal and subaccount) to store the owners. Since the ICP AccountId can be calculated from an ICRC-1 Account, but computability does not hold in the inverse direction, there is no way for a ledger implementing ICP AccountId to display `icrc7_owner_of` data. To help with the transition, ledgers using ICP AccountId can return error type `NotMigrated` for tokens that exist, but have not migrated to ICRC-1 Account yet (the owner of the NFT token would need to call a migration endpoint in the canister as part of the migration process, which may take an arbitrary amount of time to migrate all tokens).
 
 ## Extensions
 
