@@ -264,7 +264,7 @@ type ApprovalError = variant {
     Unauthorized;
     TooOld;
     CreatedInFuture : record { ledger_time: nat64; };
-    TemporarilyUnavailable;
+    NotMigrated;
     GenericError : record { error_code : nat; message : text; };
 };
 ```
@@ -323,7 +323,7 @@ type TransferError = variant {
     TooOld;
     CreatedInFuture : record { ledger_time: nat64; };
     Duplicate : record { duplicate_of : nat; };
-    TemporarilyUnavailable;
+    NotMigrated;
     GenericError : record { error_code : nat; message : text; };
 };
 ```
@@ -368,7 +368,7 @@ type RevokeTokensArgs = record {
 type RevokeError = variant {
     Unauthorized;
     ApprovalDoesNotExist;
-    TemporarilyUnavailable;
+    NotMigrated;
     GenericError : record { error_code : nat; message : text; };
 };
 ```
