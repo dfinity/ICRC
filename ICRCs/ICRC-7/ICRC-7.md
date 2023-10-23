@@ -170,6 +170,10 @@ icrc7_max_take_value : () -> (opt nat) query;
 
 Returns the maximum number of approvals that may be revoked in a single invocation of `icrc7_revoke_token_approvals` or `icrc7_revoke_collection_approvals`.
 
+```candid "Methods" +=
+icrc7_max_revoke_approvals : () -> (opt nat) query;
+```
+
 ### icrc7_token_metadata
 
 Returns the token metadata for `token_ids`, a list of token ids. Each element of the response vector comprises a `token_id` and the `metadata` corresponding to this token.
