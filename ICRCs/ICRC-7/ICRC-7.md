@@ -35,7 +35,7 @@ Unless specified explicitly otherwise, the ordering of response elements for bat
 
 Methods that modify the state of the ledger have responses that comprise transaction indices as part of the response in the success case. Such a transaction index is an index into the chain of transactions that have been made for this ledger and therefore refers a specific block created for this ledger.
 
-The response size for messages sent to a canister is constrained currently at 2MB of size. For calls that could result in larger response messages, the caller needs to ensure to constrain the input accordingly so that the response remains below the maximum allowed size. If the maximum size of a response is hit, the ledger canister traps.
+The response size for messages sent to a canister is constrained currently at 2MB. For requests that could result in larger response messages, the caller needs to ensure to constrain the input accordingly so that the response remains below the maximum allowed size, e.g., not query too many token ids in one batch call. If the maximum size of a response is hit, the ledger canister traps. The ledger SHOULD make sure that the response size does not exceed the permitted maximum *before* making any changes that might be committed to replicated state.
 
 ### icrc7_collection_metadata
 
@@ -57,6 +57,8 @@ The following are the more technical, implementation-oriented, metadata elements
   * `icrc7:max_approvals_per_token` of type `nat` (optional): The maximum number of active approvals this ledger implementation allows per token. When present, should be the same as the result of the [`icrc7_max_approvals_per_token`](#icrc7_max_approvals_per_token) query call.
   * `icrc7:max_update_batch_size` of type `nat` (optional): The maximum batch size for update batch calls this ledger implementation supports. When present, should be the same as the result of the [`icrc7_max_update_batch_size`](#icrc7_max_update_batch_size) query call.
   * `icrc7:default_take_value` of type `nat` (optional): The default value this ledger uses for the `take` pagination parameter. When present, should be the same as the result of the [`icrc7_default_take_value`](#icrc7_default_take_value) query call.
+  * `icrc7:max_take_value` of type `nat` (optional): The maximum `take` value for paginated query calls this ledger implementation supports. The value applies to all paginated calls the ledger exposes. When present, should be the same as the result of the [`icrc7_max_take_value`](#icrc7_max_take_value) query call.
+  * `icrc7:max_revoke_approvals` of type `nat` (optional): The maximum number of approvals that may be revoked in a single invocation of `icrc7_revoke_token_approvals` or `icrc7_revoke_collection_approvals`. When present, should be the same as the result of the [`icrc7_max_revoke_approvals`](#icrc7_max_revoke_approvals) query call.
 
 // FIX t.b.d. Add maximum input sizes for the query methods to ensure response sizes are in bound.
 
@@ -149,6 +151,18 @@ Returns the default parameter the ledger uses for `take` in case the parameter i
 icrc7_default_take_value : () -> (opt nat) query;
 ```
 
+### icrc7_max_take_value
+
+Returns the maximum `take` value for paginated query calls this ledger implementation supports. The value applies to all paginated calls the ledger exposes.
+
+```candid "Methods" +=
+icrc7_max_take_value : () -> (opt nat) query;
+```
+
+### icrc7_max_revoke_approvals
+
+Returns the maximum number of approvals that may be revoked in a single invocation of `icrc7_revoke_token_approvals` or `icrc7_revoke_collection_approvals`.
+
 ### icrc7_token_metadata
 
 Returns the token metadata for `token_ids`, a list of token ids. Each element of the response vector comprises a `token_id` and the `metadata` corresponding to this token.
@@ -207,7 +221,8 @@ For retrieving all tokens of the ledger, the pagination API is used such that th
 Each invocation is executed on the current memory state of the ledger.
 
 ```candid "Methods" +=
-icrc7_tokens : (prev : opt nat, take : opt nat32) -> (token_ids : vec nat) query;
+icrc7_tokens : (prev : opt nat, take : opt nat32)
+    -> (token_ids : vec nat) query;
 ```
 
 ### icrc7_tokens_of
@@ -280,7 +295,8 @@ Note that collection-level approvals MUST be managed by the ledger as collection
 See the [#icrc7_approve_tokens](icrc7_approve_tokens) for the Candid types.
 
 ```candid "Methods" +=
-icrc7_approve_collection : (ApprovalInfo) -> (approval_response : variant { Ok : nat; Err : ApprovalError; } );
+icrc7_approve_collection : (ApprovalInfo)
+    -> (approval_response : variant { Ok : nat; Err : ApprovalError; } );
 ```
 
 ### icrc7_transfer
@@ -336,7 +352,7 @@ Only the owner of tokens can revoke approvals.
 
 The response is a vector comprising records with a `token_id` and a corresponding variant with `Ok` containing a transaction index indicating the success case or an `Err` variant indicating the error case.
 
-Note that the response size on ICP is limited. Callers of this method should take care to not exceed the response limit with their inputs.
+Note that the size of responses on ICP is limited. Callers of this method should take particular care to not exceed the response limit for their inputs, e.g., in case there are many approvals defined for a token id or many token ids with a few approvals each are provided as input.
 
 Revoking an approval for one or more token ids does not affect collection-level approvals.
 
@@ -374,6 +390,8 @@ This is the analogous method to `icrc7_revoke_token_approvals` for revoking coll
 
 Revoking a collection-level approval does not affect approvals for individual token ids.
 
+Note that the size of responses on ICP is limited. Callers of this method should take particular care to not exceed the response limit for their inputs by revoking too many collection-level approvals with one call.
+
 An ICRC-7 ledger implementation does not need to keep track of revoked approvals.
 
 ```candid "Type definitions" +=
@@ -384,7 +402,7 @@ type RevokeCollectionArgs = record {
 ```
 ```candid "Methods" +=
 icrc7_revoke_collection_approvals: (RevokeCollectionArgs)
-    -> (vec variant { Ok : nat; Err : RevokeError; }; );
+    -> (vec record { from_subaccount : blob; spender : Account; variant { Ok : nat; Err : RevokeError; }; };);
 ```
 
 ### icrc7_is_approved
@@ -398,14 +416,14 @@ icrc7_is_approved : (spender : Account; from_subaccount : blob; token_id : nat)
 
 ### icrc7_get_token_approvals
 
-Returns the token-level approvals that exist for the given vector of `token_ids`.  The result is paginated, the mechanics of pagination is the same as for `icrc7_tokens` using `prev` and `take` to control pagination. Note that `take` refers to the number of returned elements tp be requested. The `prev` parameter is an `ApprovalInfo` with the meaning that `ApprovalInfo`s following the provided one are returned, based on a sorting order over `ApprovalInfo`s implemented by the ledger.
+Returns the token-level approvals that exist for the given vector of `token_ids`.  The result is paginated, the mechanics of pagination is the same as for `icrc7_tokens` using `prev` and `take` to control pagination. Note that `take` refers to the number of returned elements to be requested. The `prev` parameter is an `ApprovalInfo` with the meaning that `ApprovalInfo`s following the provided one are returned, based on a sorting order over `ApprovalInfo`s implemented by the ledger.
 
-The response is a vector the elements of which comprise a `token_id` and a corresponding `approval`. If multiple approvals exist for a `token_id`, multiple entries with the same `token_id` are returned.
+The response is a vector the elements of which comprise a `token_id` and a corresponding `approval`. If multiple approvals exist for a `token_id`, multiple entries with the same `token_id` are contained in the response.
 
 The ordering of the elements in the response is undefined. An implementation of the ledger can use any internal sorting order for the elements of the response to implement pagination.
 
 ```candid "Methods" +=
-icrc7_get_approvals: (token_ids : vec nat, prev : opt ApprovalInfo; take : opt nat32)
+icrc7_get_approvals : (token_ids : vec nat, prev : opt ApprovalInfo; take : opt nat32)
     -> (vec record { token_id : nat; approval : ApprovalInfo; }) query;
 ```
 
