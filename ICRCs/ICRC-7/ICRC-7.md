@@ -55,12 +55,11 @@ The following metadata fields are defined by ICRC-7, starting with general colle
 
 The following are the more technical, implementation-oriented, metadata elements:
   * `icrc7:max_approvals_per_token` of type `nat` (optional): The maximum number of active approvals this ledger implementation allows per token. When present, should be the same as the result of the [`icrc7_max_approvals_per_token`](#icrc7_max_approvals_per_token) query call.
+  * `icrc7:max_query_batch_size` of type `nat` (optional): The maximum batch size for query batch calls this ledger implementation supports. When present, should be the same as the result of the [`icrc7_max_query_batch_size`](#icrc7_max_query_batch_size) query call.
   * `icrc7:max_update_batch_size` of type `nat` (optional): The maximum batch size for update batch calls this ledger implementation supports. When present, should be the same as the result of the [`icrc7_max_update_batch_size`](#icrc7_max_update_batch_size) query call.
   * `icrc7:default_take_value` of type `nat` (optional): The default value this ledger uses for the `take` pagination parameter. When present, should be the same as the result of the [`icrc7_default_take_value`](#icrc7_default_take_value) query call.
   * `icrc7:max_take_value` of type `nat` (optional): The maximum `take` value for paginated query calls this ledger implementation supports. The value applies to all paginated calls the ledger exposes. When present, should be the same as the result of the [`icrc7_max_take_value`](#icrc7_max_take_value) query call.
   * `icrc7:max_revoke_approvals` of type `nat` (optional): The maximum number of approvals that may be revoked in a single invocation of `icrc7_revoke_token_approvals` or `icrc7_revoke_collection_approvals`. When present, should be the same as the result of the [`icrc7_max_revoke_approvals`](#icrc7_max_revoke_approvals) query call.
-
-// FIX t.b.d. Add maximum input sizes for the query methods to ensure response sizes are in bound.
 
 ```candid "Type definitions" +=
 // Generic value in accordance with ICRC-3
@@ -133,6 +132,14 @@ Returns the maximum number of approvals this ledger implementation allows to be 
 
 ```candid "Methods" +=
 icrc7_max_approvals_per_token : () -> (opt nat) query;
+```
+
+### icrc7_max_query_batch_size
+
+Returns the maximum batch size for query batch calls this ledger implementation supports.
+
+```candid "Methods" +=
+icrc7_max_query_batch_size : () -> (opt nat) query;
 ```
 
 ### icrc7_max_update_batch_size
@@ -382,15 +389,13 @@ icrc7_revoke_token_approvals: (RevokeTokensArgs)
 
 Revokes collection-level approvals from the set of active approvals. The `from_subaccount` parameter specifies the token owner's subaccount to which the approval to be revoked applies, the `spender` the party for which the approval is to be revoked. Not providing the `from_subaccount` or `spender` means to revoke approvals with any value for the omitted parameter(s). By not specifying both `from_subaccount` and `spender`, all collection-level approvals of the caller are revoked.
 
-// FIX: t.b.d.: the return value assumes that each revocation for a collection generates its own block / transaction; OK to assume this?
-
 The response is a vector containing a record for each revoked approval. Each element is the `Ok` variant in the success case containing the transaction index and the `Err` variant in the error case containing an error.
 
 This is the analogous method to `icrc7_revoke_token_approvals` for revoking collection-level approvals.
 
-Revoking a collection-level approval does not affect approvals for individual token ids.
+Revoking a collection-level approval does not affect token-level approvals for individual token ids.
 
-Note that the size of responses on ICP is limited. Callers of this method should take particular care to not exceed the response limit for their inputs by revoking too many collection-level approvals with one call.
+Note that the size of responses on ICP is limited. Callers of this method should take particular care to not exceed the response limit for their inputs by revoking too many collection-level approvals with one request.
 
 An ICRC-7 ledger implementation does not need to keep track of revoked approvals.
 
