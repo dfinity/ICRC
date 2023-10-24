@@ -54,7 +54,7 @@ The following metadata fields are defined by ICRC-7, starting with general colle
   * `icrc7:supply_cap` of type `nat` (optional): The current maximum supply for the token beyond which minting new tokens is not possible. When present, should be the same as the result of the [`icrc7_supply_cap`](#icrc7_supply_cap) query call.
 
 The following are the more technical, implementation-oriented, metadata elements:
-  * `icrc7:max_approvals_per_token` of type `nat` (optional): The maximum number of active approvals this ledger implementation allows per token. When present, should be the same as the result of the [`icrc7_max_approvals_per_token`](#icrc7_max_approvals_per_token) query call.
+  * `icrc7:max_approvals_per_token_or_collection` of type `nat` (optional): The maximum number of active approvals this ledger implementation allows per token. When present, should be the same as the result of the [`icrc7_max_approvals_per_token_or_collection`](#icrc7_max_approvals_per_token) query call.
   * `icrc7:max_query_batch_size` of type `nat` (optional): The maximum batch size for query batch calls this ledger implementation supports. When present, should be the same as the result of the [`icrc7_max_query_batch_size`](#icrc7_max_query_batch_size) query call.
   * `icrc7:max_update_batch_size` of type `nat` (optional): The maximum batch size for update batch calls this ledger implementation supports. When present, should be the same as the result of the [`icrc7_max_update_batch_size`](#icrc7_max_update_batch_size) query call.
   * `icrc7:default_take_value` of type `nat` (optional): The default value this ledger uses for the `take` pagination parameter. When present, should be the same as the result of the [`icrc7_default_take_value`](#icrc7_default_take_value) query call.
@@ -126,12 +126,12 @@ than this supply cap shall be rejected.
 icrc7_supply_cap : () -> (opt nat) query;
 ```
 
-### icrc7_max_approvals_per_token
+### icrc7_max_approvals_per_token_or_collection
 
 Returns the maximum number of approvals this ledger implementation allows to be active per token.
 
 ```candid "Methods" +=
-icrc7_max_approvals_per_token : () -> (opt nat) query;
+icrc7_max_approvals_per_token_or_collection : () -> (opt nat) query;
 ```
 
 ### icrc7_max_query_batch_size
@@ -251,9 +251,9 @@ Entitles a `spender`, indicated through an `Account`, to transfer NFTs on behalf
 
 The ledger SHOULD reject the call if the spender account owner is equal to the caller account owner.
 
-An approval that has been created, is not expired, and has not been replaced with a new approval is *active*, i.e., can allow the approved party to initate a transfer.
+An approval that has been created, is not expired, has not been revoked, and has not been replaced with a new approval is *active*, i.e., can allow the approved party to initate a transfer.
 
-In accordance with ICRC-2, multiple approvals can exist for the same `token_id` but different `spender`s and `from_subaccount`s. For the same token, spender, and subaccount triple a new approval shall always overwrite the old one. The ledger should limit the number of approvals that can be active per token. Such limit is exposed as ledger metadata through the metadata attribute `max_approvals_per_token`.
+In accordance with ICRC-2, multiple approvals can exist for the same `token_id` but different `spender`s and `from_subaccount`s. For the same token, spender, and subaccount triple a new approval shall always overwrite the old one. The ledger should limit the number of approvals that can be active per token. Such limit is exposed as ledger metadata through the metadata attribute `icrc7:max_approvals_per_token_or_collection`.
 
 The response is a vector comprising records with a `token_id` as first element and an `Ok` variant with the transaction index for the success case or an `Err` variant indicating an error as second element.
 
@@ -282,7 +282,7 @@ type ApprovalError = variant {
 
 ```candid "Methods" +=
 icrc7_approve : (token_ids : vec nat, approval : ApprovalInfo)
-    -> (vec record { token_id : opt nat; approval_response : variant { Ok : nat; Err : ApprovalError; } } );
+    -> (vec record { token_id : opt nat; approval_response : variant { Ok : nat; Err : ApprovalError; }; });
 ```
 
 ### icrc7_approve_collection
@@ -291,9 +291,9 @@ Entitles a `spender`, indicated through an `Account`, to transfer NFTs on behalf
 
 The ledger SHOULD reject the call if the spender account owner is equal to the caller account owner.
 
-An approval that has been created, is not expired, and has not been replaced with a new approval is *active*, i.e., can allow the approved party to initate a transfer.
+An approval that has been created, is not expired, has not been revoked, and has not been replaced with a new approval is *active*, i.e., can allow the approved party to initate a transfer.
 
-In accordance with ICRC-2, multiple approvals can exist for the same `collection` but different `spender`s and `from_subaccount`s. For the same token, spender, and subaccount triple a new approval shall always overwrite the old one. The ledger should limit the number of approvals that can be active per token. Such limit is exposed as ledger metadata through the metadata attribute `max_approvals_per_token`.
+In accordance with ICRC-2, multiple approvals can exist for the same `collection` but different `spender`s and `from_subaccount`s. For the same token, spender, and subaccount triple a new approval shall always overwrite the old one. The ledger should limit the number of approvals that can be active per collection. Such limit is exposed as ledger metadata through the metadata attribute `icrc7:max_approvals_per_token_or_collection`.
 
 The response contains a single element with the `Ok` variant containing the transaction index of the collection-level approval in the success case or an error `Err` otherwise.
 
@@ -307,16 +307,16 @@ See the [#icrc7_approve_tokens](icrc7_approve_tokens) for the Candid types.
 
 ```candid "Methods" +=
 icrc7_approve_collection : (ApprovalInfo)
-    -> (approval_response : variant { Ok : nat; Err : ApprovalError; } );
+    -> (approval_response : variant { Ok : nat; Err : ApprovalError; };);
 ```
 
 ### icrc7_transfer
 
-Transfers one or more tokens from the `from` account to the `to` account. The transfer can be initiated either by the holder of the tokens or a party that has been authorized by the holder to execute transfers using `icrc7_approve_tokens` or `icrc7_approve_collection`. The `spender_subaccount` is used to identify the spender. The spender is an account comprised of the principal calling this method and the parameter `spender_subaccount`.
+Transfers one or more tokens from the `from` account to the `to` account. The transfer can be initiated either by the holder of the tokens or a party that has been authorized by the holder to execute transfers using `icrc7_approve_tokens` or `icrc7_approve_collection`. The `spender_subaccount` is used to identify the spender. The spender is an account comprised of the principal calling this method and the parameter `spender_subaccount`. Leaving out the `spender_subaccount` means to use the default subaccount.
 
 The response is a vector of records each comprising a `token_id` and a corresponding `transfer_result` indicating success or error. In the success case, the `Ok` variant indicates the transaction index of the transfer, in the error case, the `Err` variant indicates the error through `TransferError`.
 
-A transfer clears all approvals for the successfully transferred tokens. This implicit approval only clears token-id-based approvals and never touches collection-level approvals.
+A transfer clears all approvals for the successfully transferred tokens. This implicit clearing of approvals only clears token-id-based approvals and never touches collection-level approvals.
 
 ```candid "Type definitions" +=
 type TransferArgs = record {
