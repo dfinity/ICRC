@@ -46,7 +46,7 @@ Analogous to [ICRC-1 metadata](https://github.com/dfinity/ICRC-1/tree/main/stand
 The set of elements contained in a specific ledger's metadata depends on the given ledger implementation, the list below establishes the currently defined fields.
 
 The following metadata fields are defined by ICRC-7, starting with general collection-specific metadata fields:
-  * `icrc7:symbol` of type `text`: The token currency code (see [ISO-4217](https://en.wikipedia.org/wiki/ISO_4217)). When present, should be the same as the result of the [`icrc1_symbol`](#symbol_method) query call.
+  * `icrc7:symbol` of type `text`: The token currency code (see [ISO-4217](https://en.wikipedia.org/wiki/ISO_4217)). When present, should be the same as the result of the [`icrc1_symbol`](#icrc7_symbol) query call.
   * `icrc7:name` of type `text`: The name of the token. Should be the same as the result of the [`icrc7_name`](#icrc7_name) query call.
   * `icrc7:description` of type `text` (optional): A textual description of the token. When present, should be the same as the result of the [`icrc7_description`](#icrc7_description) query call.
   * `icrc7:logo` of type `text` (optional): The URL of the token logo. It may be a [DataURL](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/Data_URLs) that contains the logo image itself. When present, should be the same as the result of the [`icrc7_logo`](#icrc7_logo) query call.
