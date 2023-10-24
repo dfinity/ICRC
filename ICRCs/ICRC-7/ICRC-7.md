@@ -307,7 +307,7 @@ Note: This method is analogous to `icrc7_approve_tokens`, but for approving whol
 
 Note that collection-level approvals MUST be managed by the ledger as collection-level approvals and MUST NOT be translated into token-level approvals for all tokens the caller owns.
 
-See the [#icrc7_approve_tokens](icrc7_approve_tokens) for the Candid types.
+See the [#icrc7_approve_tokens](#icrc7_approve_tokens) for the Candid types.
 
 ```candid "Methods" +=
 icrc7_approve_collection : (ApprovalInfo)
