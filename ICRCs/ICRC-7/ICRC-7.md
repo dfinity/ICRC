@@ -18,7 +18,7 @@ The account identified by the subaccount with all bytes set to 0 is the _default
 
 ```candid "Type definitions" +=
 type Subaccount = blob;
-type Account = record { owner : principal; subaccount : opt Subaccount; };
+type Account = record { owner : principal; subaccount : opt Subaccount };
 ```
 
 The canonical textual representation of the account follows the [definition in ICRC-1](https://github.com/dfinity/ICRC-1/blob/main/standards/ICRC-1/TextualEncoding.md). ICRC-7 accounts have the same structure and follow the same overall principles as ICRC-1 accounts.
@@ -74,7 +74,7 @@ type Value = variant {
 ```
 
 ```candid "Methods" +=
-icrc7_collection_metadata : () -> (metadata : vec record { key: text; value: Value }; ) query;
+icrc7_collection_metadata : () -> (metadata : vec record { key: text; value: Value } ) query;
 ```
 
 ### icrc7_symbol
@@ -192,7 +192,7 @@ type Value = variant {
 
 ```candid "Methods" +=
 icrc7_token_metadata : (token_ids : vec nat)
-    -> (vec record { token_id : nat; metadata : Value; }) query;
+    -> (vec record { token_id : nat; metadata : Value }) query;
 ```
 
 ### icrc7_owner_of
@@ -214,7 +214,7 @@ type GetOwnerError = variant {
 ```
 ```candid "Methods" +=
 icrc7_owner_of : (token_ids : vec nat)
-    -> (vec record { token_id : nat; account : variant { Ok : Account; Err : GetOwnerError; }; }) query;
+    -> (vec record { token_id : nat; account : variant { Ok : Account; Err : GetOwnerError } }) query;
 ```
 
 ### icrc7_balance_of
@@ -278,15 +278,15 @@ type ApprovalInfo = record {
 type ApprovalError = variant {
     Unauthorized;
     TooOld;
-    CreatedInFuture : record { ledger_time: nat64; };
+    CreatedInFuture : record { ledger_time: nat64 };
     NotMigrated;
-    GenericError : record { error_code : nat; message : text; };
+    GenericError : record { error_code : nat; message : text };
 };
 ```
 
 ```candid "Methods" +=
 icrc7_approve : (token_ids : vec nat, approval : ApprovalInfo)
-    -> (vec record { token_id : opt nat; approval_response : variant { Ok : nat; Err : ApprovalError; }; });
+    -> (vec record { token_id : opt nat; approval_response : variant { Ok : nat; Err : ApprovalError } });
 ```
 
 ### icrc7_approve_collection
@@ -311,7 +311,7 @@ See the [#icrc7_approve_tokens](icrc7_approve_tokens) for the Candid types.
 
 ```candid "Methods" +=
 icrc7_approve_collection : (ApprovalInfo)
-    -> (approval_response : variant { Ok : nat; Err : ApprovalError; };);
+    -> (approval_response : variant { Ok : nat; Err : ApprovalError });
 ```
 
 ### icrc7_transfer
@@ -336,16 +336,16 @@ type TransferArgs = record {
 type TransferError = variant {
     Unauthorized;
     TooOld;
-    CreatedInFuture : record { ledger_time: nat64; };
-    Duplicate : record { duplicate_of : nat; };
+    CreatedInFuture : record { ledger_time: nat64 };
+    Duplicate : record { duplicate_of : nat };
     NotMigrated;
-    GenericError : record { error_code : nat; message : text; };
+    GenericError : record { error_code : nat; message : text };
 };
 ```
 
 ```candid "Methods" +=
 icrc7_transfer : (TransferArgs)
-    -> (vec record { token_id : nat; transfer_result : variant { Ok : nat; Err : TransferError; }; });
+    -> (vec record { token_id : nat; transfer_result : variant { Ok : nat; Err : TransferError } });
 ```
 
 If a token id doesn't exist or if the caller principal is not permitted to act on a token id, then the token id receives the `Unauthorized` error response.
@@ -384,14 +384,14 @@ type RevokeError = variant {
     Unauthorized;
     ApprovalDoesNotExist;
     NotMigrated;
-    GenericError : record { error_code : nat; message : text; };
+    GenericError : record { error_code : nat; message : text };
 };
 ```
 
 ```candid "Methods" +=
 icrc7_revoke_token_approvals: (RevokeTokensArgs)
     -> (vec record { token_id : nat; from_subaccount : blob; spender : Account;
-                     revoke_response : variant { Ok : nat; Err : RevokeError; }; });
+                     revoke_response : variant { Ok : nat; Err : RevokeError } });
 ```
 
 ### icrc7_revoke_collection_approvals
@@ -416,7 +416,7 @@ type RevokeCollectionArgs = record {
 ```
 ```candid "Methods" +=
 icrc7_revoke_collection_approvals: (RevokeCollectionArgs)
-    -> (vec record { from_subaccount : blob; spender : Account; variant { Ok : nat; Err : RevokeError; }; });
+    -> (vec record { from_subaccount : blob; spender : Account; variant { Ok : nat; Err : RevokeError } });
 ```
 
 ### icrc7_is_approved
@@ -467,7 +467,7 @@ Returns the list of standards this ledger implements.
 See the ["Extensions"](#extensions) section below.
 
 ```candid "Methods" +=
-icrc7_supported_standards : () -> (vec record { name : text; url : text; }) query;
+icrc7_supported_standards : () -> (vec record { name : text; url : text }) query;
 ```
 
 The result of the call should always have at least one entry,
