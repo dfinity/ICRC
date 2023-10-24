@@ -61,6 +61,8 @@ The following are the more technical, implementation-oriented, metadata elements
   * `icrc7:max_take_value` of type `nat` (optional): The maximum `take` value for paginated query calls this ledger implementation supports. The value applies to all paginated calls the ledger exposes. When present, should be the same as the result of the [`icrc7_max_take_value`](#icrc7_max_take_value) query call.
   * `icrc7:max_revoke_approvals` of type `nat` (optional): The maximum number of approvals that may be revoked in a single invocation of `icrc7_revoke_token_approvals` or `icrc7_revoke_collection_approvals`. When present, should be the same as the result of the [`icrc7_max_revoke_approvals`](#icrc7_max_revoke_approvals) query call.
 
+Note that if specified max values are violated in a query call, the canister traps with an according error message.
+
 ```candid "Type definitions" +=
 // Generic value in accordance with ICRC-3
 type Value = variant { 
@@ -251,7 +253,7 @@ icrc7_tokens_of : (account : Account, prev : opt nat, take : opt nat32)
 
 ### icrc7_approve_tokens
 
-Entitles a `spender`, indicated through an `Account`, to transfer NFTs on behalf of the caller of this method from `account { owner = caller; subaccount = from_subaccount; }`, where `caller` is the caller of this method (and the token owner principal) and `from_subaccount` is the subaccount of the token owner principal the approval should apply to (i.e., the subaccount which the tokens can be transferred out from). The call resets the expiration date, memo, and creation timestamp for the approval to the specified values in case an approval for the `spender` and `from_subaccount` already exists for a token. The parameter `tokens` specifies a list of token ids to apply the approval to.
+Entitles a `spender`, indicated through an `Account`, to transfer NFTs on behalf of the caller of this method from `account { owner = caller; subaccount = from_subaccount; }`, where `caller` is the caller of this method (and the token owner principal) and `from_subaccount` is the subaccount of the token owner principal the approval should apply to (i.e., the subaccount which the tokens can be transferred out from and the tokens must be on). The call resets the expiration date, memo, and creation timestamp for the approval to the specified values in case an approval for the `spender` already exists for a token. The parameter `tokens` specifies a list of token ids to apply the approval to.
 
 The ledger SHOULD reject the call if the spender account owner is equal to the caller account owner.
 
@@ -293,7 +295,7 @@ icrc7_approve : (token_ids : vec nat, approval : ApprovalInfo)
 
 ### icrc7_approve_collection
 
-Entitles a `spender`, indicated through an `Account`, to transfer NFTs on behalf of the caller of this method from `account { owner = caller; subaccount = from_subaccount; }`, where `caller` is the caller of this method (and the token owner principal) and `from_subaccount` is the subaccount of the token owner principal the approval should apply to (i.e., the subaccount which the tokens can be transferred out from). The call resets the expiration date, memo, and creation timestamp for the approval to the specified values in case an approval for the `spender` and `from_subaccount` already exists for a token.
+Entitles a `spender`, indicated through an `Account`, to transfer NFTs on behalf of the caller of this method from `account { owner = caller; subaccount = from_subaccount; }`, where `caller` is the caller of this method (and the token owner principal) and `from_subaccount` is the subaccount of the token owner principal the approval should apply to (i.e., the subaccount which the tokens can be transferred out from and the tokens must be on). The call resets the expiration date, memo, and creation timestamp for the approval to the specified values in case an approval for the `spender` already exists for a token.
 
 The ledger SHOULD reject the call if the spender account owner is equal to the caller account owner.
 
@@ -336,11 +338,11 @@ type TransferArgs = record {
 };
 
 type TransferError = variant {
+    NonExistingTokenId;
     Unauthorized;
     TooOld;
     CreatedInFuture : record { ledger_time: nat64 };
     Duplicate : record { duplicate_of : nat };
-    NonExistingTokenId;
     GenericError : record { error_code : nat; message : text };
 };
 ```
@@ -383,9 +385,9 @@ type RevokeTokensArgs = record {
 };
 
 type RevokeError = variant {
+    NonExistingTokenId;
     Unauthorized;
     ApprovalDoesNotExist;
-    NonExistingTokenId;
     GenericError : record { error_code : nat; message : text };
 };
 ```
