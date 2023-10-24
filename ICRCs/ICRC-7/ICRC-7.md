@@ -39,11 +39,11 @@ The response size for messages sent to a canister is constrained currently at 2M
 
 ### icrc7_collection_metadata
 
-Returns all the collection-level metadata of the NFT collection in a single query. The data model for metadata is based on the generic `Value` type which allows for encoding arbitrarily complex data for each metadata element.
+Returns all the collection-level metadata of the NFT collection in a single query. The data model for metadata is based on the generic `Value` type which allows for encoding arbitrarily complex data for each metadata element. The metadata attributes are expressed as `(key : text, value : Value)` pairs where `key` is the name of the metadata attribute and `value` the corresponding value expressed through the `Value` type.
 
 Analogous to [ICRC-1 metadata](https://github.com/dfinity/ICRC-1/tree/main/standards/ICRC-1#metadata), metadata keys are arbitrary Unicode strings and must follow the pattern `<namespace>:<key>`, where `<namespace>` is a string not containing colons. Namespace `icrc7` is reserved for keys defined in the ICRC-7 standard.
 
-The set of elements contained in a specific ledger's metadata depends on the given ledger implementation, the list below established the currently defined fields.
+The set of elements contained in a specific ledger's metadata depends on the given ledger implementation, the list below establishes the currently defined fields.
 
 The following metadata fields are defined by ICRC-7, starting with general collection-specific metadata fields:
   * `icrc7:symbol` of type `text`: The token currency code (see [ISO-4217](https://en.wikipedia.org/wiki/ISO_4217)). When present, should be the same as the result of the [`icrc1_symbol`](#symbol_method) query call.
@@ -74,12 +74,12 @@ type Value = variant {
 ```
 
 ```candid "Methods" +=
-icrc7_collection_metadata : () -> (metadata : vec record { text; Value }; ) query;
+icrc7_collection_metadata : () -> (metadata : vec record { key: text; value: Value }; ) query;
 ```
 
 ### icrc7_symbol
 
-Returns the symbol of the collection (e.g., `MS`).
+Returns the symbol, i.e., the token currency code (see [ISO-4217](https://en.wikipedia.org/wiki/ISO_4217)), of the NFT collection (e.g., `MS`).
 
 ```candid "Methods" +=
 icrc7_symbol : () -> (text) query;
@@ -152,7 +152,7 @@ icrc7_max_update_batch_size : () -> (opt nat) query;
 
 ### icrc7_default_take_value
 
-Returns the default parameter the ledger uses for `take` in case the parameter is left out in paginated methods.
+Returns the default parameter the ledger uses for `take` in case the parameter is `null` in paginated methods.
 
 ```candid "Methods" +=
 icrc7_default_take_value : () -> (opt nat) query;
@@ -197,11 +197,13 @@ icrc7_token_metadata : (token_ids : vec nat)
 
 ### icrc7_owner_of
 
-Returns the owner `Account` of each token identified by a list of `token_ids`. The ordering of the response elements is arbitrary.
+Returns the owner `Account` of each token in a list `token_ids` of token ids. The ordering of the response elements is arbitrary.
 
 For non-existing token ids, the `NonExistingTokenId` error variant is returned.
 
 The `NotMigrated` error type is used to help migration of NFT ledgers of other standards using ICP AccountId instead of ICRC-1 Account to store the owners. See section [Migration Path for Ledgers Using ICP AccountId](#migration-path-for-ledgers-using-icp-accountid).
+
+The `GenericError` type is used for expressing any other error and is not further specified in ICRC-7.
 
 ```candid "Type definitions" +=
 type GetOwnerError = variant {
@@ -217,7 +219,7 @@ icrc7_owner_of : (token_ids : vec nat)
 
 ### icrc7_balance_of
 
-Returns the balance of the `account` provided as an argument. For a non-existing account, the value `0` is returned.
+Returns the balance of the `account` provided as an argument, i.e., the number of tokens held by the account. For a non-existing account, the value `0` is returned.
 
 ```candid "Methods" +=
 icrc7_balance_of : (account : Account) -> (balance : nat) query;
@@ -225,7 +227,9 @@ icrc7_balance_of : (account : Account) -> (balance : nat) query;
 
 ### icrc7_tokens
 
-Returns the list of tokens in this ledger, sorted by their token id. The result is paginated and pagination is controlled via the `prev` and `take` parameters: The response to a request results in at most `take` many token ids, starting with the next id following `prev`. If the response contains no token ids, there are no further tokens following prev. The token ids in the response are sorted in any consistent sorting order used by the ledger. If `take` is omitted, a reasonable value is assumed.
+Returns the list of tokens in this ledger, sorted by their token id.
+
+The result is paginated and pagination is controlled via the `prev` and `take` parameters: The response to a request results in at most `take` many token ids, starting with the next id following `prev`. If `prev` is `null`, the response elements start are the smallest ids in the ledger according to the sorting order. If the response contains no token ids, there are no further tokens following `prev`. If the response contains fewer token ids than the provided or default `take` value, there are no further tokens following the largest returned token id. The token ids in the response are sorted in any consistent sorting order used by the ledger. If `take` is omitted, the ledger's default `take` value as specified through `icrc7:default_take_value` is assumed.
 
 For retrieving all tokens of the ledger, the pagination API is used such that the first call sets `prev = null` and specifies a suitable `take` value, then the method is called repeatedly such that the greatest token id of the previous response is used as `prev` value for the next call to the method. This way all tokens can be enumerated in ascending order, provided token ids are not inserted during normal operation. 
 
@@ -238,7 +242,7 @@ icrc7_tokens : (prev : opt nat, take : opt nat32)
 
 ### icrc7_tokens_of
 
-Returns a vector of `token_id`s of all tokens held by `account`, sorted by `token_id`. The result is paginated, the mechanics of pagination is the same as for `icrc7_tokens` using `prev` and `take` to control pagination.
+Returns a vector of `token_id`s of all tokens held by `account`, sorted by `token_id`. The result is paginated, the mechanics of pagination are the same as for `icrc7_tokens` using `prev` and `take` to control pagination.
 
 ```candid "Methods" +=
 icrc7_tokens_of : (account : Account, prev : opt nat, take : opt nat32)
@@ -386,7 +390,8 @@ type RevokeError = variant {
 
 ```candid "Methods" +=
 icrc7_revoke_token_approvals: (RevokeTokensArgs)
-    -> (vec record { token_id : nat; from_subaccount : blob; spender : Account; revoke_response : variant { Ok : nat; Err : RevokeError; }; } );
+    -> (vec record { token_id : nat; from_subaccount : blob; spender : Account;
+                     revoke_response : variant { Ok : nat; Err : RevokeError; }; });
 ```
 
 ### icrc7_revoke_collection_approvals
@@ -411,7 +416,7 @@ type RevokeCollectionArgs = record {
 ```
 ```candid "Methods" +=
 icrc7_revoke_collection_approvals: (RevokeCollectionArgs)
-    -> (vec record { from_subaccount : blob; spender : Account; variant { Ok : nat; Err : RevokeError; }; };);
+    -> (vec record { from_subaccount : blob; spender : Account; variant { Ok : nat; Err : RevokeError; }; });
 ```
 
 ### icrc7_is_approved
@@ -425,22 +430,29 @@ icrc7_is_approved : (spender : Account; from_subaccount : blob; token_id : nat)
 
 ### icrc7_get_token_approvals
 
-Returns the token-level approvals that exist for the given vector of `token_ids`.  The result is paginated, the mechanics of pagination is the same as for `icrc7_tokens` using `prev` and `take` to control pagination. Note that `take` refers to the number of returned elements to be requested. The `prev` parameter is an `ApprovalInfo` with the meaning that `ApprovalInfo`s following the provided one are returned, based on a sorting order over `ApprovalInfo`s implemented by the ledger.
+Returns the token-level approvals that exist for the given vector of `token_ids`.  The result is paginated, the mechanics of pagination are the same as for `icrc7_tokens` using `prev` and `take` to control pagination. Note that `take` refers to the number of returned elements to be requested. The `prev` parameter is an `TokenApproval` with the meaning that `TokenApproval`s following the provided one are returned, based on a sorting order over `TokenApproval`s implemented by the ledger.
 
-The response is a vector the elements of which comprise a `token_id` and a corresponding `approval`. If multiple approvals exist for a `token_id`, multiple entries with the same `token_id` are contained in the response.
+The response is a vector of `TokenApproval` elements. If multiple approvals exist for a token id, multiple entries of type `TokenApproval` with the same token id are contained in the response.
 
 The ordering of the elements in the response is undefined. An implementation of the ledger can use any internal sorting order for the elements of the response to implement pagination.
 
+```candid "Type definitions" +=
+type TokenApproval = record {
+    token_id : nat;
+    approvalInfo : ApprovalInfo;
+};
+```
+
 ```candid "Methods" +=
-icrc7_get_approvals : (token_ids : vec nat, prev : opt ApprovalInfo; take : opt nat32)
-    -> (vec record { token_id : nat; approval : ApprovalInfo; }) query;
+icrc7_get_approvals : (token_ids : vec nat, prev : opt TokenApproval; take : opt nat32)
+    -> (vec TokenApproval) query;
 ```
 
 ### icrc7_get_collection_approvals
 
-Returns the collection-level approvals that exist for the specified `owner`.  The result is paginated, the mechanics of pagination is the same as for `icrc7_tokens` using `prev` and `take` to control pagination. The `prev` parameter is an `ApprovalInfo` with the meaning that `ApprovalInfo`s following the provided one are returned, based on a sorting order over `ApprovalInfo`s implemented by the ledger.
+Returns the collection-level approvals that exist for the specified `owner`. The result is paginated, the mechanics of pagination are the same as for `icrc7_tokens` using `prev` and `take` to control pagination. The `prev` parameter is an `ApprovalInfo` with the meaning that `ApprovalInfo`s following the provided one are returned, based on a sorting order over `ApprovalInfo`s implemented by the ledger.
 
-The response is a vector of `ApprovalInfo` records.
+The response is a vector of `ApprovalInfo` elements.
 
 The ordering of the elements in the response is undefined. An implementation of the ledger can use any internal sorting order for the elements of the response to implement pagination.
 
