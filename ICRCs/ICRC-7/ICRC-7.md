@@ -74,7 +74,7 @@ type Value = variant {
 ```
 
 ```candid "Methods" +=
-icrc7_collection_metadata : () -> (metadata : vec record { key: text; value: Value } ) query;
+icrc7_collection_metadata : () -> (metadata : vec record { text; Value } ) query;
 ```
 
 ### icrc7_symbol
@@ -192,7 +192,7 @@ type Value = variant {
 
 ```candid "Methods" +=
 icrc7_token_metadata : (token_ids : vec nat)
-    -> (vec record { token_id : nat; metadata : Value }) query;
+    -> (vec record { nat; Value }) query;
 ```
 
 ### icrc7_owner_of
@@ -262,6 +262,8 @@ In accordance with ICRC-2, multiple approvals can exist for the same `token_id` 
 The response is a vector comprising records with a `token_id` as first element and an `Ok` variant with the transaction index for the success case or an `Err` variant indicating an error as second element.
 
 An ICRC-7 ledger implementation does not need to keep track of expired approvals in its memory. This is important to help constrain unlimited growth of ledger memory over time. Of course, all historic approvals are contained in the block history the ledger creates.
+
+An `Unauthorized` error is returned in case the caller is not authorized to perform this action on the token, e.g., because it does not own the token or the token is not in the account `from_subaccount`.
 
 The `created_at_time` parameter indicates the time (as nanoseconds since the UNIX epoch in the UTC timezone) at which the client constructed the transaction.
 The ledger SHOULD reject transactions that have `created_at_time` argument too far in the past or the future, returning `variant { TooOld }` and `variant { CreatedInFuture = record { ledger_time = ... } }` errors correspondingly.
@@ -338,7 +340,7 @@ type TransferError = variant {
     TooOld;
     CreatedInFuture : record { ledger_time: nat64 };
     Duplicate : record { duplicate_of : nat };
-    NotMigrated;
+    NonExistingTokenId;
     GenericError : record { error_code : nat; message : text };
 };
 ```
@@ -361,7 +363,7 @@ The ledger SHOULD reject transactions that have `created_at_time` argument too f
 
 ### icrc7_revoke_token_approvals
 
-Revokes the specified approvals for specific tokens `token_ids` from the set of active approvals. The `from_subaccount` parameter specifies the token owner's subaccount to which the approval applies, the `spender` the party for which the approval is to be revoked. Not providing the `from_subaccount` or `spender` means to revoke approvals with any value for the omitted parameter(s). By not specifying both `from_subaccount` and `spender`, all token-level approvals of the caller for the given `token_ids` are revoked.
+Revokes the specified approvals for specific tokens `token_ids` from the set of active approvals. The `from_subaccount` parameter specifies the token owner's subaccount to which the approval applies, the `spender` the party for which the approval is to be revoked. A `null` value of `from_subaccount` indicates the default subaccount. A `null` value for `spender` means to revoke approvals with any value for the spender.
 
 Only the owner of tokens can revoke approvals.
 
@@ -383,7 +385,7 @@ type RevokeTokensArgs = record {
 type RevokeError = variant {
     Unauthorized;
     ApprovalDoesNotExist;
-    NotMigrated;
+    NonExistingTokenId;
     GenericError : record { error_code : nat; message : text };
 };
 ```
@@ -396,7 +398,7 @@ icrc7_revoke_token_approvals: (RevokeTokensArgs)
 
 ### icrc7_revoke_collection_approvals
 
-Revokes collection-level approvals from the set of active approvals. The `from_subaccount` parameter specifies the token owner's subaccount to which the approval to be revoked applies, the `spender` the party for which the approval is to be revoked. Not providing the `from_subaccount` or `spender` means to revoke approvals with any value for the omitted parameter(s). By not specifying both `from_subaccount` and `spender`, all collection-level approvals of the caller are revoked.
+Revokes collection-level approvals from the set of active approvals. The `from_subaccount` parameter specifies the token owner's subaccount to which the approval applies, the `spender` the party for which the approval is to be revoked. A `null` value of `from_subaccount` indicates the default subaccount. A `null` value for `spender` means to revoke approvals with any value for the spender.
 
 The response is a vector containing a record for each revoked approval. Each element is the `Ok` variant in the success case containing the transaction index and the `Err` variant in the error case containing an error.
 
