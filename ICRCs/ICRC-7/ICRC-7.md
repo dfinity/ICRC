@@ -23,6 +23,8 @@ type Account = record { owner : principal; subaccount : opt Subaccount };
 
 The canonical textual representation of the account follows the [definition in ICRC-1](https://github.com/dfinity/ICRC-1/blob/main/standards/ICRC-1/TextualEncoding.md). ICRC-7 accounts have the same structure and follow the same overall principles as ICRC-1 accounts.
 
+ICRC-7 views the ICRC-1 `Account`, a `(principal, subaccount)` tuple as primary citizen. For this reason, approval and transfer operations refer to the full account and not only the principal. For this reason, some methods comprise an extra optional `from_subaccount` or `spender_subaccount` parameter that together with the caller form an account to perform the respective operation on. Leaving such parameter `null` has the semantics of referring to the default `0` subaccount.
+
 ### Token Identifiers
 
 Tokens in ICRC-7 are identified through _token identifiers_, or _token ids_. A token id is a natural number value. Token identifiers do not need to be allocated in a contiguous manner. Non-contiguous, i.e., sparse, allocations are, for example, useful for mapping string-based identifiers to token ids.
@@ -35,7 +37,9 @@ Unless specified explicitly otherwise, the ordering of response elements for bat
 
 Methods that modify the state of the ledger have responses that comprise transaction indices as part of the response in the success case. Such a transaction index is an index into the chain of transactions that have been made for this ledger and therefore refers a specific block created for this ledger.
 
-The response size for messages sent to a canister is constrained currently at 2MB. For requests that could result in larger response messages, the caller needs to ensure to constrain the input accordingly so that the response remains below the maximum allowed size, e.g., not query too many token ids in one batch call. If the maximum size of a response is hit, the ledger canister traps. The ledger SHOULD make sure that the response size does not exceed the permitted maximum *before* making any changes that might be committed to replicated state.
+The response size for responses to messages sent to a canister smart contract on the IC is constrained to a fixed constant size. For requests that could result in larger response messages, the caller SHOULD ensure to constrain the input accordingly so that the response remains below the maximum allowed size, e.g., not query too many token ids in one batch call. If the maximum size of a response is hit, the ledger canister traps. The ledger SHOULD make sure that the response size does not exceed the permitted maximum *before* making any changes that might be committed to replicated state.
+
+Each defined Candid type is only presented once in the text upon its first use in a method.
 
 ### icrc7_collection_metadata
 
@@ -199,16 +203,12 @@ icrc7_token_metadata : (token_ids : vec nat)
 
 ### icrc7_owner_of
 
-Returns the owner `Account` of each token in a list `token_ids` of token ids. The ordering of the response elements is arbitrary.
+Returns the owner `Account` of each token in a list `token_ids` of token ids. The response elements are sorted following an ordering depending on the ledger implementation.
 
-For non-existing token ids, the `NonExistingTokenId` error variant is returned.
-
-The `NotMigrated` error type is used to help migration of NFT ledgers of other standards using ICP AccountId instead of ICRC-1 Account to store the owners. See section [Migration Path for Ledgers Using ICP AccountId](#migration-path-for-ledgers-using-icp-accountid).
-
-The `GenericError` type is used for expressing any other error and is not further specified in ICRC-7.
+For non-existing token ids, the `NonExistingTokenId` error variant is returned. The `NotMigrated` error type is used to help migration of NFT ledgers of other standards using ICP AccountId instead of ICRC-1 Account to store the owners. See section [Migration Path for Ledgers Using ICP AccountId](#migration-path-for-ledgers-using-icp-accountid). The `GenericError` type is used for expressing any other error and is not further specified in ICRC-7.
 
 ```candid "Type definitions" +=
-type GetOwnerError = variant {
+type OwnerOfError = variant {
     NonExistingTokenId;
     NotMigrated;
     GenericError : record { error_code : nat; message : text };
@@ -216,7 +216,7 @@ type GetOwnerError = variant {
 ```
 ```candid "Methods" +=
 icrc7_owner_of : (token_ids : vec nat)
-    -> (vec record { token_id : nat; account : variant { Ok : Account; Err : GetOwnerError } }) query;
+    -> (vec record { token_id : nat; account : variant { Ok : Account; Err : OwnerOfError } }) query;
 ```
 
 ### icrc7_balance_of
@@ -253,19 +253,21 @@ icrc7_tokens_of : (account : Account, prev : opt nat, take : opt nat32)
 
 ### icrc7_approve_tokens
 
-Entitles a `spender`, indicated through an `Account`, to transfer NFTs on behalf of the caller of this method from `account { owner = caller; subaccount = from_subaccount; }`, where `caller` is the caller of this method (and the token owner principal) and `from_subaccount` is the subaccount of the token owner principal the approval should apply to (i.e., the subaccount which the tokens can be transferred out from and the tokens must be on). The call resets the expiration date, memo, and creation timestamp for the approval to the specified values in case an approval for the `spender` already exists for a token. The parameter `tokens` specifies a list of token ids to apply the approval to.
+Entitles a `spender`, indicated through an `Account`, to transfer NFTs on behalf of the caller of this method from `account { owner = caller; subaccount = from_subaccount }`, where `caller` is the caller of this method (and also the owner principal of the tokens that are subject to approval) and `from_subaccount` is the subaccount of the token owner principal the approval should apply to (i.e., the subaccount which the tokens most reside on and can be transferred out from). Note that the `from_subaccount` parameter needs to be explicitly specified because accounts are a primary concept in this standard. The `expires_at` value specifies the expiration date of the approval, the `memo` is a blob containing arbitrary data. The `created_at_time` field specifies when the approval has been created. The parameter `tokens` specifies a list of NFT token ids to apply the approval to.
 
-The ledger SHOULD reject the call if the spender account owner is equal to the caller account owner.
-
-An approval that has been created, is not expired, has not been revoked, and has not been replaced with a new approval is *active*, i.e., can allow the approved party to initate a transfer.
-
-In accordance with ICRC-2, multiple approvals can exist for the same `token_id` but different `spender`s and `from_subaccount`s. For the same token, spender, and subaccount triple a new approval shall always overwrite the old one. The ledger should limit the number of approvals that can be active per token. Such limit is exposed as ledger metadata through the metadata attribute `icrc7:max_approvals_per_token_or_collection`.
+In case an approval for the specified `spender` already exists for a token on `from_subaccount` of the caller, a new approval is created that replaces the existing approval. The replaced approval is superseded with the result that the new parameters for the approval (`expires_at`, `memo`, `created_at_time`) apply.
 
 The response is a vector comprising records with a `token_id` as first element and an `Ok` variant with the transaction index for the success case or an `Err` variant indicating an error as second element.
 
+The ledger SHOULD reject the call if the spender account owner is equal to the caller account owner.
+
+An approval that has been created, has not expired (i.e., the `expires_at` field is a date in the future), has not been revoked, and has not been replaced with a new approval is *active*, i.e., can allow the approved party to initate a transfer. 
+
+In accordance with ICRC-2, multiple approvals can exist for the same `token_id` but different `spender`s (the `from_subaccount` field must be the same and equal to the subaccount the token is held on). For the same token, spender, and subaccount triple a new approval shall always overwrite the old one as explained above. The ledger should limit the number of approvals that can be active per token to constrain unlimited growth of ledger memory, the number of non-active approvals is unbounded. Such limit is exposed as ledger metadata through the metadata attribute `icrc7:max_approvals_per_token_or_collection`.
+
 An ICRC-7 ledger implementation does not need to keep track of expired approvals in its memory. This is important to help constrain unlimited growth of ledger memory over time. Of course, all historic approvals are contained in the block history the ledger creates.
 
-An `Unauthorized` error is returned in case the caller is not authorized to perform this action on the token, e.g., because it does not own the token or the token is not in the account `from_subaccount`.
+An `Unauthorized` error is returned in case the caller is not authorized to perform this action on the token, e.g., because it does not own the token or the token is not in the account specified through `from_subaccount`.
 
 The `created_at_time` parameter indicates the time (as nanoseconds since the UNIX epoch in the UTC timezone) at which the client constructed the transaction.
 The ledger SHOULD reject transactions that have `created_at_time` argument too far in the past or the future, returning `variant { TooOld }` and `variant { CreatedInFuture = record { ledger_time = ... } }` errors correspondingly.
@@ -280,10 +282,10 @@ type ApprovalInfo = record {
 };
 
 type ApprovalError = variant {
+    NonExistingTokenId;
     Unauthorized;
     TooOld;
     CreatedInFuture : record { ledger_time: nat64 };
-    NotMigrated;
     GenericError : record { error_code : nat; message : text };
 };
 ```
