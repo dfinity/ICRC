@@ -253,9 +253,11 @@ icrc7_tokens_of : (account : Account, prev : opt nat, take : opt nat32)
 
 ### icrc7_approve_tokens
 
-Entitles a `spender`, indicated through an `Account`, to transfer NFTs on behalf of the caller of this method from `account { owner = caller; subaccount = from_subaccount }`, where `caller` is the caller of this method (and also the owner principal of the tokens that are subject to approval) and `from_subaccount` is the subaccount of the token owner principal the approval should apply to (i.e., the subaccount which the tokens most reside on and can be transferred out from). Note that the `from_subaccount` parameter needs to be explicitly specified because accounts are a primary concept in this standard and thereby the `from_subaccount` needs to be specified as part of the account that holds the token. The `expires_at` value specifies the expiration date of the approval, the `memo` is a blob containing arbitrary data. The `created_at_time` field specifies when the approval has been created. The parameter `token_ids` specifies a list of tokens to apply the approval to.
+Entitles a `spender`, indicated through an `Account`, to transfer NFTs on behalf of the caller of this method from `account { owner = caller; subaccount = from_subaccount }`, where `caller` is the caller of this method (and also the owner principal of the tokens that are subject to approval) and `from_subaccount` is the subaccount of the token owner principal the approval should apply to (i.e., the subaccount which the tokens must reside on and can be transferred out from). Note that the `from_subaccount` parameter needs to be explicitly specified because accounts are a primary concept in this standard and thereby the `from_subaccount` needs to be specified as part of the account that holds the token. The `expires_at` value specifies the expiration date of the approval, the `memo` is a blob containing arbitrary data. The `created_at_time` field specifies when the approval has been created. The parameter `token_ids` specifies a list of tokens to apply the approval to.
 
 In case an approval for the specified `spender` already exists for a token on `from_subaccount` of the caller, a new approval is created that replaces the existing approval. The replaced approval is superseded with the effect that the new parameters for the approval (`expires_at`, `memo`, `created_at_time`) apply.
+
+Only one approval can be active for a given token and spender and its `from_subaccount` must be equal to the subaccount the token is held on.
 
 The response is a vector comprising records with a `token_id` as first element and an `Ok` variant with the transaction index for the success case or an `Err` variant indicating an error as second element.
 
@@ -263,7 +265,7 @@ The ledger SHOULD reject the call if the spender account owner is equal to the c
 
 An approval that has been created, has not expired (i.e., the `expires_at` field is a date in the future), has not been revoked, and has not been replaced with a new approval is *active*, i.e., can allow the approved party to initiate a transfer. 
 
-In accordance with ICRC-2, multiple approvals can exist for the same `token_id` but different `spender`s (the `from_subaccount` field must be the same and equal to the subaccount the token is held on). For the same token, spender, and subaccount triple a new approval shall always overwrite the old one as explained above. The ledger should limit the number of approvals that can be active per token to constrain unlimited growth of ledger memory. Such limit is exposed as ledger metadata through the metadata attribute `icrc7:max_approvals_per_token_or_collection`. The number of non-active approvals is not limited.
+In accordance with ICRC-2, multiple approvals can exist for the same `token_id` but different `spender`s (the `from_subaccount` field must be the same and equal to the subaccount the token is held on). For the same token, spender, and subaccount triple a new approval shall always replace the old one as explained above. The ledger should limit the number of approvals that can be active per token to constrain unlimited growth of ledger memory. Such limit is exposed as ledger metadata through the metadata attribute `icrc7:max_approvals_per_token_or_collection`. The number of non-active approvals is not limited.
 
 An ICRC-7 ledger implementation does not need to keep track of expired approvals in its memory. This is important to help constrain unlimited growth of ledger memory over time. All historic approvals are contained in the block history the ledger creates.
 
@@ -297,17 +299,24 @@ icrc7_approve : (token_ids : vec nat, approval : ApprovalInfo)
 
 ### icrc7_approve_collection
 
-Entitles a `spender`, indicated through an `Account`, to transfer NFTs on behalf of the caller of this method from `account { owner = caller; subaccount = from_subaccount; }`, where `caller` is the caller of this method (and the token owner principal) and `from_subaccount` is the subaccount of the token owner principal the approval should apply to (i.e., the subaccount which the tokens can be transferred out from and the tokens must be on). The call resets the expiration date, memo, and creation timestamp for the approval to the specified values in case an approval for the `spender` already exists for a token.
+Entitles a `spender`, indicated through an `Account`, to transfer any NFT of the collection hosted on this ledger on behalf of the caller of this method from `account { owner = caller; subaccount = from_subaccount }`, where `caller` is the caller of this method (and also the owner principal of the tokens that are subject to approval) and `from_subaccount` is the subaccount of the token owner principal the approval should apply to (i.e., the subaccount which tokens the approval should apply to must reside on and can be transferred out from). Note that the `from_subaccount` parameter needs to be explicitly specified not only because accounts are a primary concept in this standard, but also because the approval applies to the collection, i.e., all tokens on the ledger the caller holds and those tokens may be on different subaccounts. The `expires_at` value specifies the expiration date of the approval, the `memo` is a blob containing arbitrary data. The `created_at_time` field specifies when the approval has been created.
 
-The ledger SHOULD reject the call if the spender account owner is equal to the caller account owner.
-
-An approval that has been created, is not expired, has not been revoked, and has not been replaced with a new approval is *active*, i.e., can allow the approved party to initiate a transfer.
-
-In accordance with ICRC-2, multiple approvals can exist for the same `collection` but different `spender`s and `from_subaccount`s. For the same token, spender, and subaccount triple a new approval shall always overwrite the old one. The ledger should limit the number of approvals that can be active per collection. Such limit is exposed as ledger metadata through the metadata attribute `icrc7:max_approvals_per_token_or_collection`.
+In case an approval for the specified `spender` and `from_subaccount` already exists for the collection and the caller, a new approval is created that replaces the existing approval. The replaced approval is superseded with the effect that the new parameters for the approval (`expires_at`, `memo`, `created_at_time`) apply.
 
 The response contains a single element with the `Ok` variant containing the transaction index of the collection-level approval in the success case or an error `Err` otherwise.
 
-An ICRC-7 ledger implementation does not need to keep track of expired approvals in its memory. This is important to help constrain unlimited growth of ledger memory over time. Of course, all historic approvals are contained in the block history the ledger creates.
+The ledger SHOULD reject the call if the spender account owner is equal to the caller account owner.
+
+An approval that has been created, has not expired (i.e., the `expires_at` field is a date in the future), has not been revoked, and has not been replaced with a new approval is *active*, i.e., can allow the approved party to initiate a transfer. 
+
+In accordance with ICRC-2, multiple approvals can exist for the collection but different `spender`s and `from_subaccount`s. For the same spender, and subaccount triple a new approval shall always replace the old one as explained above. The ledger should limit the number of approvals that can be active per token to constrain unlimited growth of ledger memory. Such limit is exposed as ledger metadata through the metadata attribute `icrc7:max_approvals_per_token_or_collection`. The number of non-active approvals is not limited.
+
+An ICRC-7 ledger implementation does not need to keep track of expired approvals in its memory. This is important to help constrain unlimited growth of ledger memory over time. All historic approvals are contained in the block history the ledger creates.
+
+An `Unauthorized` error is not possible for this method.
+
+The `created_at_time` parameter indicates the time (as nanoseconds since the UNIX epoch in the UTC timezone) at which the client constructed the transaction.
+The ledger SHOULD reject transactions that have `created_at_time` argument too far in the past or the future, returning `variant { TooOld }` and `variant { CreatedInFuture = record { ledger_time = ... } }` errors correspondingly.
 
 Note: This method is analogous to `icrc7_approve_tokens`, but for approving whole collections. `ApprovalInfo` defines the approval to be made for the collection.
 
@@ -354,7 +363,7 @@ icrc7_transfer : (TransferArgs)
     -> (vec record { token_id : nat; transfer_result : variant { Ok : nat; Err : TransferError } });
 ```
 
-If a token id doesn't exist or if the caller principal is not permitted to act on a token id, then the token id receives the `Unauthorized` error response.
+If the caller principal is not permitted to act on a token id, then the token id receives the `Unauthorized` error response.
 
 The `memo` parameter is an arbitrary blob that is not interpreted by the ledger.
 The ledger SHOULD allow memos of at least 32 bytes in length.
