@@ -61,11 +61,11 @@ The following are the more technical, implementation-oriented, metadata elements
   * `icrc7:max_approvals_per_token_or_collection` of type `nat` (optional): The maximum number of active approvals this ledger implementation allows per token. When present, should be the same as the result of the [`icrc7_max_approvals_per_token_or_collection`](#icrc7_max_approvals_per_token) query call.
   * `icrc7:max_query_batch_size` of type `nat` (optional): The maximum batch size for query batch calls this ledger implementation supports. When present, should be the same as the result of the [`icrc7_max_query_batch_size`](#icrc7_max_query_batch_size) query call.
   * `icrc7:max_update_batch_size` of type `nat` (optional): The maximum batch size for update batch calls this ledger implementation supports. When present, should be the same as the result of the [`icrc7_max_update_batch_size`](#icrc7_max_update_batch_size) query call.
-  * `icrc7:default_take_value` of type `nat` (optional): The default value this ledger uses for the `take` pagination parameter. When present, should be the same as the result of the [`icrc7_default_take_value`](#icrc7_default_take_value) query call.
-  * `icrc7:max_take_value` of type `nat` (optional): The maximum `take` value for paginated query calls this ledger implementation supports. The value applies to all paginated calls the ledger exposes. When present, should be the same as the result of the [`icrc7_max_take_value`](#icrc7_max_take_value) query call.
+  * `icrc7:default_take_value` of type `nat` (optional): The default value this ledger uses for the `take` pagination parameter which is used in some queries. When present, should be the same as the result of the [`icrc7_default_take_value`](#icrc7_default_take_value) query call.
+  * `icrc7:max_take_value` of type `nat` (optional): The maximum `take` value for paginated query calls this ledger implementation supports. The value applies to all paginated queries the ledger exposes. When present, should be the same as the result of the [`icrc7_max_take_value`](#icrc7_max_take_value) query call.
   * `icrc7:max_revoke_approvals` of type `nat` (optional): The maximum number of approvals that may be revoked in a single invocation of `icrc7_revoke_token_approvals` or `icrc7_revoke_collection_approvals`. When present, should be the same as the result of the [`icrc7_max_revoke_approvals`](#icrc7_max_revoke_approvals) query call.
 
-Note that if specified max values are violated in a query call, the canister traps with an according error message.
+Note that if max values specified through metadata are violated in a query call by providing larger argument lists or resulting in larger responses than permitted, the canister traps with an according system error message.
 
 ```candid "Type definitions" +=
 // Generic value in accordance with ICRC-3
@@ -158,7 +158,7 @@ icrc7_max_update_batch_size : () -> (opt nat) query;
 
 ### icrc7_default_take_value
 
-Returns the default parameter the ledger uses for `take` in case the parameter is `null` in paginated methods.
+Returns the default parameter the ledger uses for `take` in case the parameter is `null` in paginated queries.
 
 ```candid "Methods" +=
 icrc7_default_take_value : () -> (opt nat) query;
@@ -253,11 +253,11 @@ icrc7_tokens_of : (account : Account, prev : opt nat, take : opt nat32)
 
 ### icrc7_approve_tokens
 
-Entitles a `spender`, indicated through an `Account`, to transfer NFTs on behalf of the caller of this method from `account { owner = caller; subaccount = from_subaccount }`, where `caller` is the caller of this method (and also the owner principal of the tokens that are subject to approval) and `from_subaccount` is the subaccount of the token owner principal the approval should apply to (i.e., the subaccount which the tokens must reside on and can be transferred out from). Note that the `from_subaccount` parameter needs to be explicitly specified because accounts are a primary concept in this standard and thereby the `from_subaccount` needs to be specified as part of the account that holds the token. The `expires_at` value specifies the expiration date of the approval, the `memo` is a blob containing arbitrary data. The `created_at_time` field specifies when the approval has been created. The parameter `token_ids` specifies a list of tokens to apply the approval to.
+Entitles a `spender`, indicated through an `Account`, to transfer NFTs on behalf of the caller of this method from `account { owner = caller; subaccount = from_subaccount }`, where `caller` is the caller of this method (and also the owner principal of the tokens that are subject to approval) and `from_subaccount` is the subaccount of the token owner principal the approval should apply to (i.e., the subaccount which the tokens must reside on and can be transferred out from). Note that the `from_subaccount` parameter needs to be explicitly specified because accounts are a primary concept in this standard and thereby the `from_subaccount` needs to be specified as part of the account that holds the token. The `expires_at` value specifies the expiration date of the approval, the `memo` parameter is an arbitrary blob that is not interpreted by the ledger. The `created_at_time` field specifies when the approval has been created. The parameter `token_ids` specifies a list of tokens to apply the approval to.
 
 In case an approval for the specified `spender` already exists for a token on `from_subaccount` of the caller, a new approval is created that replaces the existing approval. The replaced approval is superseded with the effect that the new parameters for the approval (`expires_at`, `memo`, `created_at_time`) apply.
 
-Only one approval can be active for a given token and spender and its `from_subaccount` must be equal to the subaccount the token is held on.
+Only one approval can be active for a given `(token_id, spender)` pair (the `from_subaccount` of the approval must be equal to the subaccount the token is held on).
 
 The response is a vector comprising records with a `token_id` as first element and an `Ok` variant with the transaction index for the success case or an `Err` variant indicating an error as second element.
 
@@ -283,7 +283,7 @@ type ApprovalInfo = record {
     created_at_time : opt nat64; 
 };
 
-type ApprovalError = variant {
+type ApproveTokensError = variant {
     NonExistingTokenId;
     Unauthorized;
     TooOld;
@@ -294,7 +294,7 @@ type ApprovalError = variant {
 
 ```candid "Methods" +=
 icrc7_approve : (token_ids : vec nat, approval : ApprovalInfo)
-    -> (vec record { token_id : opt nat; approval_response : variant { Ok : nat; Err : ApprovalError } });
+    -> (vec record { token_id : nat; approval_response : variant { Ok : nat; Err : ApproveTokensError } });
 ```
 
 ### icrc7_approve_collection
@@ -303,17 +303,19 @@ Entitles a `spender`, indicated through an `Account`, to transfer any NFT of the
 
 In case an approval for the specified `spender` and `from_subaccount` already exists for the collection and the caller, a new approval is created that replaces the existing approval. The replaced approval is superseded with the effect that the new parameters for the approval (`expires_at`, `memo`, `created_at_time`) apply.
 
+Multiple approvals can be active for the collection for a caller, i.e., one approval per `(spender, from_subaccount)` pair.
+
+Collection-level approvals can be created independently of currently owning tokens of the collection and always succeed.
+
 The response contains a single element with the `Ok` variant containing the transaction index of the collection-level approval in the success case or an error `Err` otherwise.
 
 The ledger SHOULD reject the call if the spender account owner is equal to the caller account owner.
 
 An approval that has been created, has not expired (i.e., the `expires_at` field is a date in the future), has not been revoked, and has not been replaced with a new approval is *active*, i.e., can allow the approved party to initiate a transfer. 
 
-In accordance with ICRC-2, multiple approvals can exist for the collection but different `spender`s and `from_subaccount`s. For the same spender, and subaccount triple a new approval shall always replace the old one as explained above. The ledger should limit the number of approvals that can be active per token to constrain unlimited growth of ledger memory. Such limit is exposed as ledger metadata through the metadata attribute `icrc7:max_approvals_per_token_or_collection`. The number of non-active approvals is not limited.
+In accordance with ICRC-2, multiple approvals can exist for the collection for a caller but different `spender`s and `from_subaccount`s. For the same spender, and subaccount pair a new approval shall always replace the old one as explained above. The ledger should limit the number of approvals that can be active per token to constrain unlimited growth of ledger memory. Such limit is exposed as ledger metadata through the metadata attribute `icrc7:max_approvals_per_token_or_collection`. The number of non-active approvals is not limited.
 
 An ICRC-7 ledger implementation does not need to keep track of expired approvals in its memory. This is important to help constrain unlimited growth of ledger memory over time. All historic approvals are contained in the block history the ledger creates.
-
-An `Unauthorized` error is not possible for this method.
 
 The `created_at_time` parameter indicates the time (as nanoseconds since the UNIX epoch in the UTC timezone) at which the client constructed the transaction.
 The ledger SHOULD reject transactions that have `created_at_time` argument too far in the past or the future, returning `variant { TooOld }` and `variant { CreatedInFuture = record { ledger_time = ... } }` errors correspondingly.
@@ -324,9 +326,17 @@ Note that collection-level approvals MUST be managed by the ledger as collection
 
 See the [#icrc7_approve_tokens](icrc7_approve_tokens) for the Candid types.
 
+```candid "Type definitions" +=
+type ApproveCollectionError = variant {
+    TooOld;
+    CreatedInFuture : record { ledger_time: nat64 };
+    GenericError : record { error_code : nat; message : text };
+};
+```
+
 ```candid "Methods" +=
 icrc7_approve_collection : (ApprovalInfo)
-    -> (approval_response : variant { Ok : nat; Err : ApprovalError });
+    -> (approval_response : variant { Ok : nat; Err : ApproveCollectionError });
 ```
 
 ### icrc7_transfer
@@ -337,8 +347,10 @@ The response is a vector of records each comprising a `token_id` and a correspon
 
 A transfer clears all approvals for the successfully transferred tokens. This implicit clearing of approvals only clears token-id-based approvals and never touches collection-level approvals.
 
+An `Unauthorized` error is returned in case someone not owning a token and not being the spender in an active token-level or collection-level approval attempts to transfer a token.
+
 ```candid "Type definitions" +=
-type TransferArgs = record {
+TransferArgs = record {
     spender_subaccount: opt blob; // the subaccount of the caller (used to identify the spender)
     from : Account;
     to : Account;
@@ -405,8 +417,7 @@ type RevokeError = variant {
 
 ```candid "Methods" +=
 icrc7_revoke_token_approvals: (RevokeTokensArgs)
-    -> (vec record { token_id : nat; from_subaccount : blob; spender : Account;
-                     revoke_response : variant { Ok : nat; Err : RevokeError } });
+    -> (vec record { token_id : nat; spender : Account; revoke_response : variant { Ok : nat; Err : RevokeError } });
 ```
 
 ### icrc7_revoke_collection_approvals
@@ -431,7 +442,7 @@ type RevokeCollectionArgs = record {
 ```
 ```candid "Methods" +=
 icrc7_revoke_collection_approvals: (RevokeCollectionArgs)
-    -> (vec record { from_subaccount : blob; spender : Account; variant { Ok : nat; Err : RevokeError } });
+    -> (vec record { blob; spender : Account; variant { Ok : nat; Err : RevokeError } });
 ```
 
 ### icrc7_is_approved
@@ -439,7 +450,7 @@ icrc7_revoke_collection_approvals: (RevokeCollectionArgs)
 Returns `true` if an active approval exists that allows the `spender` to transfer the token `token_id` from the given `from_subaccount`, `false` otherwise.
 
 ```candid "Methods" +=
-icrc7_is_approved : (spender : Account; from_subaccount : blob; token_id : nat)
+icrc7_is_approved : (spender : Account; from_subaccount : opt blob; token_id : nat)
     -> (bool) query;
 ```
 
