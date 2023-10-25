@@ -253,19 +253,19 @@ icrc7_tokens_of : (account : Account, prev : opt nat, take : opt nat32)
 
 ### icrc7_approve_tokens
 
-Entitles a `spender`, indicated through an `Account`, to transfer NFTs on behalf of the caller of this method from `account { owner = caller; subaccount = from_subaccount }`, where `caller` is the caller of this method (and also the owner principal of the tokens that are subject to approval) and `from_subaccount` is the subaccount of the token owner principal the approval should apply to (i.e., the subaccount which the tokens most reside on and can be transferred out from). Note that the `from_subaccount` parameter needs to be explicitly specified because accounts are a primary concept in this standard. The `expires_at` value specifies the expiration date of the approval, the `memo` is a blob containing arbitrary data. The `created_at_time` field specifies when the approval has been created. The parameter `tokens` specifies a list of NFT token ids to apply the approval to.
+Entitles a `spender`, indicated through an `Account`, to transfer NFTs on behalf of the caller of this method from `account { owner = caller; subaccount = from_subaccount }`, where `caller` is the caller of this method (and also the owner principal of the tokens that are subject to approval) and `from_subaccount` is the subaccount of the token owner principal the approval should apply to (i.e., the subaccount which the tokens most reside on and can be transferred out from). Note that the `from_subaccount` parameter needs to be explicitly specified because accounts are a primary concept in this standard and thereby the `from_subaccount` needs to be specified as part of the account that holds the token. The `expires_at` value specifies the expiration date of the approval, the `memo` is a blob containing arbitrary data. The `created_at_time` field specifies when the approval has been created. The parameter `token_ids` specifies a list of tokens to apply the approval to.
 
-In case an approval for the specified `spender` already exists for a token on `from_subaccount` of the caller, a new approval is created that replaces the existing approval. The replaced approval is superseded with the result that the new parameters for the approval (`expires_at`, `memo`, `created_at_time`) apply.
+In case an approval for the specified `spender` already exists for a token on `from_subaccount` of the caller, a new approval is created that replaces the existing approval. The replaced approval is superseded with the effect that the new parameters for the approval (`expires_at`, `memo`, `created_at_time`) apply.
 
 The response is a vector comprising records with a `token_id` as first element and an `Ok` variant with the transaction index for the success case or an `Err` variant indicating an error as second element.
 
 The ledger SHOULD reject the call if the spender account owner is equal to the caller account owner.
 
-An approval that has been created, has not expired (i.e., the `expires_at` field is a date in the future), has not been revoked, and has not been replaced with a new approval is *active*, i.e., can allow the approved party to initate a transfer. 
+An approval that has been created, has not expired (i.e., the `expires_at` field is a date in the future), has not been revoked, and has not been replaced with a new approval is *active*, i.e., can allow the approved party to initiate a transfer. 
 
-In accordance with ICRC-2, multiple approvals can exist for the same `token_id` but different `spender`s (the `from_subaccount` field must be the same and equal to the subaccount the token is held on). For the same token, spender, and subaccount triple a new approval shall always overwrite the old one as explained above. The ledger should limit the number of approvals that can be active per token to constrain unlimited growth of ledger memory, the number of non-active approvals is unbounded. Such limit is exposed as ledger metadata through the metadata attribute `icrc7:max_approvals_per_token_or_collection`.
+In accordance with ICRC-2, multiple approvals can exist for the same `token_id` but different `spender`s (the `from_subaccount` field must be the same and equal to the subaccount the token is held on). For the same token, spender, and subaccount triple a new approval shall always overwrite the old one as explained above. The ledger should limit the number of approvals that can be active per token to constrain unlimited growth of ledger memory. Such limit is exposed as ledger metadata through the metadata attribute `icrc7:max_approvals_per_token_or_collection`. The number of non-active approvals is not limited.
 
-An ICRC-7 ledger implementation does not need to keep track of expired approvals in its memory. This is important to help constrain unlimited growth of ledger memory over time. Of course, all historic approvals are contained in the block history the ledger creates.
+An ICRC-7 ledger implementation does not need to keep track of expired approvals in its memory. This is important to help constrain unlimited growth of ledger memory over time. All historic approvals are contained in the block history the ledger creates.
 
 An `Unauthorized` error is returned in case the caller is not authorized to perform this action on the token, e.g., because it does not own the token or the token is not in the account specified through `from_subaccount`.
 
@@ -301,7 +301,7 @@ Entitles a `spender`, indicated through an `Account`, to transfer NFTs on behalf
 
 The ledger SHOULD reject the call if the spender account owner is equal to the caller account owner.
 
-An approval that has been created, is not expired, has not been revoked, and has not been replaced with a new approval is *active*, i.e., can allow the approved party to initate a transfer.
+An approval that has been created, is not expired, has not been revoked, and has not been replaced with a new approval is *active*, i.e., can allow the approved party to initiate a transfer.
 
 In accordance with ICRC-2, multiple approvals can exist for the same `collection` but different `spender`s and `from_subaccount`s. For the same token, spender, and subaccount triple a new approval shall always overwrite the old one. The ledger should limit the number of approvals that can be active per collection. Such limit is exposed as ledger metadata through the metadata attribute `icrc7:max_approvals_per_token_or_collection`.
 
