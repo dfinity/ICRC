@@ -39,18 +39,18 @@ Methods that modify the state of the ledger have responses that comprise transac
 
 The response size for responses to messages sent to a canister smart contract on the IC is constrained to a fixed constant size. For requests that could result in larger response messages, the caller SHOULD ensure to constrain the input accordingly so that the response remains below the maximum allowed size, e.g., not query too many token ids in one batch call. If the maximum size of a response is hit, the ledger canister traps. The ledger SHOULD make sure that the response size does not exceed the permitted maximum *before* making any changes that might be committed to replicated state.
 
-Each defined Candid type is only presented once in the text upon its first use in a method.
+Each defined Candid type is only presented once in the text upon its first use in a method. Likewise, error responses are not specified repeatedly for all methods after having been first explained.
 
 ### icrc7_collection_metadata
 
-Returns all the collection-level metadata of the NFT collection in a single query. The data model for metadata is based on the generic `Value` type which allows for encoding arbitrarily complex data for each metadata element. The metadata attributes are expressed as `(key : text, value : Value)` pairs where `key` is the name of the metadata attribute and `value` the corresponding value expressed through the `Value` type.
+Returns all the collection-level metadata of the NFT collection in a single query. The data model for metadata is based on the generic `Value` type which allows for encoding arbitrarily complex data for each metadata attribute. The metadata attributes are expressed as `(text, value)` pairs where the first element is the name of the metadata attribute and the second element the corresponding value expressed through the `Value` type.
 
 Analogous to [ICRC-1 metadata](https://github.com/dfinity/ICRC-1/tree/main/standards/ICRC-1#metadata), metadata keys are arbitrary Unicode strings and must follow the pattern `<namespace>:<key>`, where `<namespace>` is a string not containing colons. Namespace `icrc7` is reserved for keys defined in the ICRC-7 standard.
 
 The set of elements contained in a specific ledger's metadata depends on the given ledger implementation, the list below establishes the currently defined fields.
 
 The following metadata fields are defined by ICRC-7, starting with general collection-specific metadata fields:
-  * `icrc7:symbol` of type `text`: The token currency code (see [ISO-4217](https://en.wikipedia.org/wiki/ISO_4217)). When present, should be the same as the result of the [`icrc1_symbol`](#symbol_method) query call.
+  * `icrc7:symbol` of type `text`: The token symbol. Token symbols are often represented similar to [ISO-4217](https://en.wikipedia.org/wiki/ISO_4217)) currency codes. When present, should be the same as the result of the [`icrc1_symbol`](#symbol_method) query call.
   * `icrc7:name` of type `text`: The name of the token. Should be the same as the result of the [`icrc7_name`](#icrc7_name) query call.
   * `icrc7:description` of type `text` (optional): A textual description of the token. When present, should be the same as the result of the [`icrc7_description`](#icrc7_description) query call.
   * `icrc7:logo` of type `text` (optional): The URL of the token logo. It may be a [DataURL](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/Data_URLs) that contains the logo image itself. When present, should be the same as the result of the [`icrc7_logo`](#icrc7_logo) query call.
@@ -85,7 +85,7 @@ icrc7_collection_metadata : () -> (metadata : vec record { text; Value } ) query
 
 ### icrc7_symbol
 
-Returns the symbol, i.e., the token currency code (see [ISO-4217](https://en.wikipedia.org/wiki/ISO_4217)), of the NFT collection (e.g., `MS`).
+Returns the token symbol of the NFT collection (e.g., `MS`).
 
 ```candid "Methods" +=
 icrc7_symbol : () -> (text) query;
@@ -231,7 +231,7 @@ icrc7_balance_of : (account : Account) -> (balance : nat) query;
 
 Returns the list of tokens in this ledger, sorted by their token id.
 
-The result is paginated and pagination is controlled via the `prev` and `take` parameters: The response to a request results in at most `take` many token ids, starting with the next id following `prev`. If `prev` is `null`, the response elements start are the smallest ids in the ledger according to the sorting order. If the response contains no token ids, there are no further tokens following `prev`. If the response contains fewer token ids than the provided or default `take` value, there are no further tokens following the largest returned token id. The token ids in the response are sorted in any consistent sorting order used by the ledger. If `take` is omitted, the ledger's default `take` value as specified through `icrc7:default_take_value` is assumed.
+The result is paginated and pagination is controlled via the `prev` and `take` parameters: The response to a request results in at most `take` many token ids, starting with the next id following `prev`. The token ids in the response are sorted in any consistent sorting order used by the ledger. If `prev` is `null`, the response elements start with the smallest ids in the ledger according to the sorting order. If the response contains no token ids, there are no further tokens following `prev`. If the response contains fewer token ids than the provided or default `take` value, there are no further tokens following the largest returned token id. If `take` is omitted, the ledger's default `take` value as specified through `icrc7:default_take_value` is assumed.
 
 For retrieving all tokens of the ledger, the pagination API is used such that the first call sets `prev = null` and specifies a suitable `take` value, then the method is called repeatedly such that the greatest token id of the previous response is used as `prev` value for the next call to the method. This way all tokens can be enumerated in ascending order, provided token ids are not inserted during normal operation. 
 
@@ -244,7 +244,7 @@ icrc7_tokens : (prev : opt nat, take : opt nat32)
 
 ### icrc7_tokens_of
 
-Returns a vector of `token_id`s of all tokens held by `account`, sorted by `token_id`. The result is paginated, the mechanics of pagination are the same as for `icrc7_tokens` using `prev` and `take` to control pagination.
+Returns a vector of `token_id`s of all tokens held by `account`, sorted by `token_id`.  The token ids in the response are sorted in any consistent sorting order used by the ledger. The result is paginated, the mechanics of pagination are analogous to `icrc7_tokens` using `prev` and `take` to control pagination.
 
 ```candid "Methods" +=
 icrc7_tokens_of : (account : Account, prev : opt nat, take : opt nat32)
@@ -341,7 +341,7 @@ icrc7_approve_collection : (ApprovalInfo)
 
 ### icrc7_transfer
 
-Transfers one or more tokens from the `from` account to the `to` account. The transfer can be initiated either by the holder of the tokens or a party that has been authorized by the holder to execute transfers using `icrc7_approve_tokens` or `icrc7_approve_collection`. The `spender_subaccount` is used to identify the spender. The spender is an account comprised of the principal calling this method and the parameter `spender_subaccount`. Leaving out the `spender_subaccount` means to use the default subaccount.
+Transfers one or more tokens from the `from` account to the `to` account. The transfer can be initiated either by the holder of the tokens or a party that has been authorized by the holder to execute transfers using `icrc7_approve_tokens` or `icrc7_approve_collection`. The `spender_subaccount` is used to identify the spender. The spender is an account comprised of the principal calling this method and the parameter `spender_subaccount`. Omitting the `spender_subaccount` means to use the default subaccount.
 
 The response is a vector of records each comprising a `token_id` and a corresponding `transfer_result` indicating success or error. In the success case, the `Ok` variant indicates the transaction index of the transfer, in the error case, the `Err` variant indicates the error through `TransferError`.
 
