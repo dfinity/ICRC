@@ -10,7 +10,7 @@ ICRC-7 is the minimal standard for the implementation of Non-Fungible Tokens (NF
 
 A token ledger implementation following this standard hosts an *NFT collection* (*collection*), a set of NFT tokens.
 
-## Concepts
+## Data
 
 ### Accounts
 
@@ -35,11 +35,11 @@ Tokens in ICRC-7 are identified through _token identifiers_, or _token ids_. A t
 
 ### Conventions
 
-The methods, both queries and update calls, that operate on token ids as inputs are *batch methods* that can receive vectors of token ids, i.e., batches of token ids, as input. The output of a batch method is a vector with records comprising a token id and a response belonging to this token id. Unless specified explicitly otherwise, the ordering of response elements for batch calls is not defined, i.e., is arbitrary. For batch calls, every token id in the input MUST occur in at least one response element. If the input contains duplicate token ids for update calls, the ledger must trap. Duplicate token ids in batch query calls may result in duplicate token ids in the response or may be deduplicated. The lenght of the response vector may be shorter than that of the input vector in batch query calls, e.g., in case of duplicate token ids in the input and a deduplication being performed by the method's implementation logic.
+The methods, both queries and update calls, that operate on token ids as inputs are *batch methods* that can receive vectors of token ids, i.e., batches of token ids, as input. The batch methods are to be used also for operations on single token ids. The output of most batch methods is a vector of records comprising a token id and a response belonging to the token id. Unless specified explicitly otherwise, the ordering of response elements for batch calls is not defined, i.e., is arbitrary. For batch calls, every distinct token id of the input MUST occur in at least one response element. If the input contains duplicate token ids for update calls, the ledger must trap. Duplicate token ids in batch query calls may result in duplicate token ids in the response or may be deduplicated at the discretion of the ledger. The lenght of the response vector may be shorter than that of the input vector in batch query calls, e.g., in case of duplicate token ids in the input and a deduplication being performed by the method's implementation logic. For update batch calls, the call MUST be executed on all provided token ids or none.
 
 Methods that modify the state of the ledger have responses that comprise transaction indices as part of the response in the success case. Such a transaction index is an index into the chain of blocks containing the transaction history of this ledger. The format of the transaction history is not part of the ICRC-7 standard, but will be published as a separate standard.
 
-All update methods have error variants defined for their responses that cover the error cases for the respective call. For query methods, error variants are only defined for methods for which a specific error needs to be handled. Other query calls do not have error variants defined for their responses.
+All update methods have error variants defined for their responses that cover the error cases for the respective call. For query methods, error variants are only defined for methods for which a specific error needs to be handled. Other query calls do not have error variants defined for their responses. Both query and update calls can trap in specific circumstances.
 
 The response size for responses to messages sent to a canister smart contract on the IC is constrained to a fixed constant size. For requests that could result in larger response messages, the caller SHOULD ensure to constrain the input accordingly so that the response remains below the maximum allowed size, e.g., not query too many token ids in one batch call. If the size limit of a response is hit, the ledger canister MUST trap. The ledger SHOULD make sure that the response size does not exceed the permitted maximum *before* making any changes that might be committed to replicated state.
 
@@ -237,9 +237,9 @@ Returns the list of tokens in this ledger, sorted by their token id.
 
 The result is paginated and pagination is controlled via the `prev` and `take` parameters: The response to a request results in at most `take` many token ids, starting with the next id following `prev`. The token ids in the response are sorted in any consistent sorting order used by the ledger. If `prev` is `null`, the response elements start with the smallest ids in the ledger according to the sorting order. If the response to a call with a non-null `prev` value contains no token ids, there are no further tokens following `prev`. If `take` is omitted, the ledger's default `take` value as specified through `icrc7:default_take_value` is assumed. If the response to a call contains fewer token ids than the provided or default `take` value, there are no further tokens in the ledger following the largest returned token id.
 
-For retrieving all tokens of the ledger, the pagination API is used such that the first call sets `prev = null` and specifies a suitable `take` value. Then, the method is called repeatedly such that the greatest token id of the previous response is used as `prev` value for the next call to the method. Using this approach, all tokens can be enumerated in ascending order, provided the ledger state does not change during the token enumeration. 
+For retrieving all tokens of the ledger, the pagination API is used such that the first call sets `prev = null` and specifies a suitable `take` value. Then, the method is called repeatedly such that the greatest token id of the previous response is used as `prev` value for the next call to the method. Using this approach, all tokens can be enumerated in ascending order, provided the ledger state does not change between the method calls.
 
-Each invocation is executed on the current memory state of the ledger. I.e., it is not possible to enumerate the token ids of the ledger at a given time or of a "snapshot" of the ledger state. Rather, the ledger state can change between the multiple calls required to enumerate all the tokens.
+Each invocation is executed on the current memory state of the ledger. I.e., it is not possible to enumerate the exact list of token ids of the ledger at a given time or of a "snapshot" of the ledger state. Rather, the ledger state can change between the multiple calls required to enumerate all the tokens.
 
 ```candid "Methods" +=
 icrc7_tokens : (prev : opt nat, take : opt nat32)
@@ -265,7 +265,7 @@ The ledger SHOULD reject the call if the spender account owner is equal to the c
 
 An approval that has been created, has not expired (i.e., the `expires_at` field is a date in the future), has not been revoked, and has not been replaced with a new approval is *active*, i.e., can allow the approved party to initiate a transfer. Only one approval can be active for a given `(token_id, spender)` pair (the `from_subaccount` of the approval must be equal to the subaccount the token is held on).
 
-In accordance with ICRC-2, multiple approvals can exist for the same `token_id` but different `spender`s (the `from_subaccount` field must be the same and equal to the subaccount the token is held on). In case an approval for the specified `spender` already exists for a token on `from_subaccount` of the caller, a new approval is created that replaces the existing approval. The replaced approval is superseded with the effect that the new parameters for the approval (`expires_at`, `memo`, `created_at_time`) apply. The ledger SHOULD limit the number of approvals that can be active per token to constrain unlimited growth of ledger memory. Such limit is exposed as ledger metadata through the metadata attribute `icrc7:max_approvals_per_token_or_collection`. The number of non-active approvals MUST NOT be limited.
+In accordance with ICRC-2, multiple approvals can exist for the same `token_id` but different `spender`s (the `from_subaccount` field must be the same and equal to the subaccount the token is held on). In case an approval for the specified `spender` already exists for a token on `from_subaccount` of the caller, a new approval is created that replaces the existing approval. The replaced approval is superseded with the effect that the new parameters for the approval (`expires_at`, `memo`, `created_at_time`) apply. The ledger SHOULD limit the number of approvals that can be active per token to constrain unlimited growth of ledger memory. Such limit is exposed as ledger metadata through the metadata attribute `icrc7:max_approvals_per_token_or_collection`.
 
 An ICRC-7 ledger implementation does not need to keep track of expired approvals in its memory. This is important to help constrain unlimited growth of ledger memory over time. All historic approvals are contained in the block history the ledger creates.
 
@@ -299,15 +299,15 @@ icrc7_approve : (token_ids : vec nat, approval : ApprovalInfo)
 
 ### icrc7_approve_collection
 
-Entitles a `spender`, indicated through an `Account`, to transfer any NFT of the collection hosted on this ledger and owned by the caller on behalf of the caller of this method from `account { owner = caller; subaccount = from_subaccount }`, where `caller` is the caller of this method (and also the owner principal of the tokens that are subject to approval) and `from_subaccount` is the subaccount of the token owner principal the approval should apply to (i.e., the subaccount which tokens the approval should apply to must reside on and can be transferred out from). Note that the `from_subaccount` parameter needs to be explicitly specified not only because accounts are a primary concept in this standard, but also because the approval applies to the collection, i.e., all tokens on the ledger the caller holds, and those tokens may be on different subaccounts. The `expires_at` value specifies the expiration date of the approval, the `memo` parameter is an arbitrary blob that is not interpreted by the ledger. The `created_at_time` field specifies when the approval has been created.
+Entitles a `spender`, indicated through an `Account`, to transfer any NFT of the collection hosted on this ledger and owned by the caller at the time of transfer on behalf of the caller of this method from `account { owner = caller; subaccount = from_subaccount }`, where `caller` is the caller of this method and `from_subaccount` is the subaccount of the token owner principal the approval should apply to (i.e., the subaccount which tokens the approval should apply to must reside on and can be transferred out from). Note that the `from_subaccount` parameter needs to be explicitly specified not only because accounts are a primary concept in this standard, but also because the approval applies to the collection, i.e., all tokens on the ledger the caller holds, and those tokens may be held on different subaccounts. The `expires_at` value specifies the expiration date of the approval, the `memo` parameter is an arbitrary blob that is not interpreted by the ledger. The `created_at_time` field specifies when the approval has been created.
 
 The response contains a single element with the `Ok` variant containing the transaction index of the collection-level approval in the success case or an error `Err` otherwise.
 
 The ledger SHOULD reject the call if the spender account owner is equal to the caller account owner.
 
-An approval that has been created, has not expired (i.e., the `expires_at` field is a date in the future), has not been revoked, and has not been replaced with a new approval is *active*, i.e., can allow the approved party to initiate a transfer. Multiple approvals can be active for the collection for a caller, i.e., one approval per `(spender, from_subaccount)` pair.
+An approval that has been created, has not expired (i.e., the `expires_at` field is a date in the future), has not been revoked, and has not been replaced with a new approval is *active*, i.e., can allow the approved party to initiate a transfer.
 
-In accordance with ICRC-2, multiple approvals can exist for the collection for a caller but different `spender`s and `from_subaccount`s. In case an approval for the specified `spender` and `from_subaccount` of the caller for the collection already exists, a new approval is created that replaces the existing approval. The replaced approval is superseded with the effect that the new parameters for the approval (`expires_at`, `memo`, `created_at_time`) apply. The ledger SHOULD limit the number of approvals that can be active per collection to constrain unlimited growth of ledger memory. Such limit is exposed as ledger metadata through the metadata attribute `icrc7:max_approvals_per_token_or_collection`. The number of non-active approvals MUST NOT be limited.
+In accordance with ICRC-2, multiple approvals can exist for the collection for a caller but different `spender`s and `from_subaccount`s, i.e., one approval per `(spender, from_subaccount)` pair. In case an approval for the specified `spender` and `from_subaccount` of the caller for the collection already exists, a new approval is created that replaces the existing approval. The replaced approval is superseded with the effect that the new parameters for the approval (`expires_at`, `memo`, `created_at_time`) apply. The ledger SHOULD limit the number of approvals that can be active per collection to constrain unlimited growth of ledger memory. Such limit is exposed as ledger metadata through the metadata attribute `icrc7:max_approvals_per_token_or_collection`.
 
 An ICRC-7 ledger implementation does not need to keep track of expired approvals in its memory. This is important to help constrain unlimited growth of ledger memory over time. All historic approvals are contained in the block history the ledger creates.
 
@@ -316,7 +316,7 @@ Collection-level approvals can be successfully created independently of currentl
 The `created_at_time` parameter indicates the time (as nanoseconds since the UNIX epoch in the UTC timezone) at which the client constructed the transaction.
 The ledger SHOULD reject transactions that have `created_at_time` argument too far in the past or the future, returning `variant { TooOld }` and `variant { CreatedInFuture = record { ledger_time = ... } }` errors correspondingly.
 
-Note: This method is analogous to `icrc7_approve_tokens`, but for approving whole collections. `ApprovalInfo` defines the approval to be made for the collection.
+Note: This method is analogous to `icrc7_approve_tokens`, but for approving whole collections. `ApprovalInfo` specifies the approval to be made for the collection.
 
 Note that collection-level approvals MUST be managed by the ledger as collection-level approvals and MUST NOT be translated into token-level approvals for all tokens the caller owns.
 
@@ -337,13 +337,11 @@ icrc7_approve_collection : (ApprovalInfo)
 
 ### icrc7_transfer
 
-Transfers one or more tokens from the `from` account to the `to` account. The transfer can be initiated either by the holder of the tokens or a party that has been authorized by the holder to execute transfers using `icrc7_approve_tokens` or `icrc7_approve_collection`. The `spender_subaccount` is used to identify the spender. The spender is an account comprised of the principal calling this method and the parameter `spender_subaccount`. Omitting the `spender_subaccount` means to use the default subaccount.
+Transfers one or more tokens from the `from` account to the `to` account. The transfer can be initiated either by the holder of the tokens or a party that has been authorized by the holder to execute transfers using `icrc7_approve_tokens` or `icrc7_approve_collection`. The `spender_subaccount` is used to identify the spender. The spender is an account comprised of the principal calling this method and the parameter `spender_subaccount`. Omitting the `spender_subaccount` means using the default subaccount.
 
 The response is a vector of records each comprising a `token_id` and a corresponding `transfer_result` indicating success or error. In the success case, the `Ok` variant indicates the transaction index of the transfer, in the error case, the `Err` variant indicates the error through `TransferError`.
 
-A transfer clears all token-level approvals for the successfully transferred tokens. This implicit clearing of approvals only clears token-level approvals and never touches collection-level approvals.
-
-An `Unauthorized` error is returned in case someone not owning a token and not being the spender in an active token-level or collection-level approval attempts to transfer a token or the token is not held in the subaccount specified in the `from` account.
+A transfer clears all active token-level approvals for the successfully transferred tokens. This implicit clearing of approvals only clears token-level approvals and never touches collection-level approvals.
 
 ```candid "Type definitions" +=
 TransferArgs = record {
@@ -371,7 +369,8 @@ icrc7_transfer : (TransferArgs)
     -> (vec record { token_id : nat; transfer_result : variant { Ok : nat; Err : TransferError } });
 ```
 
-If the caller principal is not permitted to act on a token id, then the token id receives the `Unauthorized` error response.
+If the caller principal is not permitted to act on a token id, then the token id receives the `Unauthorized` error response. This is the case if someone not owning a token and not being the spender in an active token-level or collection-level approval attempts to transfer a token or the token is not held in the subaccount specified in the `from` account.
+
 
 The `memo` parameter is an arbitrary blob that is not interpreted by the ledger.
 The ledger SHOULD allow memos of at least 32 bytes in length.
@@ -390,7 +389,7 @@ Only the owner of tokens can revoke approvals.
 
 The response is a vector comprising records with a `token_id` and a corresponding variant with `Ok` containing a transaction index indicating the success case or an `Err` variant indicating the error case.
 
-Note that the size of responses on ICP is limited. Callers of this method should take particular care to not exceed the response limit for their inputs, e.g., in case there are many approvals defined for a token id or many token ids with a few approvals each are provided as input.
+Note that the size of responses on ICP is limited. Callers of this method SHOULD take particular care to not exceed the response limit for their inputs, e.g., in case there are many approvals defined for a token id or many token ids with a few approvals each are provided as input.
 
 Revoking an approval for one or more token ids does not affect collection-level approvals.
 
