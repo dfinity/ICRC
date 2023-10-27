@@ -294,7 +294,7 @@ type ApproveTokensError = variant {
 
 ```candid "Methods" +=
 icrc7_approve : (token_ids : vec nat, approval : ApprovalInfo)
-    -> (vec record { token_id : nat; approval_response : variant { Ok : nat; Err : ApproveTokensError } });
+    -> (vec record { token_id : nat; approval_result : variant { Ok : nat; Err : ApproveTokensError } });
 ```
 
 ### icrc7_approve_collection
@@ -332,7 +332,7 @@ type ApproveCollectionError = variant {
 
 ```candid "Methods" +=
 icrc7_approve_collection : (ApprovalInfo)
-    -> (approval_response : variant { Ok : nat; Err : ApproveCollectionError });
+    -> (approval_result : variant { Ok : nat; Err : ApproveCollectionError });
 ```
 
 ### icrc7_transfer
@@ -412,7 +412,7 @@ type RevokeTokensError = variant {
 
 ```candid "Methods" +=
 icrc7_revoke_token_approvals: (RevokeTokensArgs)
-    -> (vec record { token_id : nat; spender : Account; revoke_response : variant { Ok : nat; Err : RevokeTokensError } });
+    -> (vec record { token_id : nat; spender : Account; revoke_result : variant { Ok : nat; Err : RevokeTokensError } });
 ```
 
 ### icrc7_revoke_collection_approvals
@@ -442,7 +442,7 @@ type RevokeCollectionError = variant {
 ```
 ```candid "Methods" +=
 icrc7_revoke_collection_approvals: (RevokeCollectionArgs)
-    -> (vec record { blob; spender : Account; variant { Ok : nat; Err : RevokeCollectionError } });
+    -> (vec record { spender : Account; from_subaccount : blob; revoke_result : variant { Ok : nat; Err : RevokeCollectionError } });
 ```
 
 ### icrc7_is_approved
