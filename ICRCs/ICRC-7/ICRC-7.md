@@ -35,13 +35,15 @@ Tokens in ICRC-7 are identified through _token identifiers_, or _token ids_. A t
 
 ### Conventions
 
-The methods, both queries and update calls, that operate on token ids as inputs are *batch methods* that can receive vectors of token ids, i.e., batches of token ids, as input. The output of a batch method is a vector with records comprising a token id and a response belonging to this token id. Unless specified explicitly otherwise, the ordering of response elements for batch calls is not defined, i.e., is arbitrary. For batch calls, every token id in the input MUST occur in exactly one output. If the input contains duplicate token ids for update calls, the ledger must trap. Duplicate token ids in batch query calls may result in duplicate token ids in the response or may be deduplicated. The lenght of the response vector may be shorter than that of the input vector in batch query calls, e.g., in case of duplicate token ids in the input and a deduplication being performed by the method's implementation logic.
+The methods, both queries and update calls, that operate on token ids as inputs are *batch methods* that can receive vectors of token ids, i.e., batches of token ids, as input. The output of a batch method is a vector with records comprising a token id and a response belonging to this token id. Unless specified explicitly otherwise, the ordering of response elements for batch calls is not defined, i.e., is arbitrary. For batch calls, every token id in the input MUST occur in at least one response element. If the input contains duplicate token ids for update calls, the ledger must trap. Duplicate token ids in batch query calls may result in duplicate token ids in the response or may be deduplicated. The lenght of the response vector may be shorter than that of the input vector in batch query calls, e.g., in case of duplicate token ids in the input and a deduplication being performed by the method's implementation logic.
 
 Methods that modify the state of the ledger have responses that comprise transaction indices as part of the response in the success case. Such a transaction index is an index into the chain of blocks containing the transaction history of this ledger. The format of the transaction history is not part of the ICRC-7 standard, but will be published as a separate standard.
 
+All update methods have error variants defined for their responses that cover the error cases for the respective call. For query methods, error variants are only defined for methods for which a specific error needs to be handled. Other query calls do not have error variants defined for their responses.
+
 The response size for responses to messages sent to a canister smart contract on the IC is constrained to a fixed constant size. For requests that could result in larger response messages, the caller SHOULD ensure to constrain the input accordingly so that the response remains below the maximum allowed size, e.g., not query too many token ids in one batch call. If the size limit of a response is hit, the ledger canister MUST trap. The ledger SHOULD make sure that the response size does not exceed the permitted maximum *before* making any changes that might be committed to replicated state.
 
-Each defined Candid type is only presented once in the text upon its first use in a method. Likewise, error responses are not specified repeatedly for all methods after having been first explained.
+Each defined Candid type is only presented once in the text upon its first use in a method. Likewise, error responses are not always explained repeatedly for all methods after having been first explained.
 
 ### icrc7_collection_metadata
 
@@ -401,7 +403,7 @@ type RevokeTokensArgs = record {
     spender : opt Account;
 };
 
-type RevokeError = variant {
+type RevokeTokensError = variant {
     NonExistingTokenId;
     Unauthorized;
     ApprovalDoesNotExist;
@@ -411,7 +413,7 @@ type RevokeError = variant {
 
 ```candid "Methods" +=
 icrc7_revoke_token_approvals: (RevokeTokensArgs)
-    -> (vec record { token_id : nat; spender : Account; revoke_response : variant { Ok : nat; Err : RevokeError } });
+    -> (vec record { token_id : nat; spender : Account; revoke_response : variant { Ok : nat; Err : RevokeTokensError } });
 ```
 
 ### icrc7_revoke_collection_approvals
@@ -433,10 +435,15 @@ type RevokeCollectionArgs = record {
     from_subaccount : opt blob;
     spender : opt Account;
 };
+
+type RevokeCollectionError = variant {
+    ApprovalDoesNotExist;
+    GenericError : record { error_code : nat; message : text };
+};
 ```
 ```candid "Methods" +=
 icrc7_revoke_collection_approvals: (RevokeCollectionArgs)
-    -> (vec record { blob; spender : Account; variant { Ok : nat; Err : RevokeError } });
+    -> (vec record { blob; spender : Account; variant { Ok : nat; Err : RevokeCollectionError } });
 ```
 
 ### icrc7_is_approved
@@ -450,7 +457,7 @@ icrc7_is_approved : (spender : Account; from_subaccount : opt blob; token_id : n
 
 ### icrc7_get_token_approvals
 
-Returns the token-level approvals that exist for the given vector of `token_ids`.  The result is paginated, the mechanics of pagination are the same as for `icrc7_tokens` using `prev` and `take` to control pagination. Note that `take` refers to the number of returned elements to be requested. The `prev` parameter is an `TokenApproval` with the meaning that `TokenApproval`s following the provided one are returned, based on a sorting order over `TokenApproval`s implemented by the ledger.
+Returns the token-level approvals that exist for the given vector of `token_ids`.  The result is paginated, the mechanics of pagination are analogous to `icrc7_tokens` using `prev` and `take` to control pagination, with `prev` being of type `TokenApproval`. Note that `take` refers to the number of returned elements to be requested. The `prev` parameter is a `TokenApproval` element with the meaning that `TokenApproval`s following the provided one are returned, based on a sorting order over `TokenApproval`s implemented by the ledger.
 
 The response is a vector of `TokenApproval` elements. If multiple approvals exist for a token id, multiple entries of type `TokenApproval` with the same token id are contained in the response.
 
@@ -470,15 +477,19 @@ icrc7_get_approvals : (token_ids : vec nat, prev : opt TokenApproval; take : opt
 
 ### icrc7_get_collection_approvals
 
-Returns the collection-level approvals that exist for the specified `owner`. The result is paginated, the mechanics of pagination are the same as for `icrc7_tokens` using `prev` and `take` to control pagination. The `prev` parameter is an `ApprovalInfo` with the meaning that `ApprovalInfo`s following the provided one are returned, based on a sorting order over `ApprovalInfo`s implemented by the ledger.
+Returns the collection-level approvals that exist for the specified `owner`. The result is paginated, the mechanics of pagination are analogous to `icrc7_tokens` using `prev` and `take` to control pagination. The `prev` parameter is an `CollectionApproval` with the meaning that `CollectionApproval`s following the provided one are returned, based on a sorting order over `ApprovalInfo`s implemented by the ledger.
 
-The response is a vector of `ApprovalInfo` elements.
+The response is a vector of `CollectionApproval` elements.
 
 The ordering of the elements in the response is undefined. An implementation of the ledger can use any internal sorting order for the elements of the response to implement pagination.
 
+```candid "Type definitions" +=
+type CollectionApproval = ApprovalInfo;
+```
+
 ```candid "Methods" +=
-icrc7_get_collection_approvals : (owner : Account, prev : opt ApprovalInfo, take : opt nat32)
-    -> (vec ApprovalInfo) query;
+icrc7_get_collection_approvals : (owner : Account, prev : opt CollectionApproval, take : opt nat32)
+    -> (vec CollectionApproval) query;
 ```
 
 ### icrc7_supported_standards
