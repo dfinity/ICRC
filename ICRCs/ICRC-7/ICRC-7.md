@@ -86,7 +86,7 @@ type Value = variant {
 ```
 
 ```candid "Methods" +=
-icrc7_collection_metadata : () -> (metadata : vec record { text; Value } ) query;
+icrc7_collection_metadata : () -> (vec record { text; Value } ) query;
 ```
 
 ### icrc7_symbol
@@ -232,7 +232,7 @@ icrc7_owner_of : (token_ids : vec nat)
 Returns the balance of the `account` provided as an argument, i.e., the number of tokens held by the account. For a non-existing account, the value `0` is returned.
 
 ```candid "Methods" +=
-icrc7_balance_of : (account : Account) -> (balance : nat) query;
+icrc7_balance_of : (account : Account) -> (nat) query;
 ```
 
 ### icrc7_tokens
@@ -247,7 +247,7 @@ Each invocation is executed on the current memory state of the ledger. I.e., it 
 
 ```candid "Methods" +=
 icrc7_tokens : (prev : opt nat, take : opt nat32)
-    -> (token_ids : vec nat) query;
+    -> (vec nat) query;
 ```
 
 ### icrc7_tokens_of
@@ -256,7 +256,7 @@ Returns a vector of `token_id`s of all tokens held by `account`, sorted by `toke
 
 ```candid "Methods" +=
 icrc7_tokens_of : (account : Account, prev : opt nat, take : opt nat32)
-    -> (token_ids : vec nat) query;
+    -> (vec nat) query;
 ```
 
 ### icrc7_approve_tokens
@@ -336,7 +336,7 @@ type ApproveCollectionError = variant {
 
 ```candid "Methods" +=
 icrc7_approve_collection : (ApprovalInfo)
-    -> (approval_result : variant { Ok : nat; Err : ApproveCollectionError });
+    -> (variant { Ok : nat; Err : ApproveCollectionError });
 ```
 
 ### icrc7_transfer
