@@ -315,7 +315,7 @@ In accordance with ICRC-2, multiple approvals can exist for the collection for a
 
 An ICRC-7 ledger implementation does not need to keep track of expired approvals in its memory. This is important to help constrain unlimited growth of ledger memory over time. All historic approvals are contained in the block history the ledger creates.
 
-Collection-level approvals can be successfully created independently of currently owning tokens of the collection at approval time.
+Collection-level approvals can be successfully created independently of currently owning tokens of the collection at approval time. // FIX if we want to allow DoS mitigations here, this needs to be relaxed
 
 The `created_at_time` parameter indicates the time (as nanoseconds since the UNIX epoch in the UTC timezone) at which the client constructed the transaction.
 The ledger SHOULD reject transactions that have the `created_at_time` argument too far in the past or the future, returning `variant { TooOld }` and `variant { CreatedInFuture = record { ledger_time = ... } }` errors correspondingly.
@@ -558,6 +558,7 @@ This section gives selected security advice regarding the implementation of ledg
 It is strongly recommended that implementations of this standard take steps against protecting against Denial of Service (DoS) attacks. Some examples for recommended mitigations are given next:
   * Enforcing limits, such as the number of active approvals per token for token-level approvals or per principal for collection-level approvals, to constrain the state size of the ledger. Examples of such limits are given in this standard through various metadata attributes.
   * Enforcing rate limits, such as the number of transactions such as approvals or approval revocations can be performed on a per token and per principal basis to constrain the size of the transaction log for the ledger.
+  * The execution of operations such as approving collections and revoking such approvals could be constrained to parties who own at least one token. This helps prevent DoS by attackers who create a large number of principals and perform such operations without holding tokens.
 
 ### Protection Against Attacks Against Web Applications
 
