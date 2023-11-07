@@ -8,7 +8,7 @@
 
 ICRC-7 is the minimal standard for the implementation of Non-Fungible Tokens (NFTs) on the [Internet Computer](https://internetcomputer.org).
 
-A token ledger implementation following this standard hosts an *NFT collection* (*collection*), which is a set of NFT tokens.
+A token ledger implementation following this standard hosts an *NFT collection* (*collection*), which is a set of NFTs.
 
 ## Data
 
