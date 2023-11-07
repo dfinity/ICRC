@@ -10,6 +10,10 @@ ICRC-7 is the minimal standard for the implementation of Non-Fungible Tokens (NF
 
 A token ledger implementation following this standard hosts an *NFT collection* (*collection*), which is a set of NFT tokens.
 
+## Security Considerations
+
+We strongly advise developers who display images (e.g., the token logo or images referenced from NFT metadata) or strings in a Web application to follow Web application security best practices to avoid attacks such as XSS and CSRF resulting from malicious content provided by a ledger. As one particular example, images in the SVG format provide potential for attacks if used improperly. See, for example, the OWASP guidelines for protecting against [XSS](https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html) or [CSRF](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html).
+
 ## Data
 
 ### Accounts
@@ -391,7 +395,7 @@ Revokes the specified approvals for tokens given by `token_ids` from the set of 
 
 Only the owner of tokens can revoke approvals.
 
-The response is a vector comprising records with a `token_id` and a corresponding variant with `Ok` containing a transaction index indicating the success case or an `Err` variant indicating the error case.
+The response is a vector comprising records with a pair of a `token_id` and optional `account` indicating the approval that has been revoked and a corresponding variant with `Ok` containing a transaction index indicating the success case or an `Err` variant indicating the error case. In the error case the `spender` can be `null` in the case it is meaningless, e.g., in case of a `NonExistingTokenId` or `Unauthorized` error.
 
 Note that the size of responses on ICP is limited. Callers of this method SHOULD take particular care to not exceed the response limit for their inputs, e.g., in case there are many approvals defined for a token id or many token ids with a few approvals each are provided as input.
 
@@ -416,7 +420,7 @@ type RevokeTokensError = variant {
 
 ```candid "Methods" +=
 icrc7_revoke_token_approvals: (RevokeTokensArgs)
-    -> (vec record { token_id : nat; spender : Account; revoke_result : variant { Ok : nat; Err : RevokeTokensError } });
+    -> (vec record { token_id : nat; spender : opt Account; revoke_result : variant { Ok : nat; Err : RevokeTokensError } });
 ```
 
 ### icrc7_revoke_collection_approvals
