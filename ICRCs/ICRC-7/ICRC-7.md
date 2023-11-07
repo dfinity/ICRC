@@ -10,10 +10,6 @@ ICRC-7 is the minimal standard for the implementation of Non-Fungible Tokens (NF
 
 A token ledger implementation following this standard hosts an *NFT collection* (*collection*), which is a set of NFT tokens.
 
-## Security Considerations
-
-We strongly advise developers who display images (e.g., the token logo or images referenced from NFT metadata) or strings in a Web application to follow Web application security best practices to avoid attacks such as XSS and CSRF resulting from malicious content provided by a ledger. As one particular example, images in the SVG format provide potential for attacks if used improperly. See, for example, the OWASP guidelines for protecting against [XSS](https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html) or [CSRF](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html).
-
 ## Data
 
 ### Accounts
@@ -395,7 +391,7 @@ Revokes the specified approvals for tokens given by `token_ids` from the set of 
 
 Only the owner of tokens can revoke approvals.
 
-The response is a vector comprising records with a pair of a `token_id` and optional `account` indicating the approval that has been revoked and a corresponding variant with `Ok` containing a transaction index indicating the success case or an `Err` variant indicating the error case. In the error case the `spender` can be `null` in the case it is meaningless, e.g., in case of a `NonExistingTokenId` or `Unauthorized` error.
+The response is a vector comprising records with a pair indicating the approval comprising a `token_id` and optional `account` that has been revoked and a corresponding variant with `Ok` containing a transaction index indicating the success case or an `Err` variant indicating the error case. In the error case the `spender` can be `null` in the case it is meaningless, e.g., in case of a `NonExistingTokenId` or `Unauthorized` error.
 
 Note that the size of responses on ICP is limited. Callers of this method SHOULD take particular care to not exceed the response limit for their inputs, e.g., in case there are many approvals defined for a token id or many token ids with a few approvals each are provided as input.
 
@@ -522,9 +518,9 @@ For historical reasons, multiple NFT standards, such as the EXT standard, use th
 
 The base standard intentionally excludes some ledger functions essential for building a rich DeFi ecosystem, for example:
 
-  - Reliable transaction notifications for smart contracts.
-  - The block structure and the interface for fetching blocks.
-  - Pre-signed transactions.
+  * Reliable transaction notifications for smart contracts.
+  * The block structure and the interface for fetching blocks.
+  * Pre-signed transactions.
 
 The standard defines the `icrc7_supported_standards` endpoint to accommodate these and other future extensions.
 This endpoint returns names of all specifications (e.g., `"ICRC-42"` or `"DIP-20"`) implemented by the ledger as well as URLs.
@@ -552,6 +548,20 @@ The ledger SHOULD use the following algorithm for transaction deduplication if t
   * Otherwise, the transfer is a new transaction.
 
 If the client has not set the `created_at_time` field, the ledger SHOULD NOT deduplicate the transaction.
+
+## Security Considerations
+
+This section gives selected security advice regarding the implementation of ledgers following this standard and Web applications using ledgers following this standard. Note that the advice is not exhaustive and only focuses on few selected areas.
+
+### Protection Against Denial of Service Attacks
+
+It is strongly recommended that implementations of this standard take steps against protecting against Denial of Service (DoS) attacks. Some examples for recommended mitigations are given next:
+  * Enforcing limits, such as the number of active approvals per token for token-level approvals or per principal for collection-level approvals, to constrain the state size of the ledger. Examples of such limits are given in this standard through various metadata attributes.
+  * Enforcing rate limits, such as the number of transactions such as approvals or approval revocations can be performed on a per token and per principal basis to constrain the size of the transaction log for the ledger.
+
+### Protection Against Attacks Against Web Applications
+
+We strongly advise developers who display images (e.g., the token logo or images referenced from NFT metadata) or strings in a Web application to follow Web application security best practices to avoid attacks such as XSS and CSRF resulting from malicious content provided by a ledger. As one particular example, images in the SVG format provide potential for attacks if used improperly. See, for example, the OWASP guidelines for protecting against [XSS](https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html) or [CSRF](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html).
 
 
 <!--
