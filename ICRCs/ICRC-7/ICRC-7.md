@@ -469,7 +469,7 @@ The ordering of the elements in the response is undefined. An implementation of 
 ```candid "Type definitions" +=
 type TokenApproval = record {
     token_id : nat;
-    approvalInfo : ApprovalInfo;
+    approval_info : ApprovalInfo;
 };
 ```
 
