@@ -551,11 +551,11 @@ If the client has not set the `created_at_time` field, the ledger SHOULD NOT ded
 
 ## Security Considerations
 
-This section gives selected security advice regarding the implementation of ledgers following this standard and Web applications using ledgers following this standard. Note that the advice is not exhaustive and only focuses on few selected areas.
+This section highlights some selected areas crucial for security regarding the implementation of ledgers following this standard and Web applications using ledgers following this standard. Note that this is not exhaustive by any means, but rather points out a few selected important areas.
 
 ### Protection Against Denial of Service Attacks
 
-It is strongly recommended that implementations of this standard take steps against protecting against Denial of Service (DoS) attacks. Some examples for recommended mitigations are given next:
+It is strongly recommended that implementations of this standard take steps towards protecting against Denial of Service (DoS) attacks. Some examples for recommended mitigations are given next:
   * Enforcing limits, such as the number of active approvals per token for token-level approvals or per principal for collection-level approvals, to constrain the state size of the ledger. Examples of such limits are given in this standard through various metadata attributes.
   * Enforcing rate limits, such as the number of transactions such as approvals or approval revocations can be performed on a per token and per principal basis to constrain the size of the transaction log for the ledger.
   * The execution of operations such as approving collections and revoking such approvals could be constrained to parties who own at least one token. This helps prevent DoS by attackers who create a large number of principals and perform such operations without holding tokens.
