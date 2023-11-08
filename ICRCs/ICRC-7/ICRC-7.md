@@ -1,6 +1,6 @@
 |ICRC|Title|Author|Discussions|Status|Type|Category|Created|
 |:----:|:----:|:----:|:----:|:----:|:----:|:----:|:----:|
-|7|Minimal Non-Fungible Token (NFT) Standard|Ben Zhai (@benjizhai)|https://github.com/dfinity/ICRC/issues/7|Draft|Standards Track||2023-01-31|
+|7|Minimal Non-Fungible Token (NFT) Standard|Ben Zhai (@benjizhai), Austin Fatheree (@skilesare), Dieter Sommer (@dietersommer), Thomas (@sea-snake), Moritz Fuller (@letmejustputthishere), Matthew Harmon|https://github.com/dfinity/ICRC/issues/7|Draft|Standards Track||2023-01-31|
 
 
 
@@ -80,7 +80,7 @@ The following metadata fields are defined by ICRC-7, starting with general colle
   * `icrc7:supply_cap` of type `nat` (optional): The current maximum supply for the token beyond which minting new tokens is not possible. When present, should be the same as the result of the [`icrc7_supply_cap`](#icrc7_supply_cap) query call.
 
 The following are the more technical, implementation-oriented, metadata elements:
-  * `icrc7:max_approvals_per_token_or_collection` of type `nat` (optional): The maximum number of active approvals this ledger implementation allows per token or per principal for the collection. When present, should be the same as the result of the [`icrc7_max_approvals_per_token_or_collection`](#icrc7_max_approvals_per_token_or_collection) query call.
+  * `icrc7:max_approvals_per_token_or_collection` of type `nat` (optional): The maximum number of active approvals this ledger implementation allows per-token or per-principal for the collection. When present, should be the same as the result of the [`icrc7_max_approvals_per_token_or_collection`](#icrc7_max_approvals_per_token_or_collection) query call.
   * `icrc7:max_query_batch_size` of type `nat` (optional): The maximum batch size for batch query calls this ledger implementation supports. When present, should be the same as the result of the [`icrc7_max_query_batch_size`](#icrc7_max_query_batch_size) query call.
   * `icrc7:max_update_batch_size` of type `nat` (optional): The maximum batch size for batch update calls this ledger implementation supports. When present, should be the same as the result of the [`icrc7_max_update_batch_size`](#icrc7_max_update_batch_size) query call.
   * `icrc7:default_take_value` of type `nat` (optional): The default value this ledger uses for the `take` pagination parameter which is used in some queries. When present, should be the same as the result of the [`icrc7_default_take_value`](#icrc7_default_take_value) query call.
@@ -217,6 +217,9 @@ Returns the token metadata for `token_ids`, a list of token ids. Each tuple in t
 
 ICRC-7 does not specify the representation of token metadata any further than that it is represented in a generic manner as a vector of `(text, Value)`-pairs. This is left to future standards, the collections, or the implementations in order to not constrain the utility and applicability of this standard.
 
+> [!NOTE]
+> FIX we are still missing best practices on how to encode data types that are missing in the `Value` type; `bool` seems to be the only one to address right now, e.g., as `nat` or `blob`
+
 ```candid "Type definitions" +=
 // Generic value in accordance with ICRC-3
 type Value = variant { 
@@ -240,8 +243,11 @@ Returns the owner `Account` of each token in a list `token_ids` of token ids. Th
 
 ```candid "Methods" +=
 icrc7_owner_of : (token_ids : vec nat)
-    -> (vec record { token_id : nat; account : Account }) query; // FIX: should account be opt to allow, e.g., not migrated tokens to be handled as null?
+    -> (vec record { token_id : nat; account : Account }) query;
 ```
+
+ > [!NOTE]
+ > FIX: should `account` be opt to allow, e.g., not migrated tokens to be handled as null? Or should implementors rather omit a not-migrated token_id from the output in this case (probably the nicer solution).
 
 ### icrc7_balance_of
 
@@ -331,7 +337,10 @@ In accordance with ICRC-2, multiple approvals can exist for the collection for a
 
 An ICRC-7 ledger implementation does not need to keep track of expired approvals in its memory. This is important to help constrain unlimited growth of ledger memory over time. All historic approvals are contained in the block history the ledger creates.
 
-Collection-level approvals can be successfully created independently of currently owning tokens of the collection at approval time. // FIX if we want to allow DoS mitigations here, this needs to be relaxed
+Collection-level approvals can be successfully created independently of currently owning tokens of the collection at approval time.
+
+> [!NOTE]
+> FIX if we want to allow DoS mitigations here, this needs to be relaxed so that collection-level approvals should only be possible in case someone holds at least one token; we could also leave the aspect unspecified whether you need to hold tokens and leave it to an implementation
 
 The `created_at_time` parameter indicates the time (as nanoseconds since the UNIX epoch in the UTC timezone) at which the client constructed the transaction.
 The ledger SHOULD reject transactions that have the `created_at_time` argument too far in the past or the future, returning `variant { TooOld }` and `variant { CreatedInFuture = record { ledger_time = ... } }` errors correspondingly.
@@ -587,7 +596,7 @@ It is strongly recommended that implementations of this standard take steps towa
 
 ### Protection Against Attacks Against Web Applications
 
-We strongly advise developers who display images (e.g., the token logo or images referenced from NFT metadata) or strings in a Web application to follow Web application security best practices to avoid attacks such as XSS and CSRF resulting from malicious content provided by a ledger. As one particular example, images in the SVG format provide potential for attacks if used improperly. See, for example, the OWASP guidelines for protecting against [XSS](https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html) or [CSRF](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html).
+We strongly advise developers who display untrusted images (e.g., the token logo or images referenced from NFT metadata) or strings in a Web application to follow Web application security best practices to avoid attacks such as XSS and CSRF resulting from malicious content provided by a ledger. As one particular example, images in the SVG format provide potential for attacks if used improperly. See, for example, the OWASP guidelines for protecting against [XSS](https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html) or [CSRF](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html).
 
 
 <!--
