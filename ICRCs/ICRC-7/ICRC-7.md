@@ -41,6 +41,8 @@ Methods that modify the state of the ledger have responses that comprise transac
 
 All update methods have error variants defined for their responses that cover the error cases for the respective call. For query methods, error variants are only defined for methods for which specific errors need to be handled. Other query calls do not have error variants defined for their responses to keep the API simple. Both query and update calls can trap in specific error circumstances instead of returning an error.
 
+All update methods take a `memo` parameter as input. An implementation of this standard SHOULD allow `memo`s with a minimum of 32 bytes in size for alle `memo`s.
+
 The size of responses to messages sent to a canister smart contract on the IC is constrained to a fixed constant size. For requests that could potentially result in larger response messages that breach this limit, the caller SHOULD ensure to constrain the input of the methods accordingly so that the response remains below the maximum allowed size, e.g., should not query too many token ids in one batch call. If the size limit of a response is hit, the ledger canister MUST trap. The ledger SHOULD make sure that the response size does not exceed the permitted maximum *before* making any changes that might be committed to replicated state.
 
 Each defined Candid type is only presented once in the standard text upon its first use in a method. Likewise, error responses are not always explained repeatedly for all methods after having been explained already earlier.
@@ -70,6 +72,7 @@ The following are the more technical, implementation-oriented, metadata elements
   * `icrc7:default_take_value` of type `nat` (optional): The default value this ledger uses for the `take` pagination parameter which is used in some queries. When present, should be the same as the result of the [`icrc7_default_take_value`](#icrc7_default_take_value) query call.
   * `icrc7:max_take_value` of type `nat` (optional): The maximum `take` value for paginated query calls this ledger implementation supports. The value applies to all paginated queries the ledger exposes. When present, should be the same as the result of the [`icrc7_max_take_value`](#icrc7_max_take_value) query call.
   * `icrc7:max_revoke_approvals` of type `nat` (optional): The maximum number of approvals that may be revoked in a single invocation of `icrc7_revoke_token_approvals` or `icrc7_revoke_collection_approvals`. When present, should be the same as the result of the [`icrc7_max_revoke_approvals`](#icrc7_max_revoke_approvals) query call.
+  * `icrc7:max_memo_size` of type `nat` (optional): The maximum size of `memo`s as supported by an implementation. When present, should be the same as the result of the [`icrc7_max_memo_size`](#icrc7_max_memo_size) query call.
 
 Note that if max values specified through metadata are violated in a query call by providing larger argument lists or resulting in larger responses than permitted, the canister traps with an according system error message.
 
@@ -186,9 +189,17 @@ Returns the maximum number of approvals that may be revoked in a single invocati
 icrc7_max_revoke_approvals : () -> (opt nat) query;
 ```
 
+### icrc7_max_memo_size
+
+Returns the maximum size of `memo`s as supported by an implementation.
+
+```candid "Methods" +=
+icrc7_max_memo_size : () -> (opt nat) query;
+```
+
 ### icrc7_token_metadata
 
-Returns the token metadata for `token_ids`, a list of token ids. Each tuple in the response vector comprises a token id as first element and the metadata corresponding to this token expressed as a `Value` as second element.
+Returns the token metadata for `token_ids`, a list of token ids. Each tuple in the response vector comprises a token id as first element and the metadata corresponding to this token expressed as an optional record comprising `text` and `Value` pairs expressing the token metadata as second element. In case a token does not exist, its associated metadata vector is `null`. If a token does not have metadata, its associated metadata vector is the empty vector.
 
 ```candid "Type definitions" +=
 // Generic value in accordance with ICRC-3
@@ -204,27 +215,16 @@ type Value = variant {
 
 ```candid "Methods" +=
 icrc7_token_metadata : (token_ids : vec nat)
-    -> (vec record { nat; opt Value }) query;
+    -> (vec record { nat; opt vec record { text; Value } }) query;
 ```
 
 ### icrc7_owner_of
 
 Returns the owner `Account` of each token in a list `token_ids` of token ids. The response elements are sorted following an ordering depending on the ledger implementation.
 
-For non-existing token ids, the `NonExistingTokenId` error variant is returned.
-
-The `NotMigrated` error variant is used to help migration of NFT ledgers of other standards using ICP AccountId instead of ICRC-1 Account to store the owners. See section [Migration Path for Ledgers Using ICP AccountId](#migration-path-for-ledgers-using-icp-accountid). The `GenericError` type is used for expressing any other error and is not further specified in ICRC-7.
-
-```candid "Type definitions" +=
-type OwnerOfError = variant {
-    NonExistingTokenId;
-    NotMigrated;
-    GenericError : record { error_code : nat; message : text };
-};
-```
 ```candid "Methods" +=
 icrc7_owner_of : (token_ids : vec nat)
-    -> (vec record { token_id : nat; account : variant { Ok : Account; Err : OwnerOfError } }) query;
+    -> (vec record { token_id : nat; account : Account }) query; // FIX: should account be opt to allow, e.g., not migrated tokens to be handled as null?
 ```
 
 ### icrc7_balance_of
@@ -404,6 +404,8 @@ type RevokeTokensArgs = record {
     token_ids : vec nat;
     from_subaccount : opt blob;
     spender : opt Account;
+    memo : opt blob;
+    created_at_time : opt nat64;
 };
 
 type RevokeTokensError = variant {
@@ -437,6 +439,8 @@ An ICRC-7 ledger implementation does not need to keep track of revoked approvals
 type RevokeCollectionArgs = record {
     from_subaccount : opt blob;
     spender : opt Account;
+    memo : opt blob;
+    created_at_time : opt nat64;
 };
 
 type RevokeCollectionError = variant {
@@ -512,7 +516,11 @@ record { name = "ICRC-7"; url = "https://github.com/dfinity/ICRC/ICRCs/ICRC-7"; 
 
 ## Migration Path for Ledgers Using ICP AccountId
 
-For historical reasons, multiple NFT standards, such as the EXT standard, use the ICP `AccountId` (a hash of the principal and subaccount) instead of the ICRC-1 `Account` (a pair of principal and subaccount) to store the owners. Since the ICP `AccountId` can be calculated from an ICRC-1 `Account`, but computability does not hold in the inverse direction, there is no way for a ledger implementing ICP `AccountId` to display `icrc7_owner_of` data. To help with the transition, ledgers using ICP `AccountId` can return error type `NotMigrated` for tokens that exist, but have not migrated to ICRC-1 `Account` yet (the owner of the NFT token would need to call a migration endpoint in the canister as part of the migration process, which may take an arbitrary amount of time to migrate all tokens of all users).
+For historical reasons, multiple NFT standards, such as the EXT standard, use the ICP `AccountIdentifier` or `AccountId` (a hash of the principal and subaccount) instead of the ICRC-1 `Account` (a pair of principal and subaccount) to store the owners. Since the ICP `AccountId` can be calculated from an ICRC-1 `Account`, but computability does not hold in the inverse direction, there is no way for a ledger implementing ICP `AccountId` to display `icrc7_owner_of` data.
+
+This standard does not mandate any provisions regading the handling of tokens managed through the `AccountId` regime and leaves this open to a future ICRC standard that ledgers may opt to implement or ledger-specific implementations.
+
+Ledgers using the ICP `AccountId` can omit a token that has not yet been migrated to an ICRC-1 account from the response of the `icrc7_owner_of` query. The ledger implementation may offer an additional method to allow clients to obtain further information on this token, e.g., whether it is a token based on the ICP `AccountId`. `AccountId`-based ledgers that want to support ICRC-7 need to implement a strategy to become ICRC-7 compliant, e.g., by requiring all users to call a migration endpoint to migrate their tokens to an ICRC-1-based representation. Different approaches are feasible, however, and the choice of migration approach is left to the ledger implementation and not mandated in this standard.
 
 ## Extensions
 
