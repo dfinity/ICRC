@@ -10,7 +10,9 @@ ICRC-7 is the minimal standard for the implementation of Non-Fungible Tokens (NF
 
 A token ledger implementation following this standard hosts an *NFT collection* (*collection*), which is a set of NFTs.
 
-## Data
+## Data Representation
+
+This section specifies the core principles of data representation used in this standard.
 
 ### Accounts
 
@@ -33,19 +35,31 @@ Tokens in ICRC-7 are identified through _token identifiers_, or _token ids_. A t
 
 ## Methods
 
-### Conventions
+### Generally-Applicable Specification
 
-The methods, both queries and update calls, that operate on token ids as inputs are *batch methods* that can receive vectors of token ids, i.e., batches of token ids, as input. The batch methods are to be used also for operations on single token ids — no separate methods are provided for this purpose. The output of most batch methods is a vector of records comprising a token id and a response for the token id. Unless specified explicitly otherwise, the ordering of response elements for batch calls is not defined, i.e., is arbitrary. For batch calls, every distinct token id of the input MUST occur in at least one response element. If the input contains duplicate token ids for an update call, the ledger must trap. Duplicate token ids in batch query calls may result in duplicate token ids in the response or may be deduplicated at the discretion of the ledger. Thus, the lenght of the response vector may be shorter than that of the input vector in batch query calls, e.g., in case of duplicate token ids in the input and a deduplication being performed by the method's implementation logic. For update batch calls, the method's logic MUST be executed on all provided token ids or none.
+We next outline general aspects of the specification and behaviour of query and update calls defined in this standard. Those general aspects are not repeated with every method, but specified once for all quert and update calls in this section.
+
+#### Batch Methods
+
+The methods, both queries and update calls, that operate on token ids as inputs are *batch methods* that can receive vectors of token ids, i.e., batches of token ids, as input. The batch methods are to be used also for operations on single token ids (the non-batch case) — no separate methods are provided for this purpose. The output of most batch methods is a vector of records comprising a token id and a response for the token id. Unless specified explicitly otherwise, the ordering of response elements for batch calls is not defined, i.e., is arbitrary. For batch calls, every distinct token id of the input MUST occur in at least one response element. If the input contains duplicate token ids for an update call, the ledger must trap. Duplicate token ids in batch query calls may result in duplicate token ids in the response or may be deduplicated at the discretion of the ledger. Thus, the lenght of the response vector may be shorter than that of the input vector in batch query calls, e.g., in case of duplicate token ids in the input and a deduplication being performed by the method's implementation logic. For update batch calls, the method's logic MUST be executed on all provided token ids or none.
+
+#### State-Changing Methods
 
 Methods that modify the state of the ledger have responses that comprise transaction indices as part of the response in the success case. Such a transaction index is an index into the chain of blocks containing the transaction history of this ledger. Access to the transaction history is not part of the ICRC-7 standard, but will be published as a separate standard, similar to how ICRC-3 specifies access to ICRC-1 and ICRC-2 historic blocks.
 
-All update methods have error variants defined for their responses that cover the error cases for the respective call. For query methods, error variants are only defined for methods for which specific errors need to be handled. Other query calls do not have error variants defined for their responses to keep the API simple. Both query and update calls can trap in specific error circumstances instead of returning an error.
+#### Error Handling
 
-All update methods take a `memo` parameter as input. An implementation of this standard SHOULD allow `memo`s with a minimum of 32 bytes in size for alle `memo`s.
+All update methods have error variants defined for their responses that cover the error cases for the respective call. Query methods do not have error variants defined in order to keep their API easy to use.
+
+Both query and update calls can trap in specific error circumstances instead of returning an error. The general principle is that a ledger SHOULD, or, depending on the recoverability, MUST trap in case of an error that is not related to a specific token and thus can be addressed by the error response for the token, but is a general error related to the call. For example, a ledger SHOULD trap if a limit expressed through an `icrc7:max_...` metadata attribute is violated, e.g., the maximum batch size is exceeded, or if `to` equals `from` when transferring tokens. The ledger MUST trap in case of an error that it cannot recover from, i.e., it cannot execute the call and perform all state changes according to specification.
+
+#### Other Aspects
 
 The size of responses to messages sent to a canister smart contract on the IC is constrained to a fixed constant size. For requests that could potentially result in larger response messages that breach this limit, the caller SHOULD ensure to constrain the input of the methods accordingly so that the response remains below the maximum allowed size, e.g., should not query too many token ids in one batch call. If the size limit of a response is hit, the ledger canister MUST trap. The ledger SHOULD make sure that the response size does not exceed the permitted maximum *before* making any changes that might be committed to replicated state.
 
-Each defined Candid type is only presented once in the standard text upon its first use in a method. Likewise, error responses are not always explained repeatedly for all methods after having been explained already earlier.
+All update methods take a `memo` parameter as input. An implementation of this standard SHOULD allow memos of at least 32 bytes in length for all methods.
+
+Each defined Candid type is only specified once in the standard text upon its first use. Likewise, error responses are not always explained repeatedly for all methods after having been explained already upon their first use.
 
 ### icrc7_collection_metadata
 
@@ -201,6 +215,8 @@ icrc7_max_memo_size : () -> (opt nat) query;
 
 Returns the token metadata for `token_ids`, a list of token ids. Each tuple in the response vector comprises a token id as first element and the metadata corresponding to this token expressed as an optional record comprising `text` and `Value` pairs expressing the token metadata as second element. In case a token does not exist, its associated metadata vector is `null`. If a token does not have metadata, its associated metadata vector is the empty vector.
 
+ICRC-7 does not specify the representation of token metadata any further than that it is represented in a generic manner as a vector of `(text, Value)`-pairs. This is left to future standards, the collections, or the implementations in order to not constrain the utility and applicability of this standard.
+
 ```candid "Type definitions" +=
 // Generic value in accordance with ICRC-3
 type Value = variant { 
@@ -265,7 +281,7 @@ Entitles a `spender`, indicated through an `Account`, to transfer NFTs on behalf
 
 The response is a vector comprising records with a `token_id` as first element and an `Ok` variant with the transaction index for the success case or an `Err` variant indicating an error as second element.
 
-The ledger SHOULD reject the call if the spender account owner is equal to the caller account owner.
+The ledger SHOULD trap if the spender account owner is equal to the caller account owner.
 
 An approval that has been created, has not expired (i.e., the `expires_at` field is a date in the future), has not been revoked, and has not been replaced with a new approval is *active*, i.e., can allow the approved party to initiate a transfer. Only one approval can be active for a given `(token_id, spender)` pair (the `from_subaccount` of the approval must be equal to the subaccount the token is held on).
 
@@ -307,7 +323,7 @@ Entitles a `spender`, indicated through an `Account`, to transfer any NFT of the
 
 The response contains a single element with the `Ok` variant containing the transaction index of the collection-level approval in the success case or an error `Err` otherwise.
 
-The ledger SHOULD reject the call if the spender account owner is equal to the caller account owner.
+The ledger SHOULD trap if the spender account owner is equal to the caller account owner.
 
 An approval that has been created, has not expired (i.e., the `expires_at` field is a date in the future), has not been revoked, and has not been replaced with a new approval is *active*, i.e., can allow the approved party to initiate a transfer. Only one approval can be active for a given `(spender, from_subaccount)` pair. Note that it is not required that tokens are held by the caller on their `from_subaccount` for the approval to be active.
 
@@ -345,6 +361,8 @@ Transfers one or more tokens from the `from` account to the `to` account. The tr
 
 The response is a vector of records each comprising a `token_id` and a corresponding `transfer_result` indicating success or error. In the success case, the `Ok` variant indicates the transaction index of the transfer, in the error case, the `Err` variant indicates the error through `TransferError`.
 
+The ledger SHOULD trap if `to` is equal to `from`.
+
 A transfer clears all active token-level approvals for the successfully transferred tokens. This implicit clearing of approvals only clears token-level approvals and never touches collection-level approvals.
 
 ```candid "Type definitions" +=
@@ -374,7 +392,6 @@ icrc7_transfer : (TransferArgs)
 ```
 
 If the caller principal is not permitted to act on a token id, then the token id receives the `Unauthorized` error response. This is the case if someone not owning a token and not being the spender in an active token-level or collection-level approval attempts to transfer a token or the token is not held in the subaccount specified in the `from` account.
-
 
 The `memo` parameter is an arbitrary blob that is not interpreted by the ledger.
 The ledger SHOULD allow memos of at least 32 bytes in length.
