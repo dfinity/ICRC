@@ -80,7 +80,7 @@ The following metadata fields are defined by ICRC-7, starting with general colle
   * `icrc7:supply_cap` of type `nat` (optional): The current maximum supply for the token beyond which minting new tokens is not possible. When present, should be the same as the result of the [`icrc7_supply_cap`](#icrc7_supply_cap) query call.
 
 The following are the more technical, implementation-oriented, metadata elements:
-  * `icrc7:max_approvals_per_token_or_collection` of type `nat` (optional): The maximum number of active approvals this ledger implementation allows per-token or per-principal for the collection. When present, should be the same as the result of the [`icrc7_max_approvals_per_token_or_collection`](#icrc7_max_approvals_per_token_or_collection) query call.
+  * `icrc7:max_approvals_per_token_or_collection` of type `nat` (optional): The maximum number of active approvals this ledger implementation allows per token or per principal for the collection. When present, should be the same as the result of the [`icrc7_max_approvals_per_token_or_collection`](#icrc7_max_approvals_per_token_or_collection) query call.
   * `icrc7:max_query_batch_size` of type `nat` (optional): The maximum batch size for batch query calls this ledger implementation supports. When present, should be the same as the result of the [`icrc7_max_query_batch_size`](#icrc7_max_query_batch_size) query call.
   * `icrc7:max_update_batch_size` of type `nat` (optional): The maximum batch size for batch update calls this ledger implementation supports. When present, should be the same as the result of the [`icrc7_max_update_batch_size`](#icrc7_max_update_batch_size) query call.
   * `icrc7:default_take_value` of type `nat` (optional): The default value this ledger uses for the `take` pagination parameter which is used in some queries. When present, should be the same as the result of the [`icrc7_default_take_value`](#icrc7_default_take_value) query call.
@@ -589,7 +589,7 @@ This section highlights some selected areas crucial for security regarding the i
 
 ### Protection Against Denial of Service Attacks
 
-It is strongly recommended that implementations of this standard take steps towards protecting against Denial of Service (DoS) attacks. Some examples for recommended mitigations are given next:
+It is strongly recommended that implementations of this standard take steps towards protecting against Denial of Service (DoS) attacks. Some non-exhaustive list of examples for recommended mitigations are given next:
   * Enforcing limits, such as the number of active approvals per token for token-level approvals or per principal for collection-level approvals, to constrain the state size of the ledger. Examples of such limits are given in this standard through various metadata attributes.
   * Enforcing rate limits, such as the number of transactions such as approvals or approval revocations can be performed on a per token and per principal basis to constrain the size of the transaction log for the ledger.
   * The execution of operations such as approving collections and revoking such approvals could be constrained to parties who own at least one token. This helps prevent DoS by attackers who create a large number of principals and perform such operations without holding tokens.
