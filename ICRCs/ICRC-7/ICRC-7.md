@@ -41,17 +41,25 @@ We next outline general aspects of the specification and behaviour of query and 
 
 #### Batch Methods
 
-The methods, both queries and update calls, that operate on token ids as inputs are *batch methods* that can receive vectors of token ids, i.e., batches of token ids, as input. The batch methods are to be used also for operations on single token ids (the non-batch case) — no separate methods are provided for this purpose. The output of most batch methods is a vector of records comprising a token id and a response for the token id. Unless specified explicitly otherwise, the ordering of response elements for batch calls is not defined, i.e., is arbitrary. For batch calls, every distinct token id of the input MUST occur in at least one response element. If the input contains duplicate token ids for an update call, the ledger must trap. Duplicate token ids in batch query calls may result in duplicate token ids in the response or may be deduplicated at the discretion of the ledger. Thus, the lenght of the response vector may be shorter than that of the input vector in batch query calls, e.g., in case of duplicate token ids in the input and a deduplication being performed by the method's implementation logic. For update batch calls, the method's logic MUST be executed on all provided token ids or none.
+The methods, both queries and update calls, that operate on token ids as inputs are *batch methods* that can receive vectors of token ids, i.e., batches of token ids, as input. The batch methods are to be used also for operations on single token ids (the non-batch case) — no separate methods are provided for this purpose. Most batch methods provide a vector of records comprising a token id and a response for the token id as output. Unless specified explicitly otherwise, the ordering of response elements for batch calls is not defined, i.e., is arbitrary. For batch calls, every distinct token id of the input MUST occur in at least one response element.
+
+**Batch Update Methods**
+
+If the input contains duplicate token ids for an update call, the ledger MUST trap. For update batch calls, the method's logic MUST be executed on all provided token ids or none, but it need not be successful for all, in which case error responses are returned for token ids for which exection was not successful.
+
+**Batch Query Methods**
+
+Duplicate token ids in batch query calls may result in duplicate token ids in the response or may be deduplicated at the discretion of the ledger. Thus, the lenght of the response vector may be shorter than that of the input vector in batch query calls, e.g., in case of duplicate token ids in the input and a deduplication being performed by the method's implementation logic.
 
 #### State-Changing Methods
 
-Methods that modify the state of the ledger have responses that comprise transaction indices as part of the response in the success case. Such a transaction index is an index into the chain of blocks containing the transaction history of this ledger. Access to the transaction history is not part of the ICRC-7 standard, but will be published as a separate standard, similar to how ICRC-3 specifies access to ICRC-1 and ICRC-2 historic blocks.
+Methods that modify the state of the ledger have responses that comprise transaction indices as part of the response in the success case. Such a transaction index is an index into the chain of blocks containing the transaction history of this ledger. The details of how to access the transaction history is not part of the ICRC-7 standard, but will be published as a separate standard, similar to how ICRC-3 specifies access to ICRC-1 and ICRC-2 historic blocks.
 
 #### Error Handling
 
-All update methods have error variants defined for their responses that cover the error cases for the respective call. Query methods do not have error variants defined in order to keep their API easy to use.
+All update methods have error variants defined for their responses that cover the error cases for the respective call. Batch update methods expose a top-level error for handling general errors applicable to the batch itself and a possible error per element in the batch. Query methods do not have error variants defined in order to keep their API easy to use.
 
-Both query and update calls can trap in specific error circumstances instead of returning an error. The general principle is that a ledger SHOULD, or, depending on the recoverability, MUST trap in case of an error that is not related to a specific token and thus can be addressed by the error response for the token, but is a general error related to the call. For example, a ledger SHOULD trap if a limit expressed through an `icrc7:max_...` metadata attribute is violated, e.g., the maximum batch size is exceeded, or if `to` equals `from` when transferring tokens. The ledger MUST trap in case of an error that it cannot recover from, i.e., it cannot execute the call and perform all state changes according to specification.
+Both query and update calls can trap in specific error cases instead of returning an error. The general principle is that a ledger SHOULD, or, depending on the recoverability, MUST, trap in case of an error that is not related to a specific token and thus can be addressed by the error response for the token, but is a general error related to the call. For example, a ledger SHOULD trap if a limit expressed through an `icrc7:max_...` metadata attribute is violated, e.g., the maximum batch size is exceeded. The ledger MUST trap in case of an error that it cannot recover from, i.e., it cannot execute the call and perform all state changes according to specification.
 
 #### Other Aspects
 
@@ -218,7 +226,7 @@ Returns the token metadata for `token_ids`, a list of token ids. Each tuple in t
 ICRC-7 does not specify the representation of token metadata any further than that it is represented in a generic manner as a vector of `(text, Value)`-pairs. This is left to future standards, the collections, or the implementations in order to not constrain the utility and applicability of this standard.
 
 > [!NOTE]
-> FIX we are still missing best practices on how to encode data types that are missing in the `Value` type; `bool` seems to be the only one to address right now, e.g., as `nat` or `blob`
+> Encoding of types not contained in the `Value` type SHOULD be handled according to best practices as put forth in the context of the ICRC-3 standard.
 
 ```candid "Type definitions" +=
 // Generic value in accordance with ICRC-3
@@ -241,13 +249,12 @@ icrc7_token_metadata : (token_ids : vec nat)
 
 Returns the owner `Account` of each token in a list `token_ids` of token ids. The response elements are sorted following an ordering depending on the ledger implementation.
 
+Note that tokens for which an ICRC-1 account cannot be found are not included in the response. This can be the case for a ledger that has originally used a different token standard, e.g., based on the ICP token standard, and tokens have not been fully migrated yet.
+
 ```candid "Methods" +=
-icrc7_owner_of : (token_ids : vec nat)
+icrc7_owner_of : (token_ids : vec opt nat)
     -> (vec record { token_id : nat; account : Account }) query;
 ```
-
- > [!NOTE]
- > FIX: should `account` be opt to allow, e.g., not migrated tokens to be handled as null? Or should implementors rather omit a not-migrated token_id from the output in this case (probably the nicer solution).
 
 ### icrc7_balance_of
 
@@ -268,7 +275,7 @@ For retrieving all tokens of the ledger, the pagination API is used such that th
 Each invocation is executed on the current memory state of the ledger. I.e., it is not possible to enumerate the exact list of token ids of the ledger at a given time or of a "snapshot" of the ledger state. Rather, the ledger state can change between the multiple calls required to enumerate all the tokens.
 
 ```candid "Methods" +=
-icrc7_tokens : (prev : opt nat, take : opt nat32)
+icrc7_tokens : (prev : opt nat, take : opt nat)
     -> (vec nat) query;
 ```
 
@@ -277,7 +284,7 @@ icrc7_tokens : (prev : opt nat, take : opt nat32)
 Returns a vector of `token_id`s of all tokens held by `account`, sorted by `token_id`.  The token ids in the response are sorted in any consistent sorting order used by the ledger. The result is paginated, the mechanics of pagination are analogous to `icrc7_tokens` using `prev` and `take` to control pagination.
 
 ```candid "Methods" +=
-icrc7_tokens_of : (account : Account, prev : opt nat, take : opt nat32)
+icrc7_tokens_of : (account : Account, prev : opt nat, take : opt nat)
     -> (vec nat) query;
 ```
 
@@ -309,18 +316,23 @@ type ApprovalInfo = record {
     created_at_time : opt nat64; 
 };
 
+type ApproveTokensBatchError = variant {
+    TooOld;
+    CreatedInFuture : record { ledger_time: nat64 };
+    GenericError : record { error_code : nat; message : text };
+};
+
 type ApproveTokensError = variant {
     NonExistingTokenId;
     Unauthorized;
-    TooOld;
-    CreatedInFuture : record { ledger_time: nat64 };
     GenericError : record { error_code : nat; message : text };
 };
 ```
 
 ```candid "Methods" +=
 icrc7_approve : (token_ids : vec nat, approval : ApprovalInfo)
-    -> (vec record { token_id : nat; approval_result : variant { Ok : nat; Err : ApproveTokensError } });
+    -> (variant { Ok : vec record { token_id : nat; approval_result : variant { Ok : nat; Err : ApproveTokensError } };
+                  Err : ApproveTokensBatchError);
 ```
 
 ### icrc7_approve_collection
@@ -339,11 +351,11 @@ An ICRC-7 ledger implementation does not need to keep track of expired approvals
 
 Collection-level approvals can be successfully created independently of currently owning tokens of the collection at approval time.
 
-> [!NOTE]
-> FIX if we want to allow DoS mitigations here, this needs to be relaxed so that collection-level approvals should only be possible in case someone holds at least one token; we could also leave the aspect unspecified whether you need to hold tokens and leave it to an implementation
-
 The `created_at_time` parameter indicates the time (as nanoseconds since the UNIX epoch in the UTC timezone) at which the client constructed the transaction.
 The ledger SHOULD reject transactions that have the `created_at_time` argument too far in the past or the future, returning `variant { TooOld }` and `variant { CreatedInFuture = record { ledger_time = ... } }` errors correspondingly.
+
+> [!NOTE]
+> FIX if we want to allow DoS mitigations here, this needs to be relaxed so that collection-level approvals should only be possible in case someone holds at least one token; we could also leave the aspect unspecified whether you need to hold tokens and leave it to an implementation
 
 Note: This method is analogous to `icrc7_approve_tokens`, but for approving whole collections. `ApprovalInfo` specifies the approval to be made for the collection.
 
@@ -370,7 +382,7 @@ Transfers one or more tokens from the `from` account to the `to` account. The tr
 
 The response is a vector of records each comprising a `token_id` and a corresponding `transfer_result` indicating success or error. In the success case, the `Ok` variant indicates the transaction index of the transfer, in the error case, the `Err` variant indicates the error through `TransferError`.
 
-The ledger SHOULD trap if `to` is equal to `from`.
+The ledger returns an `InvalidRecipient` error in case `to` equals `from`.
 
 A transfer clears all active token-level approvals for the successfully transferred tokens. This implicit clearing of approvals only clears token-level approvals and never touches collection-level approvals.
 
@@ -385,11 +397,16 @@ TransferArgs = record {
     created_at_time : opt nat64;
 };
 
+type TransferBatchError = variant {
+    TooOld;
+    InvalidRecipient;
+    CreatedInFuture : record { ledger_time: nat64 };
+    GenericError : record { error_code : nat; message : text };
+};
+
 type TransferError = variant {
     NonExistingTokenId;
     Unauthorized;
-    TooOld;
-    CreatedInFuture : record { ledger_time: nat64 };
     Duplicate : record { duplicate_of : nat };
     GenericError : record { error_code : nat; message : text };
 };
@@ -397,7 +414,8 @@ type TransferError = variant {
 
 ```candid "Methods" +=
 icrc7_transfer : (TransferArgs)
-    -> (vec record { token_id : nat; transfer_result : variant { Ok : nat; Err : TransferError } });
+    -> (variant { Ok : vec record { token_id : nat; transfer_result : variant { Ok : nat; Err : TransferError } };
+                  Err : TransferBatchError });
 ```
 
 If the caller principal is not permitted to act on a token id, then the token id receives the `Unauthorized` error response. This is the case if someone not owning a token and not being the spender in an active token-level or collection-level approval attempts to transfer a token or the token is not held in the subaccount specified in the `from` account.
@@ -421,6 +439,9 @@ The response is a vector comprising records with a pair indicating the approval 
 
 Note that the size of responses on ICP is limited. Callers of this method SHOULD take particular care to not exceed the response limit for their inputs, e.g., in case there are many approvals defined for a token id or many token ids with a few approvals each are provided as input.
 
+The `created_at_time` parameter indicates the time (as nanoseconds since the UNIX epoch in the UTC timezone) at which the client constructed the transaction.
+The ledger SHOULD reject transactions that have the `created_at_time` argument too far in the past or the future, returning `variant { TooOld }` and `variant { CreatedInFuture = record { ledger_time = ... } }` errors correspondingly.
+
 Revoking an approval for one or more token ids does not affect collection-level approvals.
 
 An ICRC-7 ledger implementation does not need to keep track of revoked approvals.
@@ -434,6 +455,12 @@ type RevokeTokensArgs = record {
     created_at_time : opt nat64;
 };
 
+type RevokeTokensBatchError = variant {
+    TooOld;
+    CreatedInFuture : record { ledger_time: nat64 };
+    GenericError : record { error_code : nat; message : text };
+};
+
 type RevokeTokensError = variant {
     NonExistingTokenId;
     Unauthorized;
@@ -444,7 +471,8 @@ type RevokeTokensError = variant {
 
 ```candid "Methods" +=
 icrc7_revoke_token_approvals: (RevokeTokensArgs)
-    -> (vec record { token_id : nat; spender : opt Account; revoke_result : variant { Ok : nat; Err : RevokeTokensError } });
+    -> (variant Ok : vec record { token_id : nat; spender : opt Account; revoke_result : variant { Ok : nat; Err : RevokeTokensError } };
+                Err : RevokeTokensBatchError);
 ```
 
 ### icrc7_revoke_collection_approvals
@@ -459,6 +487,9 @@ Revoking a collection-level approval does not affect token-level approvals for i
 
 Note that the size of responses on ICP is limited and callers of this method should take care to not exceed the response limit for their inputs by revoking too many collection-level approvals with one request.
 
+The `created_at_time` parameter indicates the time (as nanoseconds since the UNIX epoch in the UTC timezone) at which the client constructed the transaction.
+The ledger SHOULD reject transactions that have the `created_at_time` argument too far in the past or the future, returning `variant { TooOld }` and `variant { CreatedInFuture = record { ledger_time = ... } }` errors correspondingly.
+
 An ICRC-7 ledger implementation does not need to keep track of revoked approvals.
 
 ```candid "Type definitions" +=
@@ -469,14 +500,22 @@ type RevokeCollectionArgs = record {
     created_at_time : opt nat64;
 };
 
+type RevokeCollectionBatchError = variant {
+    TooOld;
+    CreatedInFuture : record { ledger_time: nat64 };
+    GenericError : record { error_code : nat; message : text };
+};
+
 type RevokeCollectionError = variant {
     ApprovalDoesNotExist;
     GenericError : record { error_code : nat; message : text };
 };
 ```
+
 ```candid "Methods" +=
 icrc7_revoke_collection_approvals: (RevokeCollectionArgs)
-    -> (vec record { spender : Account; from_subaccount : blob; revoke_result : variant { Ok : nat; Err : RevokeCollectionError } });
+    -> (variant Ok : vec record { spender : Account; from_subaccount : blob; revoke_result : variant { Ok : nat; Err : RevokeCollectionError } };
+                Err : RevokeCollectionBatchError);
 ```
 
 ### icrc7_is_approved
@@ -504,7 +543,7 @@ type TokenApproval = record {
 ```
 
 ```candid "Methods" +=
-icrc7_get_approvals : (token_ids : vec nat, prev : opt TokenApproval; take : opt nat32)
+icrc7_get_approvals : (token_ids : vec nat, prev : opt TokenApproval; take : opt nat)
     -> (vec TokenApproval) query;
 ```
 
@@ -521,7 +560,7 @@ type CollectionApproval = ApprovalInfo;
 ```
 
 ```candid "Methods" +=
-icrc7_get_collection_approvals : (owner : Account, prev : opt CollectionApproval, take : opt nat32)
+icrc7_get_collection_approvals : (owner : Account, prev : opt CollectionApproval, take : opt nat)
     -> (vec CollectionApproval) query;
 ```
 
