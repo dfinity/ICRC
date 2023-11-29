@@ -363,12 +363,14 @@ If the client has not set the `created_at_time` field, the ledger SHOULD NOT ded
 
 ICRC-30 builds on the ICRC-3 specification for defining the format for storing transactions in blocks of the log of the ledger. ICRC-3 defines a generic, extensible, block schema that can be further instantiated in standards implementing ICRC-3. We next define the concrete block schema for ICRC-30 as extension of the ICRC-3 block schema.
 
-All ICRC-30 batch methods result in one block per `token_id` in the batch. The blocks MUST appear in the block log in the same relative sequence as the token ids appear in the vector of input token identifiers. The block sequence corresponding to the token ids in the input can be interspersed with blocks from other (batch) methods executed by the ledger in an interleaved execution sequence.
+All ICRC-30 batch methods result in one block per `token_id` in the batch. The blocks MUST appear in the block log in the same relative sequence as the token ids appear in the vector of input token identifiers. The block sequence corresponding to the token ids in the input can be interspersed with blocks from other (batch) methods executed by the ledger in an interleaved execution sequence. This allows for high-performing ledger implementations that can make asynchronous calls to other canisters in the scope of operations on tokens.
 
 > [!NOTE]
 > **FIX:** Probably we do not want to require that the blocks for a batch tx appear in the block log in a contiguous sequence, i.e., it would not possible that multiple batch methods are executed in an interleaved execution sequence which would constrain implementations a lot. t.b.d.
 
 #### Generic ICRC-30 Block Schema
+
+The following generic schema extends the generic schema of ICRC-3 with ICRC-30-specific elements and applies to all block defintions.
 
 1. it MUST contain a field `ts: Nat` which is the timestamp of when the block was added to the Ledger
 2. its field `tx`
@@ -411,6 +413,8 @@ All ICRC-30 batch methods result in one block per `token_id` in the batch. The b
 4. it MUST contain a field `tx.to: Account`
 
 ## Extensions
+
+If extension standards are used in the context of ICRC-30, those are listed with the according `supported_standards` method of the base standard that gets extended.
 
 > [!NOTE]
 > FIX Do we need an extensions mechanism in ICRC-30 or would the extensions go into the base that ICRC-30 extends? Likely, it is the latter
