@@ -352,35 +352,35 @@ record { name = "ICRC-7"; url = "https://github.com/dfinity/ICRC/ICRCs/ICRC-7"; 
 
 ICRC-7 builds on the ICRC-3 specification for defining the format for storing transactions in blocks of the log of the ledger. ICRC-3 defines a generic, extensible, block schema that can be further instantiated in standards implementing ICRC-3. We next define the concrete block schema for ICRC-7 as extension of the ICRC-3 block schema.
 
-### Generic ICRC-7 block schema
+### Generic ICRC-7 Block Schema
 
 1. it MUST contain a field `ts: Nat` which is the timestamp of when the block was added to the Ledger
 2. its field `tx`
     1. CAN contain the `memo: Blob` field if specified by the user
     2. CAN contain the `ts: Nat` field if the user sets the `created_at_time` field in the request.
 
-### Mint block schema
+### Mint Block Schema
 
 1. the `tx.op` field MUST be `"7mint"`
 2. it MUST contain a field `tx.tid: Nat`
 3. it MUST contain a field `tx.to: Account`
 
-### Burn block schema
+### Burn Block Schema
 
 1. the `tx.op` field MUST be `"7burn"`
 2. it MUST contain a field `tx.tid: Nat`
 
 > [!Note]
-> A `tx.from` is not required as it is, due to the non-fungibility of the tokens, implied by `token_id` as the account that held the token when it was requested to be burned.
+> A `tx.from` field is not required as it is, due to the non-fungibility of the tokens, implied by `token_id` as the account that held the token when it was requested to be burned.
 
-### icrc7_transfer block schema
+### icrc7_transfer Block Schema
 
 1. the `tx.op` field MUST be `"7xfer"`
 2. it MUST contain a field `tx.tid: Nat`
 3. it MUST contain a field `tx.from: Account`
 4. it MUST contain a field `tx.to: Account`
 
-As `icrc7_transfer` is a batch method, it results in one block per `token_id` in the batch. The blocks MUST be generated in the same sequence as the token ids are listed in the `token_ids` vector.
+As `icrc7_transfer` is a batch method, it results in one block per `token_id` in the batch. The blocks MUST be appear in the block log in the same sequence as the token ids are listed in the `token_ids` vector.
 
 ## Migration Path for Ledgers Using ICP AccountId
 
