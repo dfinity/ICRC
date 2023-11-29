@@ -358,3 +358,47 @@ The ledger SHOULD use the following algorithm for transaction deduplication if t
   * Otherwise, the transfer is a new transaction.
 
 If the client has not set the `created_at_time` field, the ledger SHOULD NOT deduplicate the transaction.
+
+### ICRC-30 Block Schema
+
+ICRC-30 builds on the ICRC-3 specification for defining the format for storing transactions in blocks of the log of the ledger. ICRC-3 defines a generic, extensible, block schema that can be further instantiated in standards implementing ICRC-3. We next define the concrete block schema for ICRC-30 as extension of the ICRC-3 block schema.
+
+#### Generic ICRC-30 Block Schema
+
+1. it MUST contain a field `ts: Nat` which is the timestamp of when the block was added to the Ledger
+2. its field `tx`
+    1. CAN contain the `memo: Blob` field if specified by the user
+    2. CAN contain the `ts: Nat` field if the user sets the `created_at_time` field in the request.
+
+#### icrc30_approve_tokens Block Schema
+
+1. the `tx.op` field MUST be `"30approve_tokens"`
+2. it CAN contain a field `tx.token_id: Nat`
+3. it MUST contain a field `tx.from: Account`
+4. it MUST contain a field `tx.spender: Account`
+5. it CAN contain a field `tx.expires_at: Nat` if set by the user
+
+#### icrc30_approve_collection
+
+1. the `tx.op` field MUST be `"30approve_collection"`
+2. it MUST contain a field `tx.from: Account`
+3. it MUST contain a field `tx.spender: Account`
+4. it CAN contain a field `tx.expires_at: Nat` if set by the user
+
+#### icrc30_revoke_token_approvals
+
+1. the `tx.op` field MUST be `"30revoke_token_approval"`
+2. it MUST contain a field `tx.token_id: Nat`
+3. it MUST contain a field `tx.from: Account`
+4. it CAN contain a field `tx.spender: Account`
+
+#### icrc30_revoke_collection_approvals
+
+1. the `tx.op` field MUST be `"30revoke_collection_approval"`
+2. it MUST contain a field `tx.from: Account`
+3. it MUST contain a field `tx.spender: Account`
+
+## Extensions
+
+> [!NOTE]
+> FIX Do we need an extensions mechanism in ICRC-30 or would the extensions go into the base that ICRC-30 extends? Likely, it is the latter
