@@ -363,6 +363,11 @@ If the client has not set the `created_at_time` field, the ledger SHOULD NOT ded
 
 ICRC-30 builds on the ICRC-3 specification for defining the format for storing transactions in blocks of the log of the ledger. ICRC-3 defines a generic, extensible, block schema that can be further instantiated in standards implementing ICRC-3. We next define the concrete block schema for ICRC-30 as extension of the ICRC-3 block schema.
 
+All ICRC-30 batch methods result in one block per `token_id` in the batch. The blocks MUST appear in the block log in the same relative sequence as the token ids appear in the vector of input token identifiers. The block sequence corresponding to the token ids in the input can be interspersed with blocks from other (batch) methods executed by the ledger in an interleaved execution sequence.
+
+> [!NOTE]
+> **FIX:** Probably we do not want to require that the blocks for a batch tx appear in the block log in a contiguous sequence, i.e., it would not possible that multiple batch methods are executed in an interleaved execution sequence which would constrain implementations a lot. t.b.d.
+
 #### Generic ICRC-30 Block Schema
 
 1. it MUST contain a field `ts: Nat` which is the timestamp of when the block was added to the Ledger
@@ -378,25 +383,32 @@ ICRC-30 builds on the ICRC-3 specification for defining the format for storing t
 4. it MUST contain a field `tx.spender: Account`
 5. it CAN contain a field `tx.expires_at: Nat` if set by the user
 
-#### icrc30_approve_collection
+#### icrc30_approve_collection Block Schema
 
 1. the `tx.op` field MUST be `"30approve_collection"`
 2. it MUST contain a field `tx.from: Account`
 3. it MUST contain a field `tx.spender: Account`
 4. it CAN contain a field `tx.expires_at: Nat` if set by the user
 
-#### icrc30_revoke_token_approvals
+#### icrc30_revoke_token_approvals Block Schema
 
 1. the `tx.op` field MUST be `"30revoke_token_approval"`
 2. it MUST contain a field `tx.token_id: Nat`
 3. it MUST contain a field `tx.from: Account`
 4. it CAN contain a field `tx.spender: Account`
 
-#### icrc30_revoke_collection_approvals
+#### icrc30_revoke_collection_approvals Block Schema
 
 1. the `tx.op` field MUST be `"30revoke_collection_approval"`
 2. it MUST contain a field `tx.from: Account`
 3. it MUST contain a field `tx.spender: Account`
+
+#### icrc30_transfer_from Block Schema
+
+1. the `tx.op` field MUST be `"30xfer_from"`
+2. it CAN contain a field `tx.spender: Account`
+3. it MUST contain a field `tx.from: Account`
+4. it MUST contain a field `tx.to: Account`
 
 ## Extensions
 
