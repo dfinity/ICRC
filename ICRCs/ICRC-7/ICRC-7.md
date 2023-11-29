@@ -333,11 +333,6 @@ The ledger SHOULD reject transactions with the `Duplicate` error variant in case
 The `created_at_time` parameter indicates the time (as nanoseconds since the UNIX epoch in the UTC timezone) at which the client constructed the transaction.
 The ledger SHOULD reject transactions that have the `created_at_time` argument too far in the past or the future, returning `variant { TooOld }` and `variant { CreatedInFuture = record { ledger_time = ... } }` errors correspondingly.
 
-### ICRC-3-Compliant Blocks and Transactions
-
-> [!NOTE]
-> FIX Define ICRC-7 elements for ICRC-3 once ICRC-3 is stable; idea: every standard that builds on ICRC-3 needs to define the blocks it requires based on ICRC-3; this defines the storage format of blocks in the ledger's blockchain
-
 ### icrc7_supported_standards
 
 Returns the list of standards this ledger implements.
@@ -352,6 +347,40 @@ The result of the call should always have at least one entry:
 ```candid
 record { name = "ICRC-7"; url = "https://github.com/dfinity/ICRC/ICRCs/ICRC-7"; }
 ```
+
+## ICRC-7 Block Schema
+
+ICRC-3 defines a generic block schema that is left to a concrete implementation in standards implementing ICRC-3. ICRC-3 specifies the format of blocks including transactions that are written to the blockchain of the ledger. We next define the block schema for ICRC-7.
+
+### Generic ICRC-7 block schema
+
+1. it MUST contain a field `ts: Nat` which is the timestamp of when the block was added to the Ledger
+2. its field `tx`
+    1. CAN contain the `memo: Blob` field if specified by the user
+    2. CAN contain the `ts: Nat` field if the user sets the `created_at_time` field in the request.
+
+### Mint block schema
+
+1. the `tx.op` field MUST be `"7mint"`
+2. it MUST contain a field `tx.tid: Nat`
+3. it MUST contain a field `tx.to: Account`
+
+### Burn block schema
+
+1. the `tx.op` field MUST be `"7burn"`
+2. it MUST contain a field `tx.tid: Nat`
+
+> [!Note]
+> A `tx.from` is not required as it is, due to the non-fungibility of the tokens, implied by `token_id` as the account that held the token when it was requested to be burned.
+
+### icrc7_transfer block schema
+
+1. the `tx.op` field MUST be `"7xfer"`
+2. it MUST contain a field `tx.tid: Nat`
+3. it MUST contain a field `tx.from: Account`
+4. it MUST contain a field `tx.to: Account`
+
+As `icrc7_transfer` is a batch method, it results in one block per `token_id` in the batch. The blocks MUST be generated in the same sequence as the token ids are listed in the `token_ids` vector.
 
 ## Migration Path for Ledgers Using ICP AccountId
 
