@@ -10,6 +10,8 @@ ICRC-7 is the minimal standard for the implementation of Non-Fungible Tokens (NF
 
 A token ledger implementation following this standard hosts an *NFT collection* (*collection*), which is a set of NFTs.
 
+ICRC-7 does not handle approval-related operations such as `approve` and `transfer_from` itself. Those operations are specified by ICRC-30 which extends ICRC-7 with approval semantics.
+
 ## Data Representation
 
 This section specifies the core principles of data representation used in this standard.
@@ -18,7 +20,7 @@ This section specifies the core principles of data representation used in this s
 
 A `principal` can have multiple accounts. Each account of a `principal` is identified by a 32-byte string called `subaccount`. Therefore, an account corresponds to a pair `(principal, subaccount)`.
 
-The account identified by the subaccount with all bytes set to 0 is the _default account_ of the `principal`.
+The account identified by the subaccount with all bytes set to 0 is the *default account* of the `principal`.
 
 ```candid "Type definitions" +=
 type Subaccount = blob;
@@ -27,7 +29,7 @@ type Account = record { owner : principal; subaccount : opt Subaccount };
 
 The canonical textual representation of the account follows the [definition in ICRC-1](https://github.com/dfinity/ICRC-1/blob/main/standards/ICRC-1/TextualEncoding.md). ICRC-7 accounts have the same structure and follow the same overall principles as ICRC-1 accounts.
 
-ICRC-7 views the ICRC-1 `Account` as a primary concept, meaning that operations like transfers (or approvals as defined in the ICRC-30 extgension) always refer to the full account and not only the principal part thereof. Thus, some methods comprise an extra optional `from_subaccount` or `spender_subaccount` parameter that together with the caller form an account to perform the respective operation on. Leaving such subaccount parameter `null` always has the semantics of referring to the default subaccount comprised of all zeroes.
+ICRC-7 views the ICRC-1 `Account` as a primary concept, meaning that operations like transfers (or approvals as defined in ICRC-30) always refer to the full account and not only the principal part thereof. Thus, some methods comprise an extra optional `from_subaccount` or `spender_subaccount` parameter that together with the caller form an account to perform the respective operation on. Leaving such subaccount parameter `null` always has the semantics of referring to the default subaccount comprised of all zeroes.
 
 ### Token Identifiers
 
@@ -37,11 +39,11 @@ Tokens in ICRC-7 are identified through _token identifiers_, or _token ids_. A t
 
 ### Generally-Applicable Specification
 
-We next outline general aspects of the specification and behaviour of query and update calls defined in this standard. Those general aspects are not repeated with every method, but specified once for all quert and update calls in this section.
+We next outline general aspects of the specification and behaviour of query and update calls defined in this standard. Those general aspects are not repeated with the specification of every method, but specified once for all query and update calls in this section.
 
 #### Batch Methods
 
-The methods, both queries and update calls, that operate on token ids as inputs are *batch methods* that can receive vectors of token ids, i.e., batches of token ids, as input. The batch methods are to be used also for operations on single token ids (the non-batch case) — no separate methods are provided for this purpose. Most batch methods provide a vector of records comprising a token id and a response for the token id as output. Unless specified explicitly otherwise, the ordering of response elements for batch calls is not defined, i.e., is arbitrary. For batch calls, every distinct token id of the input MUST occur in at least one response element.
+The methods, both queries and update calls, that operate on token ids as inputs are *batch methods* that can receive vectors of token ids, i.e., batches of token ids, as input. The batch methods in this standard perform the same operation with the same parameters on a batch of token ids, thus the operations in the batch are closely related and are not independent operations. Some people refer to this modus operandi as bulk processing, but we prefer to use the more general term of batch processing also for this case. The batch methods must be used also for the common case of operations on single token ids (the non-batch case) — no separate methods are provided for this purpose. Most batch methods provide a vector of records comprising a token id and a response for the token id as output. Unless specified explicitly otherwise, the ordering of response elements for batch calls is not defined, i.e., is arbitrary. For batch calls, every distinct token id of the input MUST occur in at least one response element, where a response can be a success or error variant.
 
 **Batch Update Methods**
 
@@ -49,7 +51,7 @@ If the input contains duplicate token ids for an update call, the ledger MUST tr
 
 **Batch Query Methods**
 
-Duplicate token ids in batch query calls may result in duplicate token ids in the response or may be deduplicated at the discretion of the ledger. Thus, the lenght of the response vector may be shorter than that of the input vector in batch query calls, e.g., in case of duplicate token ids in the input and a deduplication being performed by the method's implementation logic.
+Duplicate token ids in batch query calls may result in duplicate token ids in the response or may be deduplicated at the discretion of the ledger. The lenght of the response vector may be shorter than that of the input vector in batch query calls, e.g., in case of duplicate token ids in the input and a deduplication being performed by the method's implementation logic.
 
 #### State-Changing Methods
 
@@ -240,11 +242,11 @@ icrc7_token_metadata : (token_ids : vec nat)
 
 Returns the owner `Account` of each token in a list `token_ids` of token ids. The response elements are sorted following an ordering depending on the ledger implementation.
 
-Note that tokens for which an ICRC-1 account cannot be found are not included in the response. This can be the case for a ledger that has originally used a different token standard, e.g., based on the ICP token standard, and tokens have not been fully migrated yet.
+Note that tokens for which an ICRC-1 account cannot be found have a `null` response. This can for example be the case for a ledger that has originally used a different token standard, e.g., based on the ICP account model, and tokens of this ledger have not been fully migrated yet to ICRC-7.
 
 ```candid "Methods" +=
-icrc7_owner_of : (token_ids : vec opt nat)
-    -> (vec record { token_id : nat; account : Account }) query;
+icrc7_owner_of : (token_ids : vec nat)
+    -> (vec record { token_id : nat; account : opt Account }) query;
 ```
 
 ### icrc7_balance_of
@@ -320,7 +322,7 @@ icrc7_transfer : (TransferArgs)
                   Err : TransferBatchError });
 ```
 
-If the caller principal is not permitted to act on a token id, then the token id receives the `Unauthorized` error response. This is the case if the token is not held in the subaccount specified in the `from` account.
+If the caller principal is not permitted to act on a token id, then the token id receives the `Unauthorized` error response. This may be the case if the token is not held in the subaccount specified in the `from` account.
 
 The `memo` parameter is an arbitrary blob that is not interpreted by the ledger.
 The ledger SHOULD allow memos of at least 32 bytes in length.
@@ -330,6 +332,11 @@ The ledger SHOULD reject transactions with the `Duplicate` error variant in case
 
 The `created_at_time` parameter indicates the time (as nanoseconds since the UNIX epoch in the UTC timezone) at which the client constructed the transaction.
 The ledger SHOULD reject transactions that have the `created_at_time` argument too far in the past or the future, returning `variant { TooOld }` and `variant { CreatedInFuture = record { ledger_time = ... } }` errors correspondingly.
+
+### ICRC-3-Compliant Blocks and Transactions
+
+> [!NOTE]
+> FIX Define ICRC-7 elements for ICRC-3 once ICRC-3 is stable; idea: every standard that builds on ICRC-3 needs to define the blocks it requires based on ICRC-3; this defines the storage format of blocks in the ledger's blockchain
 
 ### icrc7_supported_standards
 
@@ -350,9 +357,11 @@ record { name = "ICRC-7"; url = "https://github.com/dfinity/ICRC/ICRCs/ICRC-7"; 
 
 For historical reasons, multiple NFT standards, such as the EXT standard, use the ICP `AccountIdentifier` or `AccountId` (a hash of the principal and subaccount) instead of the ICRC-1 `Account` (a pair of principal and subaccount) to store the owners. Since the ICP `AccountId` can be calculated from an ICRC-1 `Account`, but computability does not hold in the inverse direction, there is no way for a ledger implementing ICP `AccountId` to display `icrc7_owner_of` data.
 
-This standard does not mandate any provisions regading the handling of tokens managed through the `AccountId` regime and leaves this open to a future ICRC standard that ledgers may opt to implement or ledger-specific implementations.
+This standard does not mandate any provisions regarding the handling of tokens managed through the `AccountId` regime and leaves this open to a future ICRC standard that ledgers may opt to implement or ledger-specific implementations.
 
-Ledgers using the ICP `AccountId` can omit a token that has not yet been migrated to an ICRC-1 account from the response of the `icrc7_owner_of` query. The ledger implementation may offer an additional method to allow clients to obtain further information on this token, e.g., whether it is a token based on the ICP `AccountId`. `AccountId`-based ledgers that want to support ICRC-7 need to implement a strategy to become ICRC-7 compliant, e.g., by requiring all users to call a migration endpoint to migrate their tokens to an ICRC-1-based representation. Different approaches are feasible, however, and the choice of migration approach is left to the ledger implementation and not mandated in this standard.
+Ledgers using the ICP `AccountId` can provide a `null` response for a token that has not yet been migrated to an ICRC-1 account for the `icrc7_owner_of` query. The ledger implementation may offer an additional method to allow clients to obtain further information on this token, e.g., whether it is a token based on the ICP `AccountId`. `AccountId`-based ledgers that want to support ICRC-7 need to implement a strategy to become ICRC-7 compliant, e.g., by requiring all users to call a migration endpoint to migrate their tokens to an ICRC-1-based representation. It is acceptable behaviour to not consider not-yet-migrated tokens of such ledgers in responses as they conceptually don't count against the total ICRC-7 supply of the ledger before being migrated.
+
+Different approaches for migration are feasible and the choice of migration approach is left to the ledger implementation and not mandated in this standard. ICRC standards may emerge in the future for addressing the migration from previous NFT standards to ICRC-7.
 
 ## Extensions
 
@@ -397,12 +406,12 @@ This section highlights some selected areas crucial for security regarding the i
 
 It is strongly recommended that implementations of this standard take steps towards protecting against Denial of Service (DoS) attacks. Some non-exhaustive list of examples for recommended mitigations are given next:
   * Enforcing limits, such as the number of active approvals per token for token-level approvals or per principal for collection-level approvals, to constrain the state size of the ledger. Examples of such limits are given in this standard through various metadata attributes.
-  * Enforcing rate limits, such as the number of transactions such as approvals or approval revocations can be performed on a per token and per principal basis to constrain the size of the transaction log for the ledger.
-  * The execution of operations such as approving collections and revoking such approvals could be constrained to parties who own at least one token. This helps prevent DoS by attackers who create a large number of principals and perform such operations without holding tokens.
+  * Enforcing rate limits, such as the number of transactions such as approvals or approval revocations, can be performed on a per-token and per-principal basis to constrain the size of the transaction log for the ledger.
+  * The execution of operations such as approving collections and revoking such approvals could be constrained to parties who own at least one token on a ledger. This helps prevent DoS by attackers who create a large number of principals and perform such operations without holding tokens.
 
 ### Protection Against Attacks Against Web Applications
 
-We strongly advise developers who display untrusted images (e.g., the token logo or images referenced from NFT metadata) or strings in a Web application to follow Web application security best practices to avoid attacks such as XSS and CSRF resulting from malicious content provided by a ledger. As one particular example, images in the SVG format provide potential for attacks if used improperly. See, for example, the OWASP guidelines for protecting against [XSS](https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html) or [CSRF](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html).
+We strongly advise developers who display untrusted user-generated data like images (e.g., the token logo or images referenced from NFT metadata) or strings in a Web application to follow Web application security best practices to avoid attacks such as XSS and CSRF resulting from malicious content provided by a ledger. As one particular example, images in the SVG format provide potential for attacks if used improperly. See, for example, the OWASP guidelines for protecting against [XSS](https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html) or [CSRF](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html). The above examples are only selected examples and by no means provide an exhaustive view of security issues.
 
 
 <!--
