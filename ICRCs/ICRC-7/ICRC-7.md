@@ -350,7 +350,7 @@ record { name = "ICRC-7"; url = "https://github.com/dfinity/ICRC/ICRCs/ICRC-7"; 
 
 ## ICRC-7 Block Schema
 
-ICRC-3 defines a generic block schema that is left to a concrete implementation in standards implementing ICRC-3. ICRC-3 specifies the format of blocks including transactions that are written to the blockchain of the ledger. We next define the block schema for ICRC-7.
+ICRC-7 builds on the ICRC-3 specification for defining the format for storing transactions in blocks of the log of the ledger. ICRC-3 defines a generic, extensible, block schema that can be further instantiated in standards implementing ICRC-3. We next define the concrete block schema for ICRC-7 as extension of the ICRC-3 block schema.
 
 ### Generic ICRC-7 block schema
 
