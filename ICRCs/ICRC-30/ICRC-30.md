@@ -30,6 +30,7 @@ Returns the approval-related metadata of the ledger implementation. The metadata
 
 The following metadata property is defined for ICRC-30:
   * `icrc30:max_approvals_per_token_or_collection` of type `nat` (optional): The maximum number of active approvals this ledger implementation allows per token or per principal for the collection. When present, should be the same as the result of the [`icrc30_max_approvals_per_token_or_collection`](#icrc30_max_approvals_per_token_or_collection) query call.
+  * `icrc30:max_revoke_approvals` of type `nat` (optional): The maximum number of approvals that may be revoked in a single invocation of `icrc30_revoke_token_approvals` or `icrc30_revoke_collection_approvals`. When present, should be the same as the result of the [`icrc30_max_revoke_approvals`](#icrc30_max_revoke_approvals) query call.
 
 Note that all other relevant metadata properties from the ICRC-7 implementation that this standard is an extension of apply to this standard, e.g., the maximum batch sizes for queries and updates.
 
@@ -55,6 +56,14 @@ Returns the maximum number of approvals this ledger implementation allows to be 
 
 ```candid "Methods" +=
 icrc30_max_approvals_per_token_or_collection : () -> (opt nat) query;
+```
+
+### icrc30_max_revoke_approvals
+
+Returns the maximum number of approvals that may be revoked in a single invocation of `icrc30_revoke_token_approvals` or `icrc30_revoke_collection_approvals`.
+
+```candid "Methods" +=
+icrc30_max_revoke_approvals : () -> (opt nat) query;
 ```
 
 ### icrc30_approve_tokens
@@ -127,7 +136,7 @@ Collection-level approvals can be successfully created independently of currentl
 The `created_at_time` parameter indicates the time (as nanoseconds since the UNIX epoch in the UTC timezone) at which the client constructed the transaction.
 The ledger SHOULD reject transactions that have the `created_at_time` argument too far in the past or the future, returning `variant { TooOld }` and `variant { CreatedInFuture = record { ledger_time = ... } }` errors correspondingly.
 
-Note: This method is analogous to `icrc7_approve_tokens`, but for approving whole collections. `ApprovalInfo` specifies the approval to be made for the collection.
+Note: This method is analogous to `icrc30_approve_tokens`, but for approving whole collections. `ApprovalInfo` specifies the approval to be made for the collection.
 
 Collection-level approvals MUST be managed by the ledger as collection-level approvals and MUST NOT be translated into token-level approvals for all tokens the caller owns.
 
@@ -261,7 +270,7 @@ type TokenApproval = record {
 ```
 
 ```candid "Methods" +=
-icrc30_get_approvals : (token_ids : vec nat, prev : opt TokenApproval; take : opt nat)
+icrc30_get_token_approvals : (token_ids : vec nat, prev : opt TokenApproval; take : opt nat)
     -> (vec TokenApproval) query;
 ```
 
