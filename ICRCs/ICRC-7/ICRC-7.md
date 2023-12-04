@@ -94,7 +94,6 @@ The following are the more technical, implementation-oriented, metadata elements
   * `icrc7:max_update_batch_size` of type `nat` (optional): The maximum batch size for batch update calls this ledger implementation supports. When present, should be the same as the result of the [`icrc7_max_update_batch_size`](#icrc7_max_update_batch_size) query call.
   * `icrc7:default_take_value` of type `nat` (optional): The default value this ledger uses for the `take` pagination parameter which is used in some queries. When present, should be the same as the result of the [`icrc7_default_take_value`](#icrc7_default_take_value) query call.
   * `icrc7:max_take_value` of type `nat` (optional): The maximum `take` value for paginated query calls this ledger implementation supports. The value applies to all paginated queries the ledger exposes. When present, should be the same as the result of the [`icrc7_max_take_value`](#icrc7_max_take_value) query call.
-  * `icrc7:max_revoke_approvals` of type `nat` (optional): The maximum number of approvals that may be revoked in a single invocation of `icrc7_revoke_token_approvals` or `icrc7_revoke_collection_approvals`. When present, should be the same as the result of the [`icrc7_max_revoke_approvals`](#icrc7_max_revoke_approvals) query call.
   * `icrc7:max_memo_size` of type `nat` (optional): The maximum size of `memo`s as supported by an implementation. When present, should be the same as the result of the [`icrc7_max_memo_size`](#icrc7_max_memo_size) query call.
 
 Note that if max values specified through metadata are violated in a query call by providing larger argument lists or resulting in larger responses than permitted, the canister traps with an according system error message.
@@ -194,14 +193,6 @@ Returns the maximum `take` value for paginated query calls this ledger implement
 
 ```candid "Methods" +=
 icrc7_max_take_value : () -> (opt nat) query;
-```
-
-### icrc7_max_revoke_approvals
-
-Returns the maximum number of approvals that may be revoked in a single invocation of `icrc7_revoke_token_approvals` or `icrc7_revoke_collection_approvals`.
-
-```candid "Methods" +=
-icrc7_max_revoke_approvals : () -> (opt nat) query;
 ```
 
 ### icrc7_max_memo_size
@@ -362,13 +353,16 @@ ICRC-7 builds on the ICRC-3 specification for defining the format for storing tr
 ### Mint Block Schema
 
 1. the `tx.op` field MUST be `"7mint"`
-2. it MUST contain a field `tx.tid: Nat`
+2. it MUST contain a field `tx.token_id: Nat`
 3. it MUST contain a field `tx.to: Account`
+4. it MUST contain a field `tx.token_metadata: Value` // t.b.d., see below
+
+// FIX t.b.d. what should go into the mint block; in ICRC-1 the governing principle is that the ledger should be reconstructible from the blocks; applying this here would mean to have the full metadata in the block; size wise, this should not be an issue as there are multiple archive canisters keeping the block log, while there is (currently) one canister that keeps all token state; thus, we may want to keep the full metadata around in the block log, up for discussion in the upcoming meeting
 
 ### Burn Block Schema
 
 1. the `tx.op` field MUST be `"7burn"`
-2. it MUST contain a field `tx.tid: Nat`
+2. it MUST contain a field `tx.token_id: Nat`
 
 > [!Note]
 > A `tx.from` field is not required as it is, due to the non-fungibility of the tokens, implied by `token_id` as the account that held the token when it was requested to be burned.
@@ -376,7 +370,7 @@ ICRC-7 builds on the ICRC-3 specification for defining the format for storing tr
 ### icrc7_transfer Block Schema
 
 1. the `tx.op` field MUST be `"7xfer"`
-2. it MUST contain a field `tx.tid: Nat`
+2. it MUST contain a field `tx.token_id: Nat`
 3. it MUST contain a field `tx.from: Account`
 4. it MUST contain a field `tx.to: Account`
 
