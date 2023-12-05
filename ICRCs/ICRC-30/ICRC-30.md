@@ -389,7 +389,7 @@ The following generic schema extends the generic schema of ICRC-3 with ICRC-30-s
 #### icrc30_approve_tokens Block Schema
 
 1. the `tx.op` field MUST be `"30approve_tokens"`
-2. it CAN contain a field `tx.token_id: Nat`
+2. it MUST contain a field `tx.token_id: Nat`
 3. it MUST contain a field `tx.from: Account`
 4. it MUST contain a field `tx.spender: Account`
 5. it CAN contain a field `tx.expires_at: Nat` if set by the user
@@ -417,9 +417,10 @@ The following generic schema extends the generic schema of ICRC-3 with ICRC-30-s
 #### icrc30_transfer_from Block Schema
 
 1. the `tx.op` field MUST be `"30xfer_from"`
-2. it CAN contain a field `tx.spender: Account`
-3. it MUST contain a field `tx.from: Account`
-4. it MUST contain a field `tx.to: Account`
+2. it MUST contain a field `tx.token_id: Nat`
+3. it MUST contain a field `tx.spender: Account`
+4. it MUST contain a field `tx.from: Account`
+5. it MUST contain a field `tx.to: Account`
 
 ## Extensions
 
