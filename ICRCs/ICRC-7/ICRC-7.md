@@ -362,7 +362,7 @@ ICRC-7 builds on the ICRC-3 specification for defining the format for storing tr
 4. it MUST contain a field `tx.to: Account`
 5. it MUST contain a field `tx.meta: Value`
 
-The `Value` element must be less than the maximum size permitted for inter-canister calls. If the metadata is sufficiently small, it is recommended to put the full metadata into the `tx.token_metadata` field, if it is too large, a hash of the metadata can be added. // FIX: Polish
+Note that `tid` refers to the token id. The size of the `meta` field expressing the token metadata must be less than the maximum size permitted for inter-canister calls. If the metadata is sufficiently small, it is recommended to put the full metadata into the `tx.meta` field, if the metadata is too large, it is recommended to add a hash of the metadata to the `meta` field.
 
 ### Burn Block Schema
 
@@ -379,8 +379,6 @@ The `Value` element must be less than the maximum size permitted for inter-canis
 4. it MUST contain a field `tx.to: Account`
 
 As `icrc7_transfer` is a batch method, it results in one block per `token_id` in the batch. The blocks MUST appear in the block log in the same sequence as the token ids are listed in the `token_ids` vector. Blocks from one batch transfer invocation can be interleaved from other such method calls.
-
-FIX: note about interleaved execution
 
 ## Migration Path for Ledgers Using ICP AccountId
 
