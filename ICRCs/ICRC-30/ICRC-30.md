@@ -390,30 +390,32 @@ The following generic schema extends the generic schema of ICRC-3 with ICRC-30-s
 
 1. the `tx.op` field MUST be `"30approve_tokens"`
 2. it MUST contain a field `tx.token_id: Nat`
-3. it CAN contain a field `tx.from_subaccount: blob`
-4. it MUST contain a field `tx.spender: Account`
-5. it CAN contain a field `tx.expires_at: Nat` if set by the user
+3. it MUST contain a field `tx.spender: Account`
+4. it CAN contain a field `tx.expires_at: Nat` if set by the user
 
-> [!NOTE] Can we remove the `from_subaccount` entirely as it is implied by the subaccount the token is held on? This applies to all methods
+> [!NOTE] The `from_subaccount` is not contained in the block as it is implied by the subaccount the token is held on when an approval is made.
 
 #### icrc30_approve_collection Block Schema
 
 1. the `tx.op` field MUST be `"30approve_collection"`
-2. it CAN contain a field `tx.from_subaccount: blob`
+2. it MUST contain a field `tx.from_subaccount: blob`
 3. it MUST contain a field `tx.spender: Account`
 4. it CAN contain a field `tx.expires_at: Nat` if set by the user
+
+> [!NOTE] Collection-level approvals are always on `(spender, subaccount)`-pairs, thus a subaccount always needs to be given. The default all-`0` subaccount is also explicitly encoded.
 
 #### icrc30_revoke_token_approvals Block Schema
 
 1. the `tx.op` field MUST be `"30revoke_token_approval"`
 2. it MUST contain a field `tx.token_id: Nat`
-3. it CAN contain a field `tx.from_subaccount: blob`
-4. it CAN contain a field `tx.spender: Account`
+3. it MUST contain a field `tx.spender: Account`
+
+> [!NOTE] The `from_subaccount` is not contained in the block as it is implied by the subaccount the token is held on when an approval is made.
 
 #### icrc30_revoke_collection_approvals Block Schema
 
 1. the `tx.op` field MUST be `"30revoke_collection_approval"`
-2. it CAN contain a field `tx.from_subaccount: blob`
+2. it MUST contain a field `tx.from_subaccount: blob`
 3. it MUST contain a field `tx.spender: Account`
 
 #### icrc30_transfer_from Block Schema
