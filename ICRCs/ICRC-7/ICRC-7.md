@@ -324,7 +324,7 @@ The ledger SHOULD reject transactions with the `Duplicate` error variant in case
 The `created_at_time` parameter indicates the time (as nanoseconds since the UNIX epoch in the UTC timezone) at which the client constructed the transaction.
 The ledger SHOULD reject transactions that have the `created_at_time` argument too far in the past or the future, returning `variant { TooOld }` and `variant { CreatedInFuture = record { ledger_time = ... } }` errors correspondingly.
 
-> [!NOTE] Note that multiple concurrently executing batch transfers can lead to an interleaved execution of those invocations.
+> [!NOTE] Note that multiple concurrently executing batch transfers triggered by method invocations can lead to an interleaved execution of the corresponding sequences of token transfers.
 
 ### icrc7_supported_standards
 
@@ -351,8 +351,6 @@ ICRC-7 builds on the ICRC-3 specification for defining the format for storing tr
 2. its field `tx`
     1. CAN contain the `memo: Blob` field if specified by the user
     2. CAN contain the `ts: Nat` field if the user sets the `created_at_time` field in the request.
-
-> [!NOTE] FIX: Maybe add some text explaining that the block log schema allows for a complete reconstruction of the ledger from the log.
 
 ### Mint Block Schema
 
