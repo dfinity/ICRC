@@ -422,11 +422,13 @@ The following generic schema extends the generic schema of ICRC-3 with ICRC-30-s
 
 1. the `tx.op` field MUST be `"30xfer_from"`
 2. it MUST contain a field `tx.token_id: Nat`
-3. it CAN contain a field `tx.spender_subaccount: blob`
+3. it MUST contain a field `tx.spender_subaccount: blob`
 4. it MUST contain a field `tx.from: Account`
 5. it MUST contain a field `tx.to: Account`
 
-> [!NOTE] Can we remove the `from` as it is implied by the current holder of the token?
+> [!NOTE] The `spender_subaccount` is always explicitly encoded, also in case of the default all-`0` subaccount.
+
+> [!NOTE] FIX We should remove `from` as it is implied by the current holder of the token.
 
 ## Extensions
 
