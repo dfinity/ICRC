@@ -324,6 +324,8 @@ The ledger SHOULD reject transactions with the `Duplicate` error variant in case
 The `created_at_time` parameter indicates the time (as nanoseconds since the UNIX epoch in the UTC timezone) at which the client constructed the transaction.
 The ledger SHOULD reject transactions that have the `created_at_time` argument too far in the past or the future, returning `variant { TooOld }` and `variant { CreatedInFuture = record { ledger_time = ... } }` errors correspondingly.
 
+> [!NOTE] FIX: Can batch transfers be executed in an interleaved fashion, i.e., individual transfers of multiple method calls can be interleaved? Also affects text related to the block log for transfers.
+
 ### icrc7_supported_standards
 
 Returns the list of standards this ledger implements.
@@ -350,6 +352,8 @@ ICRC-7 builds on the ICRC-3 specification for defining the format for storing tr
     1. CAN contain the `memo: Blob` field if specified by the user
     2. CAN contain the `ts: Nat` field if the user sets the `created_at_time` field in the request.
 
+> [!NOTE] FIX: Maybe add some text explaining that the block log schema allows for a complete reconstruction of the ledger from the log.
+
 ### Mint Block Schema
 
 1. the `tx.op` field MUST be `"7mint"`
@@ -357,7 +361,9 @@ ICRC-7 builds on the ICRC-3 specification for defining the format for storing tr
 3. it MUST contain a field `tx.to: Account`
 4. it MUST contain a field `tx.token_metadata: Value` // t.b.d., see below
 
-// FIX t.b.d. what should go into the mint block; in ICRC-1 the governing principle is that the ledger should be reconstructible from the blocks; applying this here would mean to have the full metadata in the block; size wise, this should not be an issue as there are multiple archive canisters keeping the block log, while there is (currently) one canister that keeps all token state; thus, we may want to keep the full metadata around in the block log, up for discussion in the upcoming meeting
+> [!NOTE] FIX t.b.d. what should go into the mint block; in ICRC-1 the governing principle is that the ledger should be reconstructible from the blocks (except for configuration changes, which are not considered there); applying this here would mean to have the full metadata in the block; size wise, this should not be an issue as there are multiple archive canisters keeping the block log, while there is (currently) one canister that keeps all token state; thus, we may want to keep the full metadata around in the block log, up for discussion in the upcoming meeting
+
+> [!NOTE] FIX: Do we want to have a `from` here expressing the minting account? Not having it seems less constraining. Ledgers still can add it as extra field in case they have multiple minting accounts.
 
 ### Burn Block Schema
 
@@ -367,6 +373,8 @@ ICRC-7 builds on the ICRC-3 specification for defining the format for storing tr
 > [!Note]
 > A `tx.from` field is not required as it is, due to the non-fungibility of the tokens, implied by `token_id` as the account that held the token when it was requested to be burned.
 
+> [!NOTE] FIX: Do we want to have a `to` here expressing the minting account? Not having it seems less constraining. Ledgers still can add it as extra field in case they have multiple minting accounts.
+
 ### icrc7_transfer Block Schema
 
 1. the `tx.op` field MUST be `"7xfer"`
@@ -374,7 +382,11 @@ ICRC-7 builds on the ICRC-3 specification for defining the format for storing tr
 3. it MUST contain a field `tx.from: Account`
 4. it MUST contain a field `tx.to: Account`
 
-As `icrc7_transfer` is a batch method, it results in one block per `token_id` in the batch. The blocks MUST be appear in the block log in the same sequence as the token ids are listed in the `token_ids` vector.
+As `icrc7_transfer` is a batch method, it results in one block per `token_id` in the batch. The blocks MUST appear in the block log in the same sequence as the token ids are listed in the `token_ids` vector. Blocks from one batch transfer invocation can be interleaved from other such method calls.
+
+> [!NOTE] FIX: Can we omit `from` as is implied by the current token holder?
+
+> [!NOTE] FIX: Interleaving allowed?
 
 ## Migration Path for Ledgers Using ICP AccountId
 
