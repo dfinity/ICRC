@@ -382,53 +382,46 @@ All ICRC-30 batch methods result in one block per `token_id` in the batch. The b
 The following generic schema extends the generic schema of ICRC-3 with ICRC-30-specific elements and applies to all block defintions.
 
 1. it MUST contain a field `ts: Nat` which is the timestamp of when the block was added to the Ledger
-2. its field `tx`
+2. it CAN contain a field `memo: Blob` if specified by the canister
+3. its field `tx`
     1. CAN contain the `memo: Blob` field if specified by the user
     2. CAN contain the `ts: Nat` field if the user sets the `created_at_time` field in the request.
 
 #### icrc30_approve_tokens Block Schema
 
-1. the `tx.op` field MUST be `"30approve_tokens"`
-2. it MUST contain a field `tx.token_id: Nat`
-3. it MUST contain a field `tx.spender: Account`
-4. it CAN contain a field `tx.expires_at: Nat` if set by the user
-
-> [!NOTE] The `from_subaccount` is not contained in the block as it is implied by the subaccount the token is held on when an approval is made.
+1. the `tx.op` field MUST be `"30appr"`
+2. it MUST contain a field `tx.tid: Nat`
+3. it MUST contain a field `tx.from: Account`
+4. it MUST contain a field `tx.spender: Account`
+5. it CAN contain a field `tx.exp: Nat` if set by the user
 
 #### icrc30_approve_collection Block Schema
 
-1. the `tx.op` field MUST be `"30approve_collection"`
-2. it MUST contain a field `tx.from_subaccount: blob`
+1. the `tx.op` field MUST be `"30appr_coll"`
+2. it MUST contain a field `tx.from: Account`
 3. it MUST contain a field `tx.spender: Account`
-4. it CAN contain a field `tx.expires_at: Nat` if set by the user
-
-> [!NOTE] Collection-level approvals are always on `(spender, subaccount)`-pairs, thus a subaccount always needs to be given. The default all-`0` subaccount is also explicitly encoded.
+4. it CAN contain a field `tx.exp: Nat` if set by the user
 
 #### icrc30_revoke_token_approvals Block Schema
 
-1. the `tx.op` field MUST be `"30revoke_token_approval"`
-2. it MUST contain a field `tx.token_id: Nat`
-3. it MUST contain a field `tx.spender: Account`
-
-> [!NOTE] The `from_subaccount` is not contained in the block as it is implied by the subaccount the token is held on when an approval is made.
+1. the `tx.op` field MUST be `"30revoke"`
+2. it MUST contain a field `tx.tid: Nat`
+3. it MUST contain a field `tx.from: Account`
+4. it MUST contain a field `tx.spender: Account`
 
 #### icrc30_revoke_collection_approvals Block Schema
 
-1. the `tx.op` field MUST be `"30revoke_collection_approval"`
-2. it MUST contain a field `tx.from_subaccount: blob`
+1. the `tx.op` field MUST be `"30revoke_coll"`
+2. it MUST contain a field `tx.from: Account`
 3. it MUST contain a field `tx.spender: Account`
 
 #### icrc30_transfer_from Block Schema
 
-1. the `tx.op` field MUST be `"30xfer_from"`
-2. it MUST contain a field `tx.token_id: Nat`
-3. it MUST contain a field `tx.spender_subaccount: blob`
+1. the `tx.op` field MUST be `"30xfer"`
+2. it MUST contain a field `tx.tid: Nat`
+3. it MUST contain a field `tx.spender: Account`
 4. it MUST contain a field `tx.from: Account`
 5. it MUST contain a field `tx.to: Account`
-
-> [!NOTE] The `spender_subaccount` is always explicitly encoded, also in case of the default all-`0` subaccount.
-
-> [!NOTE] FIX We should remove `from` as it is implied by the current holder of the token.
 
 ## Extensions
 
