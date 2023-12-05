@@ -372,10 +372,7 @@ If the client has not set the `created_at_time` field, the ledger SHOULD NOT ded
 
 ICRC-30 builds on the ICRC-3 specification for defining the format for storing transactions in blocks of the log of the ledger. ICRC-3 defines a generic, extensible, block schema that can be further instantiated in standards implementing ICRC-3. We next define the concrete block schema for ICRC-30 as extension of the ICRC-3 block schema.
 
-All ICRC-30 batch methods result in one block per `token_id` in the batch. The blocks MUST appear in the block log in the same relative sequence as the token ids appear in the vector of input token identifiers. The block sequence corresponding to the token ids in the input can be interspersed with blocks from other (batch) methods executed by the ledger in an interleaved execution sequence. This allows for high-performing ledger implementations that can make asynchronous calls to other canisters in the scope of operations on tokens.
-
-> [!NOTE]
-> **FIX:** Probably we do not want to require that the blocks for a batch tx appear in the block log in a contiguous sequence, i.e., it would not possible that multiple batch methods are executed in an interleaved execution sequence which would constrain implementations a lot. t.b.d.
+All ICRC-30 batch methods result in one block per `token_id` in the batch. The blocks MUST appear in the block log in the same relative sequence as the token ids appear in the vector of input token identifiers. The block sequence corresponding to the token ids in the input can be interspersed with blocks from other (batch) methods executed by the ledger in an interleaved execution sequence. This allows for high-performance ledger implementations that can make asynchronous calls to other canisters in the scope of operations on tokens and process multiple batch update calls concurrently.
 
 #### Generic ICRC-30 Block Schema
 
@@ -394,6 +391,8 @@ The following generic schema extends the generic schema of ICRC-3 with ICRC-30-s
 3. it MUST contain a field `tx.from: Account`
 4. it MUST contain a field `tx.spender: Account`
 5. it CAN contain a field `tx.exp: Nat` if set by the user
+
+Note that `tid` refers to the token id and `exp` to the expiry time of the approval.
 
 #### icrc30_approve_collection Block Schema
 
