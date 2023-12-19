@@ -422,6 +422,3 @@ Note that `tid` refers to the token id and `exp` to the expiry time of the appro
 ## Extensions
 
 If extension standards are used in the context of ICRC-30, those are listed with the according `supported_standards` method of the base standard that gets extended.
-
-> [!NOTE]
-> FIX Do we need an extensions mechanism in ICRC-30 or would the extensions go into the base that ICRC-30 extends? Likely, it is the latter
