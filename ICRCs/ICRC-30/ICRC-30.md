@@ -6,11 +6,11 @@
 
 # ICRC-30: Approval Support for the Minimal Non-Fungible Token (NFT) Standard
 
-This document specifies approval support for the ICRC-7 minimal NFT standard for the Internet Computer. It defines all methods required for managing approval semantics for an NFT token ledger, i.e., creating approvals, revoking approvals, querying approval information, and making transfers based on approvals. The scope of ICRC-30 has been part of ICRC-7 originally, however, the responsible Working Group has decided to split it out into a separate standard for the following reasons:
+This document specifies approval support for the ICRC-7 minimal NFT standard for the Internet Computer. It defines all the methods required for managing approval semantics for an NFT token ledger, i.e., creating approvals, revoking approvals, querying approval information, and making transfers based on approvals. The scope of ICRC-30 has been part of ICRC-7 originally, however, the responsible Working Group has decided to split it out into a separate standard for the following reasons:
   * ICRC-7 and ICRC-30 are much easier to navigate and shorter on their own due to their respective foci;
-  * Ledgers that do not want to implement approval and transfer from semantics do not need to provide dummy implementations of the corresponding methods.
+  * Ledgers that do not want to implement approval and transfer from semantics do not need to provide dummy implementations of the corresponding methods that fail by default.
 
-This standard extends the ICRC-7 NFT standard and is intended to be implemented in token ledgers that implement ICRC-7.
+This standard extends the ICRC-7 NFT standard and is intended to be implemented by token ledgers that implement ICRC-7.
 
 ## Concepts
 
@@ -133,7 +133,7 @@ It is left to the ledger implementation to decide whether collection-level appro
 The `created_at_time` parameter indicates the time (as nanoseconds since the UNIX epoch in the UTC timezone) at which the client constructed the transaction.
 The ledger SHOULD reject transactions that have the `created_at_time` argument too far in the past or the future, returning `variant { TooOld }` and `variant { CreatedInFuture = record { ledger_time = ... } }` errors correspondingly.
 
-Note: This method is analogous to `icrc30_approve_tokens`, but for approving whole collections. `ApprovalInfo` specifies the approval to be made for the collection.
+Note that this method is analogous to `icrc30_approve_tokens`, but for approving whole collections. `ApprovalInfo` specifies the approval to be made for the collection.
 
 Collection-level approvals MUST be managed by the ledger as collection-level approvals and MUST NOT be translated into token-level approvals for all tokens the caller owns.
 
