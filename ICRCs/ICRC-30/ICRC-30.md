@@ -128,10 +128,7 @@ In accordance with ICRC-2, multiple approvals can exist for the collection for a
 
 An ICRC-7 ledger implementation does not need to keep track of expired approvals in its memory. This is important to help constrain unlimited growth of ledger memory over time. All historic approvals are contained in the block history the ledger creates.
 
-Collection-level approvals can be successfully created independently of currently owning tokens of the collection at approval time.
-
-> [!NOTE]
-> FIX if we want to allow DoS mitigations here, this needs to be relaxed so that collection-level approvals should only be possible in case someone holds at least one token; we could also leave the aspect unspecified whether you need to hold tokens and leave it to an implementation
+It is left to the ledger implementation to decide whether collection-level approvals can be successfully created independently of currently owning tokens of the collection at approval time.
 
 The `created_at_time` parameter indicates the time (as nanoseconds since the UNIX epoch in the UTC timezone) at which the client constructed the transaction.
 The ledger SHOULD reject transactions that have the `created_at_time` argument too far in the past or the future, returning `variant { TooOld }` and `variant { CreatedInFuture = record { ledger_time = ... } }` errors correspondingly.
