@@ -37,7 +37,7 @@ type BatchTransferArg = record {
 
 type TransferError = variant {
     BadFee : record { expected_fee : nat };
-    InsufficientFunds : record { balance : nat; needed_amount: nat };
+    InsufficientFunds : record { balance : nat;};
     GenericError : record { error_code : nat; message : text };
 };
 
@@ -48,7 +48,6 @@ type TransferBatchArgs = record {
 };
 
 type TransferBatchError = variant {
-    BadBatchFee : record { expected_fee : nat };   // If there is a discrepancy in the expected batch fee
     TemporarilyUnavailable;
     TooOld;
     CreatedInFuture : record { ledger_time: nat64 };
