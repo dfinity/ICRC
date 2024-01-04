@@ -61,7 +61,8 @@ type TransferBatchResult = variant {
       transfer_result : variant {
         Ok : nat; // Transaction indices for successful transfers
         Err : TransferError
-      };   
+      };
+    }; 
     Err : TransferBatchError;
 };
 
