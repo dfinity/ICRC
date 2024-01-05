@@ -125,6 +125,75 @@ Ledgers supporting ICRC-4 SHOULD provide metadata via the icrc1_metadata() funct
 | `icrc4:batch_fee` | A replacement fee that can be used as an alternative to the icrc1:fee value. | `variant { Nat = 5_000 }` | 
 | `icrc4:maximum_balance_size` | The IC has a ~2MB limit on ingress and responses there for an implementor must provide guidance on the maximum number of balance inquiries that can be handled in one call | `variant { Nat = 10_000 }` | 
 
+## Updates to Transfer Block Schema
+
+ICRC-4 does not make updates to the ICRC-1 block schema for transfer, mint, or burn. Each successful transaction in a transfer request MUST get it's own entry in the transaction log.
+
+```
+the tx.op field MUST be "xfer"
+it MUST contain a field tx.from: Account
+it MUST contain a field tx.to: Account
+it CAN contain a field tx.spender: Account
+```
+
+ICRC-4 does  make updates to the ICRC general block schema in order to enable a batch-level memo.  This schema aims to record the memo once in the ledger and provide each additional transaction a pointer to that memo.  This saves significant space in the ledger as the memo does not need to be repeated.
+
+```
+it CAN contain memo_batch field: Blob
+it CAN contain memo_block field where the Value points to a previous block with memo_batch included: Nat
+```
+//todo: do we want to shorten these
+
+Example:
+
+```
+variant { Map = vec {
+    record { "fee"; variant { Nat = 10 : nat } };
+    record { "phash"; variant { Blob =
+        blob "h,,\97\82\ff.\9cx&l\a2e\e7KFVv\d1\89\beJ\c5\c5\ad,h\5c<\ca\ce\be"
+    }};
+    record { "memo-batch"; variant { Blob =
+        blob "h,,\97\82\ff.\9cx&l\a2e\e7KFVv\d1\89\beJ\c5\c5\ad,h\5c<\ca\ce\be"
+    }};
+    record { "ts"; variant { Nat = 1_701_109_006_692_276_133 : nat } };
+    record { "tx"; variant { Map = vec {
+        record { "op"; variant { Text = "xfer" } };
+        record { "amt"; variant { Nat = 609_618 : nat } };
+        record { "from"; variant { Array = vec {
+                variant { Blob = blob "\00\00\00\00\00\f0\13x\01\01" };
+                variant { Blob = blob "\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00" };
+        }}};
+        record { "to"; variant { Array = vec {
+            variant { Blob = blob " \ef\1f\83Zs\0a?\dc\d5y\e7\ccS\9f\0b\14a\ac\9f\fb\f0bf\f3\a9\c7D\02" };
+            variant { Blob = blob "\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00" };
+        }}};
+    }}};
+}};
+
+// subsequent block in the batch
+
+variant { Map = vec {
+    record { "fee"; variant { Nat = 10 : nat } };
+    record { "phash"; variant { Blob =
+        blob "h,,\97\82\ff.\9cx&l\a2e\e7KFVv\d1\89\beJ\c5\c5\ad,h\5c<\ca\ce\be"
+    }};
+    record { "memo-block"; variant { Nat =10 }};
+    record { "ts"; variant { Nat = 1_701_109_006_692_276_133 : nat } };
+    record { "tx"; variant { Map = vec {
+        record { "op"; variant { Text = "xfer" } };
+        record { "amt"; variant { Nat = 609_618 : nat } };
+        record { "from"; variant { Array = vec {
+                variant { Blob = blob "\00\00\00\00\00\f0\13x\01\01" };
+                variant { Blob = blob "\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00" };
+        }}};
+        record { "to"; variant { Array = vec {
+            variant { Blob = blob " \ef\1f\83Zs\0a?\dc\d5y\e7\ccS\9f\0b\14a\ac\9f\fb\f0bf\f3\a9\c7D\02" };
+            variant { Blob = blob "\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00" };
+        }}};
+    }}};
+}};
+```
+
 ## Transaction deduplication <span id="transaction_deduplication"></span>
 
 Consider the following scenario:
