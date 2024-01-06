@@ -50,6 +50,7 @@ type TransferBatchArgs = record {
 type TransferBatchError = variant {
     TemporarilyUnavailable;
     TooOld;
+    TooManyRequests: record {limit : Nat};
     CreatedInFuture : record { ledger_time: nat64 };
     Duplicate : record { duplicate_of : nat }; //todo: should this be different for batch since the items can go into many transactions
     GenericError : record { error_code : nat; message : text };
