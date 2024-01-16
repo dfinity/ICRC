@@ -28,58 +28,49 @@ Executes a batch of transfer operations from the sender's subaccounts to various
 type Subaccount = blob;
 type Account = record { owner: principal; subaccount: opt Subaccount; };
 
-type BatchTransferArg = record {
+type TransferArg = record {
     from_subaccount: opt Subaccount;
     to: Account;
     amount: nat;
+    memo: opt blob;
+    created_at_time: opt nat64;
     fee: ?nat
 };
 
 type TransferError = variant {
     BadFee : record { expected_fee : nat };
     InsufficientFunds : record { balance : nat;};
-    GenericError : record { error_code : nat; message : text };
-};
-
-type TransferBatchArgs = record {
-    transfers: vec BatchTransferArg;
-    memo: opt blob;      // A single memo for batch-level deduplication
-    created_at_time: opt nat64;
-};
-
-type TransferBatchError = variant {
-    TemporarilyUnavailable;
     TooOld;
-    TooManyRequests: record {limit : Nat};
+    BatchTerminated;
     CreatedInFuture : record { ledger_time: nat64 };
-    Duplicate : record { duplicate_of : nat }; //todo: should this be different for batch since the items can go into many transactions
+    Duplicate : record { duplicate_of : nat };
+    TemporarilyUnavailable;
     GenericError : record { error_code : nat; message : text };
 };
 
-type TransferBatchResult = variant {
-    Ok : vec record {
-      transfer : BatchTransferArg; //todo: do we need this?  Can we leave out memo? or is it helpful
-      transfer_result : variant {
-        Ok : nat; // Transaction indices for successful transfers
-        Err : TransferError
-      };
-    }; 
-    Err : TransferBatchError;
-};
+type TransferBatchResult = vec record {
+  transfer: TransferArg; 
+  transfer_result : variant {
+    Ok : nat; // Transaction indices for successful transfers
+    Err : opt TransferError;
+  };
+}; 
 
 // icrc4_transfer_batch method definition
-icrc4_transfer_batch: (TransferBatchArgs) -> (TransferBatchResult);
+icrc4_transfer_batch: (vec TransferBatchArgs) -> (vec TransferBatchResult);
 ```
 
 #### Preconditions for Transfer Batch
 
-- The sender MUST have sufficient tokens in each specified subaccount to complete the corresponding transfer, including the fee per transfer.
+- The sender MUST have sufficient tokens in each specified subaccount to complete the corresponding transfers, including the fee per transfer.
 - The number of transactions in the batch SHOULD NOT exceed the maximum batch size specified by the ledger.
 
 #### Postconditions for Transfer Batch
 
 - Upon successful processing, each transfer in the batch will be associated with a transaction index corresponding to its inclusion in the ledger.
 - Transaction indices are returned in an `Ok` variant, while errors are captured in an `Err` variant. If an error occurs, the batch processing MAY stop.
+- The Implementation MAY return unprocessed entries with a null error.
+- The Implementation MAY leave out unprocessed items.
 
 #### Fee Structure
 
@@ -130,65 +121,6 @@ Ledgers supporting ICRC-4 SHOULD provide metadata via the icrc1_metadata() funct
 
 ICRC-4 does not make updates to the ICRC-1 block schema for transfer, mint, or burn. Each successful transaction in a transfer request MUST get it's own entry in the transaction log.
 
-
-ICRC-4 does  make updates to the ICRC general block schema in order to enable a batch-level memo.  This schema aims to record the memo once in the ledger and provide each additional transaction a pointer to that memo.  This saves significant space in the ledger as the memo does not need to be repeated.
-
-```
-it CAN contain memo_block field where the Value points to a previous block with memo_batch included: Nat
-```
-//todo: do we want to shorten these
-
-Example:
-
-```
-variant { Map = vec {
-    record { "fee"; variant { Nat = 10 : nat } };
-    record { "phash"; variant { Blob =
-        blob "h,,\97\82\ff.\9cx&l\a2e\e7KFVv\d1\89\beJ\c5\c5\ad,h\5c<\ca\ce\be"
-    }};
-
-    record { "ts"; variant { Nat = 1_701_109_006_692_276_133 : nat } };
-    record { "tx"; variant { Map = vec {
-        record { "op"; variant { Text = "xfer" } };
-        record { "amt"; variant { Nat = 609_618 : nat } };
-        record { "from"; variant { Array = vec {
-                variant { Blob = blob "\00\00\00\00\00\f0\13x\01\01" };
-                variant { Blob = blob "\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00" };
-        }}};
-        record { "to"; variant { Array = vec {
-            variant { Blob = blob " \ef\1f\83Zs\0a?\dc\d5y\e7\ccS\9f\0b\14a\ac\9f\fb\f0bf\f3\a9\c7D\02" };
-            variant { Blob = blob "\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00" };
-        }}};
-        record { "memo"; variant { Blob =
-            blob "h,,\97\82\ff.\9cx&l\a2e\e7KFVv\d1\89\beJ\c5\c5\ad,h\5c<\ca\ce\be"
-        }};
-    }}};
-}};
-
-// subsequent block in the batch
-
-variant { Map = vec {
-    record { "fee"; variant { Nat = 10 : nat } };
-    record { "phash"; variant { Blob =
-        blob "h,,\97\82\ff.\9cx&l\a2e\e7KFVv\d1\89\beJ\c5\c5\ad,h\5c<\ca\ce\be"
-    }};
-    record { "memo-block"; variant { Nat =10 }};
-    record { "ts"; variant { Nat = 1_701_109_006_692_276_133 : nat } };
-    record { "tx"; variant { Map = vec {
-        record { "op"; variant { Text = "xfer" } };
-        record { "amt"; variant { Nat = 609_618 : nat } };
-        record { "from"; variant { Array = vec {
-                variant { Blob = blob "\00\00\00\00\00\f0\13x\01\01" };
-                variant { Blob = blob "\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00" };
-        }}};
-        record { "to"; variant { Array = vec {
-            variant { Blob = blob " \ef\1f\83Zs\0a?\dc\d5y\e7\ccS\9f\0b\14a\ac\9f\fb\f0bf\f3\a9\c7D\02" };
-            variant { Blob = blob "\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00" };
-        }}};
-    }}};
-}};
-```
-
 ## Transaction deduplication <span id="transaction_deduplication"></span>
 
 Consider the following scenario:
@@ -211,9 +143,7 @@ The ledger SHOULD use the following algorithm for transaction deduplication if t
   * If the ledger observed a structurally equal transfer payload (i.e., all the transfer argument fields and the caller have the same values) at transaction with index `i`, it should return `variant { Duplicate = record { duplicate_of = i } }`.
   * Otherwise, the transfer is a new transaction.
 
-If the client did not set the `created_at_time` field, the ledger SHOULD NOT deduplicate the transaction. //todo: is this still true?
-
-todo: I assume that we need to not dedupe existing transactions, but we should discuss.
+If the client did not set the `created_at_time` field, the ledger SHOULD NOT deduplicate the transaction.
 
 ### Supported Standards
 
