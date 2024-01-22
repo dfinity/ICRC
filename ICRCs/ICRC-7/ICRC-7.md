@@ -51,7 +51,7 @@ If the input contains duplicate token ids for an update call, the ledger MUST tr
 
 **Batch Query Methods**
 
-Duplicate token ids in batch query calls may result in duplicate token ids in the response or may be deduplicated at the discretion of the ledger. The lenght of the response vector may be shorter than that of the input vector in batch query calls, e.g., in case of duplicate token ids in the input and a deduplication being performed by the method's implementation logic.
+Duplicate token ids in batch query calls may result in duplicate token ids in the response or may be deduplicated at the discretion of the ledger. The lenght of the response vector may be shorter than that of the input vector in batch query calls, e.g., in case of duplicate token ids in the input and a deduplication being performed by the method's implementation logic or in case of the token not existing.
 
 #### State-Changing Methods
 
@@ -205,7 +205,7 @@ icrc7_max_memo_size : () -> (opt nat) query;
 
 ### icrc7_token_metadata
 
-Returns the token metadata for `token_ids`, a list of token ids. Each tuple in the response vector comprises a token id as first element and the metadata corresponding to this token expressed as an optional record comprising `text` and `Value` pairs expressing the token metadata as second element. In case a token does not exist, its associated metadata vector is `null`. If a token does not have metadata, its associated metadata vector is the empty vector.
+Returns the token metadata for `token_ids`, a list of token ids. Each tuple in the response vector comprises a token id as first element and the metadata corresponding to this token expressed as an optional record comprising `text` and `Value` pairs expressing the token metadata as second element. In case a token does not exist, no element corresponding to it is returned in the response. If a token does not have metadata, its associated metadata vector is the empty vector.
 
 ICRC-7 does not specify the representation of token metadata any further than that it is represented in a generic manner as a vector of `(text, Value)`-pairs. This is left to future standards, the collections, or the implementations in order to not constrain the utility and applicability of this standard.
 
@@ -226,7 +226,7 @@ type Value = variant {
 
 ```candid "Methods" +=
 icrc7_token_metadata : (token_ids : vec nat)
-    -> (vec record { nat; opt vec record { text; Value } }) query;
+    -> (vec record { token_id : nat; metadata: vec record { text; Value } }) query;
 ```
 
 ### icrc7_owner_of
