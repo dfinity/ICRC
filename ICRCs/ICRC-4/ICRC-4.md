@@ -57,7 +57,7 @@ type TransferBatchResult = vec record {
 }; 
 
 // icrc4_transfer_batch method definition
-icrc4_transfer_batch: (vec TransferArg) -> (vec TransferBatchResult);
+icrc4_transfer_batch: (vec TransferArg) -> async TransferBatchResult;
 ```
 
 #### Preconditions for Transfer Batch
