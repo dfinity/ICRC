@@ -41,20 +41,23 @@ type TransferError = variant {
     BadFee : record { expected_fee : nat };
     InsufficientFunds : record { balance : nat;};
     TooOld;
-    BatchTerminated;
+    GenericBatchError : record { error_code : nat; message : text };
     CreatedInFuture : record { ledger_time: nat64 };
     Duplicate : record { duplicate_of : nat };
     TemporarilyUnavailable;
     GenericError : record { error_code : nat; message : text };
 };
 
-type TransferBatchResult = vec record {
-  transfer: TransferArg; 
-  transfer_result : variant {
+type TransferBatchResult = vec ?variant {
     Ok : nat; // Transaction indices for successful transfers
-    Err : opt TransferError;
-  };
-}; 
+    Err : TransferError;
+};
+
+/*
+   input : [A, B, C, D, E, F, G];
+   possible output: [opt #Ok(5), null,null,opt #Err(#GenericBatchError(...)]; 
+                    [opt #Err(#GenericBatchError(...), opt #Ok(5), null, null,, null, null, opt #Ok(6)];
+*/
 
 // icrc4_transfer_batch method definition
 icrc4_transfer_batch: (vec TransferArg) -> async TransferBatchResult;
@@ -69,8 +72,9 @@ icrc4_transfer_batch: (vec TransferArg) -> async TransferBatchResult;
 
 - Upon successful processing, each transfer in the batch will be associated with a transaction index corresponding to its inclusion in the ledger.
 - Transaction indices are returned in an `Ok` variant, while errors are captured in an `Err` variant. If an error occurs, the batch processing MAY stop.
-- The Implementation MAY return unprocessed entries with a null error.
-- The Implementation MAY leave out unprocessed items.
+- The Implementation MAY return unprocessed entries with a null item in the TransferBatchResult.
+- The Implementation MUST maintain index integrity.
+- Indexes with a null response MAY be truncated on the right side.
 
 #### Fee Structure
 
@@ -87,23 +91,22 @@ type BalanceQueryArgs = record {
     accounts: vec Account;
 };
 
-
-type BalanceQueryResult = vec (Account, nat); 
+type BalanceQueryResult = vec nat; 
 
 // icrc4_balance_of_batch method definition
-icrc4_balance_of_batch: (BalanceQueryArgs) -> (BalanceQueryResult) query;
+icrc4_balance_of_batch: (BalanceQueryArgs) -> async (BalanceQueryResult) query;
 ```
 
 #### Preconditions for the Balance Query Batch
 
-- The request MUST include a list of accounts, each specified by their owner principal and optionally a subaccount.
-- The number of accounts in the query MUST NOT exceed the maximum batch size for balance queries specified by the ledger.
+- The request MUST include a list of accounts with at least one item, each specified by their owner principal and optionally a subaccount.
+- The number of accounts in the query SHOULD NOT exceed the maximum batch size for balance queries specified by the ledger.
 
 #### Postconditions for the Balance Query Batch
 
-- The method returns a list of accounts paired with their respective balances if the query succeeds.
-- If an error occurs due to too many requests, a `TooManyRequests` trap will occur.
-- Every balance included in the result corresponds directly to an account in the input query, maintaining the same order to facilitate mapping between requested accounts and their balances. Todo: do we want to require ordering?
+- The method returns a list of balances in order or request if the query succeeds.
+- If too many requests are provided the ledger MAY truncate the responses at the limit.
+- Every balance included in the result corresponds directly to an account in the input query, maintaining the same order to facilitate mapping between requested accounts and their balances.
 
 
 ## Batch Transfer Metadata
@@ -114,7 +117,6 @@ Ledgers supporting ICRC-4 SHOULD provide metadata via the icrc1_metadata() funct
 | Key | Semantics | Example value
 | --- | ------------- | --------- |
 | `icrc4:maximum_batch_size` | The IC has a ~2MB limit on ingress and responses there for an implementor must provide guidance on the maximum number of transactions that can be handled in one call | `variant { Nat = 10_000 }` | 
-| `icrc4:batch_fee` | A replacement fee that can be used as an alternative to the icrc1:fee value. | `variant { Nat = 5_000 }` | 
 | `icrc4:maximum_balance_size` | The IC has a ~2MB limit on ingress and responses there for an implementor must provide guidance on the maximum number of balance inquiries that can be handled in one call | `variant { Nat = 10_000 }` | 
 
 ## Updates to Transfer Block Schema
@@ -152,8 +154,6 @@ All ledgers implementing ICRC-4 MUST include the standard in the list returned b
 ## Rationale and Backwards Compatibility
 
 The introduction of the `memo` and `created_at_time` fields at the batch level, rather than on individual transactions, aligns ICRC-4 with the batch processing patterns of ICRC-7 and improves consistency across token standards. This structure simplifies deduplication processes and reduces the complexity of transaction verification for users and implementers.
-
-Transactions within a batch SHALL share the same `memo` and `created_at_time` to allow for efficient deduplication. This approach eliminates the need for per-transaction memos, which can otherwise complicate the standard and its implementation.
 
 ICRC-4 introduces no known backward compatibility issues with existing standards. It is designed as an extension of ICRC-1 and preserves the principles of individual transfer transactions.
 
