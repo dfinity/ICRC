@@ -70,7 +70,7 @@ icrc37_max_revoke_approvals : () -> (opt nat) query;
 
 Entitles a `spender`, indicated through an `Account`, to transfer NFTs on behalf of the caller of this method from `account { owner = caller; subaccount = from_subaccount }`, where `caller` is the caller of this method (and also the owner principal of the tokens that are subject to approval) and `from_subaccount` is the subaccount of the token owner principal the approval should apply to (i.e., the subaccount which the tokens must be held on and can be transferred out from). Note that the `from_subaccount` parameter needs to be explicitly specified because accounts are a primary concept in this standard and thereby the `from_subaccount` needs to be specified as part of the account that holds the token. The `expires_at` value specifies the expiration date of the approval, the `memo` parameter is an arbitrary blob that is not interpreted by the ledger. The `created_at_time` field specifies when the approval has been created. The method accepts batches of such token approval requests as input.
 
-Each response comprises an optional `Ok` or `Err` variant, the success case containing the transaction index of the operation, and the error case containing an error variant. The overall response comprises a vector of such responses.
+Each response comprises an optional `Ok` or `Err` variant, the success case containing the transaction index of the operation, and the error case containing an error variant. The overall response comprises a vector of such responses, where elements can also be `null` in case they have not been processed.
 
 The ledger returns an `InvalidSpender` error if the spender account owner is equal to the caller account owner. I.e., a principal cannot create an approval for themselves, because a principal always has an implicit approval to act on their own tokens.
 
@@ -107,6 +107,7 @@ type ApproveTokenError = variant {
     NonExistingTokenId;
     Unauthorized;
     GenericError : record { error_code : nat; message : text };
+    GenericBatchError : record { error_code : nat; message : text }; // FIX batch errors to be defined (e.g., a specific one and a generic one)
 };
 ```
 
@@ -160,6 +161,7 @@ type ApproveCollectionError = variant {
     CreatedInFuture : record { ledger_time: nat64 };
     GenericError : record { error_code : nat; message : text };
     // FIX batch errors
+    GenericBatchError : record { error_code : nat; message : text };
 };
 ```
 
@@ -238,7 +240,7 @@ type RevokeCollectionApprovalArg = record {
     created_at_time : opt nat64;
 };
 
-type RevokeCollectionApprovalResult = opt variant {
+type RevokeCollectionApprovalResult = variant {
     Ok : nat; // Transaction index for successful revocation
     Err : RevokeCollectionApprovalError;
 };
@@ -254,7 +256,7 @@ type RevokeCollectionApprovalError = variant {
 
 ```candid "Methods" +=
 icrc37_revoke_collection_approval: (vec RevokeCollectionArg)
-    -> (vec RevokeCollectionApprovalResult);
+    -> (vec opt RevokeCollectionApprovalResult);
 ```
 
 ### icrc37_is_approved
@@ -344,7 +346,7 @@ TransferFromArg = record {
     created_at_time : opt nat64;
 };
 
-type TransferFromResponse = opt variant {
+type TransferFromResponse = variant {
     Ok : nat; // Transaction index for successful transfer
     Err : TransferFromError;
 }
@@ -363,7 +365,7 @@ type TransferFromError = variant {
 
 ```candid "Methods" +=
 icrc37_transfer_from : (vec TransferFromArg)
-    -> (vec TransferFromResponse);
+    -> (vec opt TransferFromResponse);
 ```
 
 If the caller principal is not permitted to act on a token id, then the token id receives the `Unauthorized` error response. This is the case if someone not owning a token and not being the spender in an active token-level or collection-level approval attempts to transfer a token or the token is not held in the subaccount specified in the `from` account.
@@ -425,7 +427,7 @@ The following generic schema extends the generic schema of ICRC-3 with ICRC-37-s
 4. it MUST contain a field `tx.spender: Account`
 5. it CAN contain a field `tx.exp: Nat` if set by the user
 
-Note that `tid` refers to the token id and `exp` to the expiry time of the approval.
+Note that `tid` refers to the token id and `exp` to the expiry time of the approval, the names of the other fiels should speak for themselves.
 
 #### icrc37_approve_collection Block Schema
 
