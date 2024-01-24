@@ -10,7 +10,7 @@ ICRC-7 is the minimal standard for the implementation of Non-Fungible Tokens (NF
 
 A token ledger implementation following this standard hosts an *NFT collection* (*collection*), which is a set of NFTs.
 
-ICRC-7 does not handle approval-related operations such as `approve` and `transfer_from` itself. Those operations are specified by ICRC-30 which extends ICRC-7 with approval semantics.
+ICRC-7 does not handle approval-related operations such as `approve` and `transfer_from` itself. Those operations are specified by ICRC-37 which extends ICRC-7 with approval semantics.
 
 ## Data Representation
 
@@ -29,7 +29,7 @@ type Account = record { owner : principal; subaccount : opt Subaccount };
 
 The canonical textual representation of the account follows the [definition in ICRC-1](https://github.com/dfinity/ICRC-1/blob/main/standards/ICRC-1/TextualEncoding.md). ICRC-7 accounts have the same structure and follow the same overall principles as ICRC-1 accounts.
 
-ICRC-7 views the ICRC-1 `Account` as a primary concept, meaning that operations like transfers (or approvals as defined in ICRC-30) always refer to the full account and not only the principal part thereof. Thus, some methods comprise an extra optional `from_subaccount` or `spender_subaccount` parameter that together with the caller form an account to perform the respective operation on. Leaving such subaccount parameter `null` always has the semantics of referring to the default subaccount comprised of all zeroes.
+ICRC-7 views the ICRC-1 `Account` as a primary concept, meaning that operations like transfers (or approvals as defined in ICRC-37) always refer to the full account and not only the principal part thereof. Thus, some methods comprise an extra optional `from_subaccount` or `spender_subaccount` parameter that together with the caller form an account to perform the respective operation on. Leaving such subaccount parameter `null` always has the semantics of referring to the default subaccount comprised of all zeroes.
 
 ### Token Identifiers
 
@@ -41,33 +41,64 @@ Tokens in ICRC-7 are identified through _token identifiers_, or _token ids_. A t
 
 We next outline general aspects of the specification and behaviour of query and update calls defined in this standard. Those general aspects are not repeated with the specification of every method, but specified once for all query and update calls in this section.
 
+//FIX queries may not allow filling up processing gaps with `null` elements; t.b.d.; allowing so would make the API more similar to updates
+
 #### Batch Methods
 
-The methods, both queries and update calls, that operate on token ids as inputs are *batch methods* that can receive vectors of token ids, i.e., batches of token ids, as input. The batch methods in this standard perform the same operation with the same parameters on a batch of token ids, thus the operations in the batch are closely related and are not independent operations. Some people refer to this modus operandi as bulk processing, but we prefer to use the more general term of batch processing also for this case. The batch methods must be used also for the common case of operations on single token ids (the non-batch case) — no separate methods are provided for this purpose. Most batch methods provide a vector of records comprising a token id and a response for the token id as output. Unless specified explicitly otherwise, the ordering of response elements for batch calls is not defined, i.e., is arbitrary. For batch calls, every distinct token id of the input MUST occur in at least one response element, where a response can be a success or error variant.
+The methods that have at most one result per input value arte modeled as *batch methods*, i.e., they operate on a vector of inputs and return a vector of outputs. The elements of the output are sorted in the same order as the elements of the input, meaning that the `i`-the element in the result is the reponse to the `i`-th element in the request. We call this property of the arguments "positional". The response may have fewer elements than the request in case processing has stopped through a batch processing error that prevents it from moving forward. In case of such batch processing error, the element which caused the batch processing to terminate receives an error response with the batch processing error. This element can not have a specific per-element error as it expresses the batch error. This element need not be the element with the highest index in the response as processing of requests can be concurrent in an implementation and any element earlier in the request may cause the batch processing failure.
 
-**Batch Update Methods**
+The response of a batch method may be shorter than the request and then contain only responses to a prefix of the request vector. This happens when the processing is terminated due to an error. However, due to the ordering requirements of the response elements w.r.t. the request elements (positional arguments), the response must be contiguous, possibly containing `null` elements, i.e., it contains response elements to a contiguous prefix of the requst vector.
 
-If the input contains duplicate token ids for an update call, the ledger MUST trap. For update batch calls, the method's logic MUST be executed on all provided token ids or none, but it need not be successful for all, in which case error responses are returned for token ids for which exection was not successful.
+The standard does not impose any constraints on aspects such as no duplicate token ids being contained in the elements of a request batch. Rather, each element is independent of the others and its execution may succeed or lead to an error. We do not impose any constraints on the sequence of processing of the elements of a batch in order to not have undue constraints on the implementation in terms of performance. A client SHOULD not assume any specific sequence of processing of batch elements. I.e., if a client intends to make dependent transactions, e.g., to move a token from its current subaccount to a specific "vendor subaccount" and from there transfer it to a customer, those two operations should be part of subsequent batches to assure both transfers to complete without assumptions on the implementation of the ledger.
+
+**Example**
+
+Consider an input comprising the batch of transactions `A, B, C, D, E, F, G, H`, each of the items being one operation to perform and letters abstract the operation in the example.
+```
+Input : [A, B, C, D, E, F, G];
+```
+Depending on the concurrent execution of the individual operations, there may be different outcomes:
+
+1. Assume an error that prevents further processing has occurred while processing `D`, with successfully processed `A`. Processing of `B` and `C` has not been initated yet.
+  * Output: `[opt #Ok(5), null ,null, opt #Err(#GenericBatchError(...)];`
+2. Assume an error that prevents further processing has occurred while processing `B` with successfully processed `A` and `D`, but processing for `C` has not been initiated. `A` and `D` receive a success response with their transaction id, `B` the batch error, and `C` is filled with a `null`:
+  * Output: `[opt #Ok(5), opt #Err(#GenericBatchError(...), null , opt #Ok(6)];`
+3. Assume an error that prevents further processing has occurred while processing `A`, but processing of `B` and `H` has already been initiated and succeeds. The not-processed elements are filled up with `null` elements up to the rightmost processed element `H`.
+  * Output: `[opt #Err(#GenericBatchError(...), opt #Ok(5), null, null, null, null, null, opt #Ok(6)];`
+
+// FIX We may note that processing of batch items is independent and they can independently succeed / fail; does not impose constraints in implementation; only constraint is that the response must contain response items up to the largest element index processing of which has been initiated by the ledger, regardless of whether it is successful or not eventually
+
+Batch methods are named following the convention of using their singular name, e.g., `icrc_7_token_of` and not `icrc_7_tokens_of` as this better matches the intent of the method independent of it being batch and better reflects the naming of the argument and response types in update calls. E.g., consider `icrc37_approve_token` from ICRC-37 and its associated data types `ApproveTokenArg`, `ApproveTokenResult`, and `ApproveTokenError`. Using plural would be misleading, e.g., `ApproveTokensResult` would hint that the result is about multiple tokens which is not the case.
+
+The API style we employ for batch APIs is simple, does not repeat request information in the response, and does not unnecessarily constrain the implementation, i.e., permits highly-concurrent implementations. On the client side it has no major drawbacks as it is straightforward to associated the corresponding request data with the responses by using positional alignment of the request and response vectors.
 
 **Batch Query Methods**
 
-Duplicate token ids in batch query calls may result in duplicate token ids in the response or may be deduplicated at the discretion of the ledger. The lenght of the response vector may be shorter than that of the input vector in batch query calls, e.g., in case of duplicate token ids in the input and a deduplication being performed by the method's implementation logic or in case of the token not existing.
+There are two different classes of query methods in terms of their API styles available in this standard:
+1. Query methods that have (at most) one response per request in the batch. For example, `icrc7_balance_of`, which receives a vector of token ids as input and each output element is the balance of the corresponding input. Those methods perfectly lend themselves for implementation with a batch API. Those queries have an analogous API style as batch update calls.
+1. Query methods that may have multiple responses for an input element. An example is `icrc7_tokens_of`, which may have many response elements for an account. Those methods require pagination. Pagination is hard to combine with the batch API style of the reponses corresponding to the requests by index of the respective vectors. Thus, the guiding principle is that such methods be non-batch paginated methods, unless there is a strong reason for a deviation from this.
+
+**Batch Update Methods**
+
+The guiding principle is to have the update methods be batch methods, analogous to queries. The API style is the same as for the class 1 of queries outlined above.
+
+For batch update calls, each element in the request for which processing has been attempted, i.e., started, needs to contain a non-null response at the corresponding index. Elements for which processing has not been attempted, may contain a `null` response. The response vector may contain responses only to a prefix of the request vector.
 
 #### State-Changing Methods
 
-Methods that modify the state of the ledger have responses that comprise transaction indices as part of the response in the success case. Such a transaction index is an index into the chain of blocks containing the transaction history of this ledger. The details of how to access the transaction history is not part of the ICRC-7 standard, but will be published as a separate standard, similar to how ICRC-3 specifies access to ICRC-1 and ICRC-2 historic blocks.
+Methods that modify the state of the ledger have responses that comprise transaction indices as part of the response in the success case. Such a transaction index is an index into the chain of blocks containing the transaction history of this ledger. The details of how to access the transaction history of ICRC-7 ledgers is not part of the ICRC-7 standard, but will use the separately published ICRC-3 standard that specifies access to the block log of ICRC ledgers.
 
 #### Error Handling
 
-All update methods have error variants defined for their responses that cover the error cases for the respective call. Batch update methods expose a top-level error for handling general errors applicable to the batch itself and a possible error per element in the batch. Query methods do not have error variants defined in order to keep their API easy to use.
+It is recommended that neither query nor update calls trap unless completely unavoidable. The API is designed such that any errors do not need to lead to a trap, but can be communicated back to the client and the processing of large batches may be shortene to processing only a prefix.
 
-Both query and update calls can trap in specific error cases instead of returning an error. The general principle is that a ledger SHOULD, or, depending on the recoverability, MUST, trap in case of an error that is not related to a specific token and thus can be addressed by the error response for the token, but is a general error related to the call. For example, a ledger SHOULD trap if a limit expressed through an `icrc7:max_...` metadata attribute is violated, e.g., the maximum batch size is exceeded. The ledger MUST trap in case of an error that it cannot recover from, i.e., it cannot execute the call and perform all state changes according to specification.
+For example, if a limit expressed through an `icrc7:max_...` metadata attribute is violated, e.g., the maximum batch size is exceeded and the response would be too large, the ledger should process only a prefix of the input and return this. Only a prefix of the request being responded to means that the not-contained elements have not been processed, their processing has not even been attempted to be initiated.
 
 #### Other Aspects
 
-The size of responses to messages sent to a canister smart contract on the IC is constrained to a fixed constant size. For requests that could potentially result in larger response messages that breach this limit, the caller SHOULD ensure to constrain the input of the methods accordingly so that the response remains below the maximum allowed size, e.g., should not query too many token ids in one batch call. If the size limit of a response is hit, the ledger canister MUST trap. The ledger SHOULD make sure that the response size does not exceed the permitted maximum *before* making any changes that might be committed to replicated state.
+The size of responses to messages sent to a canister smart contract on the IC is constrained to a fixed constant size. For requests that could potentially result in larger response messages that breach this limit, the caller SHOULD ensure to constrain the input of the methods accordingly so that the response remains below the maximum allowed size, e.g., the caller should not query too many token ids in one batch call. To avoid hitting the size limit, the ledger may process only a prefix of the request. The ledger MAY make sure that the response size does not exceed the permitted maximum *before* making any changes that might be committed to replicated state.
 
-All update methods take a `memo` parameter as input. An implementation of this standard SHOULD allow memos of at least 32 bytes in length for all methods.
+All update methods take `memo` parameters as input. An implementation of this standard SHOULD allow memos of at least 32 bytes in length for all methods.
 
 Each defined Candid type is only specified once in the standard text upon its first use. Likewise, error responses are not always explained repeatedly for all methods after having been explained already upon their first use.
 
@@ -226,26 +257,28 @@ type Value = variant {
 
 ```candid "Methods" +=
 icrc7_token_metadata : (token_ids : vec nat)
-    -> (vec record { token_id : nat; metadata: vec record { text; Value } }) query;
+    -> (vec opt metadata: vec record { text; Value }) query;
 ```
 
 ### icrc7_owner_of
 
-Returns the owner `Account` of each token in a list `token_ids` of token ids. The response elements are sorted following an ordering depending on the ledger implementation.
+Returns the owner `Account` of each token in a list `token_ids` of token ids. The ordering of the response elements corresponds to that of the request elements.
 
 Note that tokens for which an ICRC-1 account cannot be found have a `null` response. This can for example be the case for a ledger that has originally used a different token standard, e.g., based on the ICP account model, and tokens of this ledger have not been fully migrated yet to ICRC-7.
 
 ```candid "Methods" +=
 icrc7_owner_of : (token_ids : vec nat)
-    -> (vec record { token_id : nat; account : opt Account }) query;
+    -> (vec opt account : Account) query;
 ```
 
 ### icrc7_balance_of
 
 Returns the balance of the `account` provided as an argument, i.e., the number of tokens held by the account. For a non-existing account, the value `0` is returned.
 
+// FIX Do we need to allow a response to be `null` with the new batch API semantics? E.g., processing needs to hold and responses need to be filled up with `null` values; if so, this clashes with `null` semantics for various queries; not allowing `null` values seems to be cleaner, but deviates from ghow update calls are handled
+
 ```candid "Methods" +=
-icrc7_balance_of : (account : Account) -> (nat) query;
+icrc7_balance_of : (vec account : Account) -> (nat) query;
 ```
 
 ### icrc7_tokens
@@ -274,46 +307,50 @@ icrc7_tokens_of : (account : Account, prev : opt nat, take : opt nat)
 
 ### icrc7_transfer
 
-Transfers one or more tokens from the account defined by the caller principal and `subaccount` to the `to` account. The transfer can only be initiated by the holder of the tokens.
+Performs a batch of transfers of tokens. Each transfer transfers a token `token_id` from the account defined by the caller principal and the specified `subaccount` to the `to` account. A `memo` and `created_at_time` can be given optionally. The transfer can only be initiated by the holder of the tokens.
 
-The response is a vector of records each comprising a `token_id` and a corresponding `transfer_result` indicating success or error. In the success case, the `Ok` variant indicates the transaction index of the transfer, in the error case, the `Err` variant indicates the error through `TransferError`.
+The response is a vector of `TransferResult` records, whose sequence correspond to the sequence of `TransferArg`s in the request, i.e., the `i`-th `TransferResult` in the response is the response to the `i`-th `TransferArg` in the request. Each `TransferResult` comprises an `Ok` variant with the transaction index of the transfer in the success case or an `Err` variant with a `TransferError` in the error case.
 
-The ledger returns an `InvalidRecipient` error in case `to` equals `from`.
-
-A transfer clears all active token-level approvals for the successfully transferred tokens. This implicit clearing of approvals only clears token-level approvals and never touches collection-level approvals.
+A transfer clears all active token-level approvals for a successfully transferred token. This implicit clearing of approvals only clears token-level approvals and never touches collection-level approvals. This clearing does not create an ICRC-3 block in the transaction log, but it is implied by the transfer block in the log.
 
 ```candid "Type definitions" +=
-TransferArgs = record {
-    subaccount: opt blob; // the subaccount of the caller (used to identify the spender)
+TransferArg = record {
+    subaccount: opt blob; // the subaccount of the caller (used to identify the spender), null means the default all-zero subaccount
     to : Account;
-    token_ids : vec nat;
+    token_id : vec nat;
     // type: leave open for now
     memo : opt blob;
     created_at_time : opt nat64;
 };
 
-type TransferBatchError = variant {
-    InvalidRecipient;
-    TooOld;
-    CreatedInFuture : record { ledger_time: nat64 };
-    GenericError : record { error_code : nat; message : text };
+type TransferResult = variant {
+    Ok : nat; // Transaction indices for successful transfers
+    Err : TransferError;
 };
 
 type TransferError = variant {
+    // per-transfer errors
     NonExistingTokenId;
+    InvalidRecipient;
     Unauthorized;
+    TooOld;
+    CreatedInFuture : record { ledger_time: nat64 };
     Duplicate : record { duplicate_of : nat };
     GenericError : record { error_code : nat; message : text };
+    // batch errors
+    BatchTermination;
+    GenericBatchError : record { error_code : nat; message : text };
 };
+
 ```
 
 ```candid "Methods" +=
-icrc7_transfer : (TransferArgs)
-    -> (variant { Ok : vec record { token_id : nat; transfer_result : variant { Ok : nat; Err : TransferError } };
-                  Err : TransferBatchError });
+icrc7_transfer : (vec TransferArg) -> (vec opt TransferResult);
 ```
 
-If the caller principal is not permitted to act on a token id, then the token id receives the `Unauthorized` error response. This may be the case if the token is not held in the subaccount specified in the `from` account.
+The ledger returns an `InvalidRecipient` error in case `to` equals `from` for a `TransferArg`.
+
+If the caller principal is not permitted to act on a token id, then the corresponding request item receives the `Unauthorized` error response. This may be the case if the token is not held in the subaccount specified in the `from` account.
 
 The `memo` parameter is an arbitrary blob that is not interpreted by the ledger.
 The ledger SHOULD allow memos of at least 32 bytes in length.
@@ -325,6 +362,8 @@ The `created_at_time` parameter indicates the time (as nanoseconds since the UNI
 The ledger SHOULD reject transactions that have the `created_at_time` argument too far in the past or the future, returning `variant { TooOld }` and `variant { CreatedInFuture = record { ledger_time = ... } }` errors correspondingly.
 
 > [!NOTE] Note that multiple concurrently executing batch transfers triggered by method invocations can lead to an interleaved execution of the corresponding sequences of token transfers.
+
+> [!NOTE] Note further that deduplication is performed independently on the different items of the batch.
 
 ### icrc7_supported_standards
 
@@ -349,8 +388,8 @@ ICRC-7 builds on the ICRC-3 specification for defining the format for storing tr
 
 1. it MUST contain a field `ts: Nat` which is the timestamp of when the block was added to the Ledger
 2. its field `tx`
-    1. CAN contain the `memo: Blob` field if specified by the user
-    2. CAN contain the `ts: Nat` field if the user sets the `created_at_time` field in the request.
+    1. CAN contain a field `memo: Blob` if specified by the user
+    2. CAN contain a field `ts: Nat` if the user sets the `created_at_time` field in the request.
 
 ### Mint Block Schema
 
@@ -360,7 +399,7 @@ ICRC-7 builds on the ICRC-3 specification for defining the format for storing tr
 4. it MUST contain a field `tx.to: Account`
 5. it MUST contain a field `tx.meta: Value`
 
-Note that `tid` refers to the token id. The size of the `meta` field expressing the token metadata must be less than the maximum size permitted for inter-canister calls. If the metadata is sufficiently small, it is recommended to put the full metadata into the `tx.meta` field, if the metadata is too large, it is recommended to add a hash of the metadata to the `meta` field.
+Note that `tid` refers to the token id. The size of the `meta` field expressing the token metadata must be less than the maximum size permitted for inter-canister calls. If the metadata is sufficiently small, it is recommended to add the full metadata into the `tx.meta` field, if the metadata is too large, it is recommended to add a hash of the metadata to the `meta` field.
 
 ### Burn Block Schema
 
@@ -376,7 +415,7 @@ Note that `tid` refers to the token id. The size of the `meta` field expressing 
 3. it MUST contain a field `tx.from: Account`
 4. it MUST contain a field `tx.to: Account`
 
-As `icrc7_transfer` is a batch method, it results in one block per `token_id` in the batch. The blocks MUST appear in the block log in the same sequence as the token ids are listed in the `token_ids` vector. Blocks from one batch transfer invocation can be interleaved from other such method calls.
+As `icrc7_transfer` is a batch method, it results in one block per `token_id` in the batch. The blocks MUST appear in the block log in the same sequence as the token ids are listed in the `token_ids` vector. Blocks from one batch transfer invocation can be interleaved from other such method calls. // t.b.d. for the new API
 
 ## Migration Path for Ledgers Using ICP AccountId
 
