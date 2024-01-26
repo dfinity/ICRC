@@ -41,56 +41,52 @@ Tokens in ICRC-7 are identified through _token identifiers_, or _token ids_. A t
 
 We next outline general aspects of the specification and behaviour of query and update calls defined in this standard. Those general aspects are not repeated with the specification of every method, but specified once for all query and update calls in this section.
 
-//FIX queries may not allow filling up processing gaps with `null` elements; t.b.d.; allowing so would make the API more similar to updates
+#### Batch Update Methods
 
-#### Batch Methods
+The methods that have at most one result per input value are modeled as *batch methods*, i.e., they operate on a vector of inputs and return a vector of outputs. The elements of the output are sorted in the same order as the elements of the input, meaning that the `i`-the element in the result is the reponse to the `i`-th element in the request. We call this property of the arguments "positional". The response may have fewer elements than the request in case processing has stopped through a batch processing error that prevents it from moving forward. In case of such batch processing error, the element which caused the batch processing to terminate receives an error response with the batch processing error. This element can not have a specific per-element error as it expresses the batch error. This element need not be the element with the highest index in the response as processing of requests can be concurrent in an implementation and any element earlier in the request may cause the batch processing failure.
 
-The methods that have at most one result per input value arte modeled as *batch methods*, i.e., they operate on a vector of inputs and return a vector of outputs. The elements of the output are sorted in the same order as the elements of the input, meaning that the `i`-the element in the result is the reponse to the `i`-th element in the request. We call this property of the arguments "positional". The response may have fewer elements than the request in case processing has stopped through a batch processing error that prevents it from moving forward. In case of such batch processing error, the element which caused the batch processing to terminate receives an error response with the batch processing error. This element can not have a specific per-element error as it expresses the batch error. This element need not be the element with the highest index in the response as processing of requests can be concurrent in an implementation and any element earlier in the request may cause the batch processing failure.
-
-The response of a batch method may be shorter than the request and then contain only responses to a prefix of the request vector. This happens when the processing is terminated due to an error. However, due to the ordering requirements of the response elements w.r.t. the request elements (positional arguments), the response must be contiguous, possibly containing `null` elements, i.e., it contains response elements to a contiguous prefix of the requst vector.
+The response of a batch method may be shorter than the request and then contain only responses to a prefix of the request vector. This happens when the processing is terminated due to an error. However, due to the ordering requirements of the response elements w.r.t. the request elements (positional arguments), the response must be contiguous, possibly containing `null` elements, i.e., it contains response elements to a contiguous prefix of the request vector.
 
 The standard does not impose any constraints on aspects such as no duplicate token ids being contained in the elements of a request batch. Rather, each element is independent of the others and its execution may succeed or lead to an error. We do not impose any constraints on the sequence of processing of the elements of a batch in order to not have undue constraints on the implementation in terms of performance. A client SHOULD not assume any specific sequence of processing of batch elements. I.e., if a client intends to make dependent transactions, e.g., to move a token from its current subaccount to a specific "vendor subaccount" and from there transfer it to a customer, those two operations should be part of subsequent batches to assure both transfers to complete without assumptions on the implementation of the ledger.
 
-**Example**
+Note that the items in a batch are processed independently of each other and processing can independently succeed or fail. This choice does not impose relevant constraints on the ledger implementation. The only constraint resulting from this is that the response must contain response items up to the largest element index processing of which has been initiated by the ledger, regardless of its result. The response items following this highest-index processed request item can be left out.
 
-Consider an input comprising the batch of transactions `A, B, C, D, E, F, G, H`, each of the items being one operation to perform and letters abstract the operation in the example.
+The API style we employ for batch APIs is simple, does not repeat request information in the response, and does not unnecessarily constrain the implementation, i.e., permits highly-concurrent implementations. On the client side it has no major drawbacks as it is straightforward to associated the corresponding request data with the responses by using positional alignment of the request and response vectors.
+
+The guiding principle is to have all suitable update methods be batch methods, i.e., all update calls that have at most one response per request.
+
+For batch update calls, each element in the request for which processing has been attempted, i.e., started, regardless of the success thereof, needs to contain a non-null response at the corresponding index. Elements for which processing has not been attempted, may contain a `null` response. The response vector may contain responses only to a prefix of the request vector, with further non-processed elements being omitted from the response.
+
+Update calls, i.e., methods that modify the state of the ledger, always have responses that comprise transaction indices in the success case. Such a transaction index is an index into the chain of blocks containing the transaction history of this ledger. The details of how to access the transaction history of ICRC-7 ledgers is not part of the ICRC-7 standard, but will use the separately published [ICRC-3](https://github.com/dfinity/ICRC-1/tree/main/standards/ICRC-3) standard that specifies access to the block log of ICRC ledgers.
+
+*Example*
+
+Consider an input comprising the batch of transactions `A, B, C, D, E, F, G, H`, each of the items being one operation to perform and letters abstract the request items in the example.
 ```
 Input : [A, B, C, D, E, F, G, H];
 ```
 Depending on the concurrent execution of the individual operations, there may be different outcomes:
 
-1. Assume an error that prevents further processing has occurred while processing `D`, with successfully processed `A`. Processing of `B` and `C` has not been initated yet.
+1. Assume an error that prevents further processing has occurred while processing `D`, with successfully processed `A`. Processing of `B` and `C` has not been initated yet, therefore they receive `null` responses.
   * Output: `[opt #Ok(5), null ,null, opt #Err(#GenericBatchError(...)];`
 2. Assume an error that prevents further processing has occurred while processing `B` with successfully processed `A` and `D`, but processing for `C` has not been initiated. `A` and `D` receive a success response with their transaction id, `B` the batch error, and `C` is filled with a `null`:
   * Output: `[opt #Ok(5), opt #Err(#GenericBatchError(...), null , opt #Ok(6)];`
 3. Assume an error that prevents further processing has occurred while processing `A`, but processing of `B` and `H` has already been initiated and succeeds. The not-processed elements are filled up with `null` elements up to the rightmost processed element `H`.
   * Output: `[opt #Err(#GenericBatchError(...), opt #Ok(5), null, null, null, null, null, opt #Ok(6)];`
 
-Note that the items in a batch are processed independent of each other and processing can independently succeed or fail. This choice does not impose relevant constraints on the ledger implementation. The only constraint resulting from this is that the response must contain response items up to the largest element index processing of which has been initiated by the ledger, regardless of its result. The response items following this highest-index processed request item can be left out.
+#### Batch Query Methods
 
-The API style we employ for batch APIs is simple, does not repeat request information in the response, and does not unnecessarily constrain the implementation, i.e., permits highly-concurrent implementations. On the client side it has no major drawbacks as it is straightforward to associated the corresponding request data with the responses by using positional alignment of the request and response vectors.
-
-**Batch Query Methods**
-
-There are two different classes of query methods in terms of their API styles available in this standard:
+There are two different classes of query methods in terms of their API styles defined in this standard:
 1. Query methods that have (at most) one response per request in the batch. For example, `icrc7_balance_of`, which receives a vector of token ids as input and each output element is the balance of the corresponding input. Those methods perfectly lend themselves for implementation with a batch API. Those queries have an analogous API style as batch update calls.
 1. Query methods that may have multiple responses for an input element. An example is `icrc7_tokens_of`, which may have many response elements for an account. Those methods require pagination. Pagination is hard to combine with the batch API style of the reponses corresponding to the requests by index of the respective vectors. Thus, the guiding principle is that such methods be non-batch paginated methods, unless there is a strong reason for a deviation from this.
 
-**Batch Update Methods**
-
-The guiding principle is to have the update methods be batch methods, analogous to queries. The API style is the same as for the class 1 of queries outlined above.
-
-For batch update calls, each element in the request for which processing has been attempted, i.e., started, needs to contain a non-null response at the corresponding index. Elements for which processing has not been attempted, may contain a `null` response. The response vector may contain responses only to a prefix of the request vector.
-
-#### State-Changing Methods
-
-Methods that modify the state of the ledger have responses that comprise transaction indices as part of the response in the success case. Such a transaction index is an index into the chain of blocks containing the transaction history of this ledger. The details of how to access the transaction history of ICRC-7 ledgers is not part of the ICRC-7 standard, but will use the separately published ICRC-3 standard that specifies access to the block log of ICRC ledgers.
+The class 1 of query calls above is handled with an API style that is *almost identical* to that of batch update calls. The main and only difference is the meaning of `null` values. For update calls, a `null` response means that processing has not been initiated, e.g., after a batch error has occurred. For query calls, errors that prevent further processing of queries are not expected as queries are read operations that should not fail. For queries, `null` may be defined to have a specific meaning per query. Queries must process the complete contiguous request sequence from index 0 up to a given request element index and may not have further response elements, but must, unlike queries, not skip processing of some elements. As queries are read-only operations that don't have the numerous failure modes of updates, this should not impose any undue constraints on an implementation.
 
 #### Error Handling
 
-It is recommended that neither query nor update calls trap unless completely unavoidable. The API is designed such that any errors do not need to lead to a trap, but can be communicated back to the client and the processing of large batches may be shortene to processing only a prefix.
+It is recommended that neither query nor update calls trap unless completely unavoidable. The API is designed such that errors do not need to cause a trap, but can be communicated back to the client and the processing of large batches may be short-circuited to processing only a prefix thereof.
 
-For example, if a limit expressed through an `icrc7:max_...` metadata attribute is violated, e.g., the maximum batch size is exceeded and the response would be too large, the ledger should process only a prefix of the input and return this. Only a prefix of the request being responded to means that the not-contained elements have not been processed, their processing has not even been attempted to be initiated.
+For example, if a limit expressed through an `icrc7:max_...` metadata attribute is violated, e.g., the maximum batch size is exceeded and the response size would exceed the system's permitted maximum, the ledger should process only a prefix of the input and return a corresponding response vector with elements corresponding to this prefix. Only a prefix of the request being responded to means that the suffix of the request has not been processed and the processing of its elements has not even been attempted to be initiated.
 
 #### Other Aspects
 
@@ -125,7 +121,7 @@ The following are the more technical, implementation-oriented, metadata elements
   * `icrc7:max_take_value` of type `nat` (optional): The maximum `take` value for paginated query calls this ledger implementation supports. The value applies to all paginated queries the ledger exposes. When present, should be the same as the result of the [`icrc7_max_take_value`](#icrc7_max_take_value) query call.
   * `icrc7:max_memo_size` of type `nat` (optional): The maximum size of `memo`s as supported by an implementation. When present, should be the same as the result of the [`icrc7_max_memo_size`](#icrc7_max_memo_size) query call.
 
-Note that if max values specified through metadata are violated in a query call by providing larger argument lists or resulting in larger responses than permitted, the canister traps with an according system error message.
+Note that if `icrc7_max...` limits specified through metadata are violated in a query call by providing larger argument lists or resulting in larger responses than permitted, the canister SHOULD return a response only to a prefix of the request items.
 
 ```candid "Type definitions" +=
 // Generic value in accordance with ICRC-3
