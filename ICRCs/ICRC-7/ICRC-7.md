@@ -55,7 +55,7 @@ The standard does not impose any constraints on aspects such as no duplicate tok
 
 Consider an input comprising the batch of transactions `A, B, C, D, E, F, G, H`, each of the items being one operation to perform and letters abstract the operation in the example.
 ```
-Input : [A, B, C, D, E, F, G];
+Input : [A, B, C, D, E, F, G, H];
 ```
 Depending on the concurrent execution of the individual operations, there may be different outcomes:
 
@@ -66,9 +66,7 @@ Depending on the concurrent execution of the individual operations, there may be
 3. Assume an error that prevents further processing has occurred while processing `A`, but processing of `B` and `H` has already been initiated and succeeds. The not-processed elements are filled up with `null` elements up to the rightmost processed element `H`.
   * Output: `[opt #Err(#GenericBatchError(...), opt #Ok(5), null, null, null, null, null, opt #Ok(6)];`
 
-// FIX We may note that processing of batch items is independent and they can independently succeed / fail; does not impose constraints in implementation; only constraint is that the response must contain response items up to the largest element index processing of which has been initiated by the ledger, regardless of whether it is successful or not eventually
-
-Batch methods are named following the convention of using their singular name, e.g., `icrc_7_token_of` and not `icrc_7_tokens_of` as this better matches the intent of the method independent of it being batch and better reflects the naming of the argument and response types in update calls. E.g., consider `icrc37_approve_token` from ICRC-37 and its associated data types `ApproveTokenArg`, `ApproveTokenResult`, and `ApproveTokenError`. Using plural would be misleading, e.g., `ApproveTokensResult` would hint that the result is about multiple tokens which is not the case.
+Note that the items in a batch are processed independent of each other and processing can independently succeed or fail. This choice does not impose relevant constraints on the ledger implementation. The only constraint resulting from this is that the response must contain response items up to the largest element index processing of which has been initiated by the ledger, regardless of its result. The response items following this highest-index processed request item can be left out.
 
 The API style we employ for batch APIs is simple, does not repeat request information in the response, and does not unnecessarily constrain the implementation, i.e., permits highly-concurrent implementations. On the client side it has no major drawbacks as it is straightforward to associated the corresponding request data with the responses by using positional alignment of the request and response vectors.
 
