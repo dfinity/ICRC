@@ -21,15 +21,15 @@ When an active approval exists for a token or for an account for the whole colle
 
 The owner principal can explicitly revoke an active approval at their discretion using the `icrc37_revoke_token_approvals` for revoking token-level approvals and `icrc37_revoke_collection_approvals` for revoking collection-level approvals.
 
-Analogous to ICRC-7, also ICRC-37 uses the ICRC-1 *account* as entity that the source account (`from`), destination account (`to`), and spending account (`spender`) are expressed with, i.e., a *subaccount* is always used besides the principal. In many practical the subaccount will be the default all `0` subaccount.
+Analogous to ICRC-7, also ICRC-37 uses the ICRC-1 *account* as entity that the source account (`from`), destination account (`to`), and spending account (`spender`) are expressed with, i.e., a *subaccount* is always used besides the principal. In many practical the subaccount will be the default all-`0` subaccount.
 
 ## Methods
 
 ### Generally-Applicable Specification
 
-The API follows the style introduced in [ICRC-7]()[Title](https://github.com/dfinity/ICRC/ICRC-7/ICRC-7.md#generally-applicable-specification). See the beforementioned link to ICRC-7 for details.
+The API follows the style introduced in [ICRC-7](https://github.com/dfinity/ICRC/ICRC-7/ICRC-7.md#generally-applicable-specification). See the aforementioned link to ICRC-7 for details.
 
-To summarize, both eligible update and query calls receive a vector of request items as input and return a vector or response items. Those are *positional arguments*, i.e., i-th element of the response corresponds to the i-th element of the request. The response may correspond to a proper prefix of the request: It must be a contiguous sequence of response items corresponding to a proper prefix of the request.
+To summarize, batch-eligible update and query calls receive a vector of request items as input and return a vector or response items. Those are *positional arguments*, i.e., `i`-th element of the response corresponds to the `i`-th element of the request. The response may correspond to a proper prefix of the request: It must be a contiguous sequence of response items, where each item corresponds to an item of a proper prefix of the request.
 
 For update calls, `null` elements in the response have the meaning that processing for the corresponding request items has not been initiated. For query calls, `null` elements have meaning as defined by the respective query call.
 
@@ -77,9 +77,9 @@ icrc37_max_revoke_approvals : () -> (opt nat) query;
 
 ### icrc37_approve_tokens
 
-Entitles a `spender`, indicated through an `Account`, to transfer NFTs on behalf of the caller of this method from `account { owner = caller; subaccount = from_subaccount }`, where `caller` is the caller of this method (and also the owner principal of the tokens that are subject to approval) and `from_subaccount` is the subaccount of the token owner principal the approval should apply to (i.e., the subaccount which the tokens must be held on and can be transferred out from). Note that the `from_subaccount` parameter needs to be explicitly specified because accounts are a primary concept in this standard and thereby the `from_subaccount` needs to be specified as part of the account that holds the token. The method has batch semantics and allows for submitting a batch of such collection approvals with a single invocation.
+Entitles a `spender`, indicated through an `Account`, to transfer NFTs on behalf of the caller of this method from `account { owner = caller; subaccount = from_subaccount }`, where `caller` is the caller of this method (and also the owner principal of the tokens that are subject to approval) and `from_subaccount` is the subaccount of the token owner principal the approval should apply to (i.e., the subaccount which the tokens must be held on and can be transferred out from). Note that the `from_subaccount` parameter needs to be explicitly specified because accounts are a primary concept in this standard and thereby the `from_subaccount` needs to be specified as part of the account that holds the token. The method has batch semantics and allows for submitting a batch of such token-level approvals with a single invocation.
 
-Each response item contains either a single `Ok` variant containing the transaction index of the collection-level approval in the success case or an error `Err` variant otherwise. A `null` element in the response indicates that the corresponding request element has not been processed. The batch response comprises a vector of this `(Ok, Err)` variant, one per request element. The response is a positional argument w.r.t. the request, i.e., the `i`-the response element is the response to the `i`-th` request element.
+The method response comprises a vector of optional item, one per request item. The response is a positional argument w.r.t. the request, i.e., the `i`-th response element is the response to the `i`-th request element. Each response item contains either an `Ok` variant containing the transaction index of the token-level approval in the success case or an `Err` variant in the error case. A `null` element in the response indicates that the corresponding request element has not been processed.
 
 Only one approval can be active for a given `(token_id, spender)` pair (the `from_subaccount` of the approval must be equal to the subaccount the token is held on).
 
@@ -87,12 +87,13 @@ In accordance with ICRC-2, multiple approvals can exist for the same `token_id` 
 
 An ICRC-7 ledger implementation does not need to keep track of expired approvals in its memory. This is important to help constrain unlimited growth of ledger memory over time. All historic approvals are contained in the block history the ledger creates.
 
-The `created_at_time` parameter indicates the time (as nanoseconds since the UNIX epoch in the UTC timezone) at which the client constructed the transaction, the `memo` parameter is an arbitrary blob that is not interpreted by the ledger.
-
-The ledger SHOULD reject transactions that have the `created_at_time` argument too far in the past or the future, returning `variant { TooOld }` and `variant { CreatedInFuture = record { ledger_time = ... } }` errors correspondingly.
 The ledger returns an `InvalidSpender` error if the spender account owner is equal to the caller account owner. I.e., a principal cannot create an approval for themselves, because a principal always has an implicit approval to act on their own tokens.
 
 An `Unauthorized` error is returned in case the caller is not authorized to perform this action on the token, i.e., it does not own the token or the token is not held in the account specified through `from_subaccount`.
+
+A `NonExistingTokenId` error is returned in case the referred-to token does not exist.
+
+The `created_at_time` parameter indicates the time (as nanoseconds since the UNIX epoch in the UTC timezone) at which the client constructed the transaction, the `memo` parameter is an arbitrary blob that is not interpreted by the ledger. The ledger SHOULD reject transactions that have the `created_at_time` argument too far in the past or the future, returning `variant { TooOld }` and `variant { CreatedInFuture = record { ledger_time = ... } }` errors correspondingly.
 
 ```candid "Type definitions" +=
 type ApprovalInfo = {
@@ -134,7 +135,7 @@ icrc37_approve_tokens : (vec ApproveTokenArg)
 
 Entitles a `spender`, indicated through an `Account`, to transfer any NFT of the collection hosted on this ledger and owned by the caller at the time of transfer on behalf of the caller of this method from `account { owner = caller; subaccount = from_subaccount }`, where `caller` is the caller of this method and `from_subaccount` is the subaccount of the token owner principal the approval should apply to (i.e., the subaccount which tokens the approval should apply to must be held on and can be transferred out from). Note that the `from_subaccount` parameter needs to be explicitly specified not only because accounts are a primary concept in this standard, but also because the approval applies to the collection, i.e., all tokens on the ledger the caller holds, and those tokens may be held on different subaccounts. The `expires_at` value specifies the expiration date of the approval. The method has batch semantics and allows for submitting a batch of such collection approvals with a single invocation.
 
-Each response item contains either a single `Ok` variant containing the transaction index of the collection-level approval in the success case or an error `Err` variant otherwise. A `null` element in the response indicates that the corresponding request element has not been processed. The batch response comprises a vector of this `(Ok, Err)` variant, one per request element. The response is a positional argument w.r.t. the request, i.e., the `i`-the response element is the response to the `i`-th` request element.
+The method response comprises a vector of optional item, one per request item. The response is a positional argument w.r.t. the request, i.e., the `i`-th response element is the response to the `i`-th request element. Each response item contains either an `Ok` variant containing the transaction index of the collection-level approval in the success case or an `Err` variant in the error case. A `null` element in the response indicates that the corresponding request element has not been processed.
 
 Only one approval can be active for a given `(spender, from_subaccount)` pair. Note that it is not required that tokens be held by the caller on their `from_subaccount` for the approval to be active.
 
@@ -144,15 +145,15 @@ An ICRC-7 ledger implementation does not need to keep track of expired approvals
 
 It is left to the ledger implementation to decide whether collection-level approvals can be successfully created independently of currently owning tokens of the collection at approval time.
 
-The `created_at_time` parameter indicates the time (as nanoseconds since the UNIX epoch in the UTC timezone) at which the client constructed the transaction, the `memo` parameter is an arbitrary blob that is not interpreted by the ledger. The ledger SHOULD reject transactions that have the `created_at_time` argument too far in the past or the future, returning `variant { TooOld }` and `variant { CreatedInFuture = record { ledger_time = ... } }` errors correspondingly.
-
 The ledger returns an `InvalidSpender` error if the spender account owner is equal to the caller account owner. I.e., a principal cannot create an approval for themselves, because a principal always has an implicit approval to act on their own tokens.
+
+The `created_at_time` parameter indicates the time (as nanoseconds since the UNIX epoch in the UTC timezone) at which the client constructed the transaction, the `memo` parameter is an arbitrary blob that is not interpreted by the ledger. The ledger SHOULD reject transactions that have the `created_at_time` argument too far in the past or the future, returning `variant { TooOld }` and `variant { CreatedInFuture = record { ledger_time = ... } }` errors correspondingly.
 
 Note that this method is analogous to `icrc37_approve_tokens`, but for approving whole collections. `ApproveCollectionArg` specifies the approval to be made for the collection.
 
 To ensure proper semantics, collection-level approvals MUST be managed by the ledger as collection-level approvals and MUST NOT be translated into token-level approvals for all tokens the caller owns.
 
-See the [#icrc37_approve_tokens](#icrc37_approve_tokens) for the Candid types.
+See the [#icrc37_approve_tokens](#icrc37_approve_tokens) for the `ApprovalInfo` type.
 
 ```candid "Type definitions" +=
 type ApproveCollectionArg = record {
@@ -185,7 +186,7 @@ Revokes the specified approvals for a token given by `token_id` from the set of 
 
 Only the owner of tokens can revoke approvals.
 
-Each response item contains either a single `Ok` variant containing the transaction index of the revoked token-level approval in the success case or an error `Err` variant otherwise. A `null` element in the response indicates that the corresponding request element has not been processed. The batch response comprises a vector of this `(Ok, Err)` variant, one per request element. The response is a positional argument w.r.t. the request, i.e., the `i`-the response element is the response to the `i`-th` request element.
+The method response comprises a vector of optional item, one per request item. The response is a positional argument w.r.t. the request, i.e., the `i`-th response element is the response to the `i`-th request element. Each response item contains either an `Ok` variant containing the transaction index of the token-level approval revocation in the success case or an `Err` variant in the error case. A `null` element in the response indicates that the corresponding request element has not been processed.
 
 The `created_at_time` parameter indicates the time (as nanoseconds since the UNIX epoch in the UTC timezone) at which the client constructed the transaction.
 The ledger SHOULD reject transactions that have the `created_at_time` argument too far in the past or the future, returning `variant { TooOld }` and `variant { CreatedInFuture = record { ledger_time = ... } }` errors correspondingly.
@@ -229,13 +230,11 @@ icrc37_revoke_token_approvals: (vec RevokeTokenApprovalArg)
 
 Revokes collection-level approvals from the set of active approvals. The `from_subaccount` parameter specifies the token owner's subaccount to which the approval applies, the `spender` the party for which the approval is to be revoked. A `null` value of `from_subaccount` indicates the default subaccount.
 
-Each response item contains either a single `Ok` variant containing the transaction index of the revoked collection-level approval in the success case or an error `Err` variant otherwise. A `null` element in the response indicates that the corresponding request element has not been processed. The batch response comprises a vector of this `(Ok, Err)` variant, one per request element. The response is a positional argument w.r.t. the request, i.e., the `i`-the response element is the response to the `i`-th` request element.
+The method response comprises a vector of optional item, one per request item. The response is a positional argument w.r.t. the request, i.e., the `i`-th response element is the response to the `i`-th request element. Each response item contains either an `Ok` variant containing the transaction index of the collection-level approval revocation in the success case or an `Err` variant in the error case. A `null` element in the response indicates that the corresponding request element has not been processed.
 
 This is the analogous method to `icrc37_revoke_token_approvals` for revoking collection-level approvals.
 
 Revoking a collection-level approval does not affect token-level approvals for individual token ids.
-
-Note that the size of responses on ICP is limited and callers of this method should take care to not exceed the response limit for their inputs by revoking too many collection-level approvals with one request.
 
 The `created_at_time` parameter indicates the time (as nanoseconds since the UNIX epoch in the UTC timezone) at which the client constructed the transaction.
 The ledger SHOULD reject transactions that have the `created_at_time` argument too far in the past or the future, returning `variant { TooOld }` and `variant { CreatedInFuture = record { ledger_time = ... } }` errors correspondingly.
@@ -295,6 +294,8 @@ The response is a vector of `TokenApproval` elements. If multiple approvals exis
 
 The ordering of the elements in the response is undefined. An implementation of the ledger can use any internal sorting order for the elements of the response to implement pagination.
 
+See the [#icrc37_approve_tokens](#icrc37_approve_tokens) for the `ApprovalInfo` type.
+
 ```candid "Type definitions" +=
 type TokenApproval = record {
     token_id : nat;
@@ -307,7 +308,7 @@ icrc37_get_token_approvals : (token_ids : vec nat, prev : opt TokenApproval; tak
     -> (vec TokenApproval) query;
 ```
 
-Note: This methods deviates from the API best practice outlined in ICRC-7 of not having paginated batch APIs. The reason is that this method requires pagination because of possibly large numbers of responses, but is also expected to be useful as batch method for frequently expected use cases. Thus, the methods cannot use the typical positional arguments of other batch calls in the ICRC-7 and ICRC-37 standards.
+> [!NOTE] This method deviates from the API best practice outlined in ICRC-7 of not having paginated batch APIs. The reason is that this method requires pagination because of possibly large numbers of responses, but is also expected to be useful as batch method for frequently expected use cases. Thus, the methods cannot use the typical positional arguments of other batch calls in the ICRC-7 and ICRC-37 standards.
 
 ### icrc37_get_collection_approvals
 
@@ -316,6 +317,8 @@ Returns the collection-level approvals that exist for the specified `owner`. The
 The response is a vector of `CollectionApproval` elements.
 
 The elements in the response are ordered following a sorting order defined by the implementation. An implementation of the ledger can use any suitable sorting order for the elements of the response to implement pagination.
+
+See the [#icrc37_approve_tokens](#icrc37_approve_tokens) for the `ApprovalInfo` type.
 
 ```candid "Type definitions" +=
 type CollectionApproval = ApprovalInfo;
