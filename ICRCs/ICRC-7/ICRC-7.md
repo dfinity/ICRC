@@ -80,7 +80,7 @@ There are two different classes of query methods in terms of their API styles de
 1. Query methods that have (at most) one response per request in the batch. For example, `icrc7_balance_of`, which receives a vector of token ids as input and each output element is the balance of the corresponding input. Those methods perfectly lend themselves for implementation with a batch API. Those queries have an analogous API style as batch update calls.
 1. Query methods that may have multiple responses for an input element. An example is `icrc7_tokens_of`, which may have many response elements for an account. Those methods require pagination. Pagination is hard to combine with the batch API style of the reponses corresponding to the requests by index of the respective vectors. Thus, the guiding principle is that such methods be non-batch paginated methods, unless there is a strong reason for a deviation from this.
 
-The class 1 of query calls above is handled with an API style that is *almost identical* to that of batch update calls. The main and only difference is the meaning of `null` values. For update calls, a `null` response means that processing has not been initiated, e.g., after a batch error has occurred. For query calls, errors that prevent further processing of queries are not expected as queries are read operations that should not fail. For queries, `null` may be defined to have a specific meaning per query. Queries must process the complete contiguous request sequence from index 0 up to a given request element index and may not have further response elements, but must, unlike queries, not skip processing of some elements. As queries are read-only operations that don't have the numerous failure modes of updates, this should not impose any undue constraints on an implementation.
+The class 1 of query calls above is handled with an API style that is *almost identical* to that of batch update calls as outlined above. The main and only difference is the meaning of `null` values. For update calls, a `null` response means that processing has not been initiated, e.g., after a batch error has occurred. For query calls, errors that prevent further processing of queries are not expected as queries are read operations that should not fail. For queries, `null` may be defined to have a specific meaning per query. Queries must process the complete contiguous request sequence from index 0 up to a given request element index and may not have further response elements, but must, unlike queries, not skip processing of some elements. As queries are read-only operations that don't have the numerous failure modes of updates, this should not impose any undue constraints on an implementation.
 
 #### Error Handling
 
@@ -269,10 +269,8 @@ icrc7_owner_of : (token_ids : vec nat)
 
 Returns the balance of the `account` provided as an argument, i.e., the number of tokens held by the account. For a non-existing account, the value `0` is returned.
 
-// FIX Do we need to allow a response to be `null` with the new batch API semantics? E.g., processing needs to hold and responses need to be filled up with `null` values; if so, this clashes with `null` semantics for various queries; not allowing `null` values seems to be cleaner, but deviates from ghow update calls are handled
-
 ```candid "Methods" +=
-icrc7_balance_of : (vec account : Account) -> (nat) query;
+icrc7_balance_of : (vec account : Account) -> (vec nat) query;
 ```
 
 ### icrc7_tokens
@@ -303,7 +301,7 @@ icrc7_tokens_of : (account : Account, prev : opt nat, take : opt nat)
 
 Performs a batch of transfers of tokens. Each transfer transfers a token `token_id` from the account defined by the caller principal and the specified `subaccount` to the `to` account. A `memo` and `created_at_time` can be given optionally. The transfer can only be initiated by the holder of the tokens.
 
-The response is a vector of `TransferResult` records, whose sequence correspond to the sequence of `TransferArg`s in the request, i.e., the `i`-th `TransferResult` in the response is the response to the `i`-th `TransferArg` in the request. Each `TransferResult` comprises an `Ok` variant with the transaction index of the transfer in the success case or an `Err` variant with a `TransferError` in the error case.
+The method response comprises a vector of optional elements, one per request element. The response is a positional argument w.r.t. the request, i.e., the `i`-th response element is the response to the `i`-th request element. Each response item contains either an `Ok` variant containing the transaction index of the transfer in the success case or an `Err` variant in the error case. A `null` element in the response indicates that the corresponding request element has not been processed.
 
 A transfer clears all active token-level approvals for a successfully transferred token. This implicit clearing of approvals only clears token-level approvals and never touches collection-level approvals. This clearing does not create an ICRC-3 block in the transaction log, but it is implied by the transfer block in the log.
 
