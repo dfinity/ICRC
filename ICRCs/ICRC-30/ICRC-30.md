@@ -115,10 +115,10 @@ type ApproveTokenResult = variant {
 
 type ApproveTokenError = variant {
     InvalidSpender;
+    Unauthorized;
+    NonExistingTokenId;
     TooOld;
     CreatedInFuture : record { ledger_time: nat64 };
-    NonExistingTokenId;
-    Unauthorized;
     GenericError : record { error_code : nat; message : text };
     BatchTermination;
     GenericBatchError : record { error_code : nat; message : text };
@@ -169,7 +169,6 @@ type ApproveCollectionError = variant {
     TooOld;
     CreatedInFuture : record { ledger_time: nat64 };
     GenericError : record { error_code : nat; message : text };
-    // FIX batch errors
     BatchTermination;
     GenericBatchError : record { error_code : nat; message : text };
 };
@@ -210,9 +209,9 @@ type RevokeTokenApprovalResponse = variant {
 }
 
 type RevokeTokenApprovalError = variant {
-    NonExistingTokenId;
-    Unauthorized;
     ApprovalDoesNotExist;
+    Unauthorized;
+    NonExistingTokenId;
     TooOld;
     CreatedInFuture : record { ledger_time: nat64 };
     GenericError : record { error_code : nat; message : text };
@@ -258,7 +257,6 @@ type RevokeCollectionApprovalResult = variant {
 
 type RevokeCollectionApprovalError = variant {
     ApprovalDoesNotExist;
-    GenericError : record { error_code : nat; message : text };
     TooOld;
     CreatedInFuture : record { ledger_time: nat64 };
     GenericError : record { error_code : nat; message : text };
@@ -355,13 +353,12 @@ type TransferFromResponse = variant {
 }
 
 type TransferFromError = variant {
-    NonExistingTokenId;
-    Unauthorized;
-    Duplicate : record { duplicate_of : nat };
-    GenericError : record { error_code : nat; message : text };
     InvalidRecipient;
+    Unauthorized;
+    NonExistingTokenId;
     TooOld;
     CreatedInFuture : record { ledger_time: nat64 };
+    Duplicate : record { duplicate_of : nat };
     GenericError : record { error_code : nat; message : text };
     BatchTermination;
     GenericBatchError : record { error_code : nat; message : text };
