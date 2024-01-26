@@ -3,20 +3,21 @@
 |30|Approval Functionality for the Non-Fungible Token (NFT) Standard|Ben Zhai (@benjizhai), Austin Fatheree (@skilesare), Dieter Sommer (@dietersommer), Thomas (@sea-snake), Moritz Fuller (@letmejustputthishere), Matthew Harmon|https://github.com/dfinity/ICRC/issues/30|Draft|Standards Track||2023-11-22|
 
 
-
 # ICRC-37: Approval Support for the Minimal Non-Fungible Token (NFT) Standard
 
-This document specifies approval support for the ICRC-7 minimal NFT standard for the Internet Computer. It defines all the methods required for managing approval semantics for an NFT token ledger, i.e., creating approvals, revoking approvals, querying approval information, and making transfers based on approvals. The scope of ICRC-37 has been part of ICRC-7 originally, however, the responsible Working Group has decided to split it out into a separate standard for the following reasons:
+This document specifies approval support for the ICRC-7 minimal NFT standard for the Internet Computer. It defines all the methods required for managing approval semantics for an NFT token ledger, i.e., creating approvals, revoking approvals, querying approval information, and making transfers based on approvals. The scope of ICRC-37 has been part of ICRC-7 originally, however, the NFT Working Group has decided to split it out into a separate standard for the following reasons:
   * ICRC-7 and ICRC-37 are much easier to navigate and shorter on their own due to their respective foci;
   * Ledgers that do not want to implement approval and transfer from semantics do not need to provide dummy implementations of the corresponding methods that fail by default.
 
 This standard extends the ICRC-7 NFT standard and is intended to be implemented by token ledgers that implement ICRC-7.
 
+// FIX naming of methods
+
 ## Concepts
 
-Approvals allow a principal, the *spender*, to transfer tokens owned by another account that has approved the spender, where the transfer is performed on behalf of the owner. Approvals can be created on a per-token basis using `icrc37_approve_tokens` or for the whole collection, i.e., all tokens of the collection, using `icrc37_approve_collection`. An approval that has been created, has not expired (i.e., the `expires_at` field is a date in the future), has not been revoked, and has not been replaced with a new approval is *active*, i.e., can allow the approved party to initiate a transfer.
+*Approvals* allow a principal, the *spender*, to transfer tokens owned by another account that has approved the spender, where the transfer is performed on behalf of the owner. Approvals can be created on a per-token basis using `icrc37_approve_token` or for the whole collection, i.e., all tokens of the collection, using `icrc37_approve_collection`. An approval that has been created, has not expired (i.e., the `expires_at` field is a date in the future), has not been revoked, and has not been replaced with a new approval is *active*, i.e., can allow the approved party to initiate a transfer.
 
-When an active approval exists for a token or for an account for the whole collection, the spender specified in the approval can transfer tokens in the scope of an approval using the `tranfer_from` method. A successful transfer also revokes the corresponding approval if it is a token-level approval. Collection-level approvals are never revoked by transfers.
+When an active approval exists for a token or for an account for the whole collection, the spender specified in the approval can transfer tokens within the scope of the approval using the `transfer_from` method. A successful transfer also implicitly revokes the corresponding approval in case it is a token-level approval. Collection-level approvals are never revoked by transfers.
 
 The owner principal can explicitly revoke an active approval at their discretion using the `icrc37_revoke_token_approvals` for revoking token-level approvals and `icrc37_revoke_collection_approvals` for revoking collection-level approvals.
 
@@ -66,13 +67,11 @@ Returns the maximum number of approvals that may be revoked in a single invocati
 icrc37_max_revoke_approvals : () -> (opt nat) query;
 ```
 
-### icrc37_approve_token
+### icrc37_approve_tokens
 
-Entitles a `spender`, indicated through an `Account`, to transfer NFTs on behalf of the caller of this method from `account { owner = caller; subaccount = from_subaccount }`, where `caller` is the caller of this method (and also the owner principal of the tokens that are subject to approval) and `from_subaccount` is the subaccount of the token owner principal the approval should apply to (i.e., the subaccount which the tokens must be held on and can be transferred out from). Note that the `from_subaccount` parameter needs to be explicitly specified because accounts are a primary concept in this standard and thereby the `from_subaccount` needs to be specified as part of the account that holds the token. The `expires_at` value specifies the expiration date of the approval, the `memo` parameter is an arbitrary blob that is not interpreted by the ledger. The `created_at_time` field specifies when the approval has been created. The method accepts batches of such token approval requests as input.
+Entitles a `spender`, indicated through an `Account`, to transfer NFTs on behalf of the caller of this method from `account { owner = caller; subaccount = from_subaccount }`, where `caller` is the caller of this method (and also the owner principal of the tokens that are subject to approval) and `from_subaccount` is the subaccount of the token owner principal the approval should apply to (i.e., the subaccount which the tokens must be held on and can be transferred out from). Note that the `from_subaccount` parameter needs to be explicitly specified because accounts are a primary concept in this standard and thereby the `from_subaccount` needs to be specified as part of the account that holds the token. The method has batch semantics and allows for submitting a batch of such collection approvals with a single invocation.
 
-Each response comprises an optional `Ok` or `Err` variant, the success case containing the transaction index of the operation, and the error case containing an error variant. The overall response comprises a vector of such responses, where elements can also be `null` in case they have not been processed.
-
-The ledger returns an `InvalidSpender` error if the spender account owner is equal to the caller account owner. I.e., a principal cannot create an approval for themselves, because a principal always has an implicit approval to act on their own tokens.
+Each response item contains either a single `Ok` variant containing the transaction index of the collection-level approval in the success case or an error `Err` variant otherwise. A `null` element in the response indicates that the corresponding request element has not been processed. The batch response comprises a vector of this `(Ok, Err)` variant, one per request element. The response is a positional argument w.r.t. the request, i.e., the `i`-the response element is the response to the `i`-th` request element.
 
 Only one approval can be active for a given `(token_id, spender)` pair (the `from_subaccount` of the approval must be equal to the subaccount the token is held on).
 
@@ -80,17 +79,19 @@ In accordance with ICRC-2, multiple approvals can exist for the same `token_id` 
 
 An ICRC-7 ledger implementation does not need to keep track of expired approvals in its memory. This is important to help constrain unlimited growth of ledger memory over time. All historic approvals are contained in the block history the ledger creates.
 
-An `Unauthorized` error is returned in case the caller is not authorized to perform this action on the token, i.e., it does not own the token or the token is not held in the account specified through `from_subaccount`.
+The `created_at_time` parameter indicates the time (as nanoseconds since the UNIX epoch in the UTC timezone) at which the client constructed the transaction, the `memo` parameter is an arbitrary blob that is not interpreted by the ledger.
 
-The `created_at_time` parameter indicates the time (as nanoseconds since the UNIX epoch in the UTC timezone) at which the client constructed the transaction.
 The ledger SHOULD reject transactions that have the `created_at_time` argument too far in the past or the future, returning `variant { TooOld }` and `variant { CreatedInFuture = record { ledger_time = ... } }` errors correspondingly.
+The ledger returns an `InvalidSpender` error if the spender account owner is equal to the caller account owner. I.e., a principal cannot create an approval for themselves, because a principal always has an implicit approval to act on their own tokens.
+
+An `Unauthorized` error is returned in case the caller is not authorized to perform this action on the token, i.e., it does not own the token or the token is not held in the account specified through `from_subaccount`.
 
 ```candid "Type definitions" +=
 type ApproveTokenArg = record {
     from_subaccount : opt blob; // null refers to the default subaccount
     spender : Account;             // Approval is given to an ICRC Account
-    expires_at : opt nat64;
     token_id : nat;
+    expires_at : opt nat64;
     memo : opt blob;
     created_at_time : nat64; 
 };
@@ -107,35 +108,37 @@ type ApproveTokenError = variant {
     NonExistingTokenId;
     Unauthorized;
     GenericError : record { error_code : nat; message : text };
-    GenericBatchError : record { error_code : nat; message : text }; // FIX batch errors to be defined (e.g., a specific one and a generic one)
+    BatchTermination;
+    GenericBatchError : record { error_code : nat; message : text };
 };
 ```
 
+// FIX naming: icrc7_create_token_approvals would be more consistent with use of singular and plural; e.g., icrc7_approve_collection must be singular as you only ever approve one collection, but maybe create multiple approvals to different parties; thus, the icrc7_create_collection_approvals would be cleaner
+
 ```candid "Methods" +=
-icrc37_approve_token : (vec ApproveTokenArg)
+icrc37_approve_tokens : (vec ApproveTokenArg)
     -> (vec opt ApproveTokenResult);
 ```
 
 ### icrc37_approve_collection
 
-Entitles a `spender`, indicated through an `Account`, to transfer any NFT of the collection hosted on this ledger and owned by the caller at the time of transfer on behalf of the caller of this method from `account { owner = caller; subaccount = from_subaccount }`, where `caller` is the caller of this method and `from_subaccount` is the subaccount of the token owner principal the approval should apply to (i.e., the subaccount which tokens the approval should apply to must be held on and can be transferred out from). Note that the `from_subaccount` parameter needs to be explicitly specified not only because accounts are a primary concept in this standard, but also because the approval applies to the collection, i.e., all tokens on the ledger the caller holds, and those tokens may be held on different subaccounts. The `expires_at` value specifies the expiration date of the approval, the `memo` parameter is an arbitrary blob that is not interpreted by the ledger. The `created_at_time` field specifies when the approval has been created. The method is a batch method that allows for submitting a batch of collection approvals with a single method invocation.
+Entitles a `spender`, indicated through an `Account`, to transfer any NFT of the collection hosted on this ledger and owned by the caller at the time of transfer on behalf of the caller of this method from `account { owner = caller; subaccount = from_subaccount }`, where `caller` is the caller of this method and `from_subaccount` is the subaccount of the token owner principal the approval should apply to (i.e., the subaccount which tokens the approval should apply to must be held on and can be transferred out from). Note that the `from_subaccount` parameter needs to be explicitly specified not only because accounts are a primary concept in this standard, but also because the approval applies to the collection, i.e., all tokens on the ledger the caller holds, and those tokens may be held on different subaccounts. The `expires_at` value specifies the expiration date of the approval. The method has batch semantics and allows for submitting a batch of such collection approvals with a single invocation.
 
-Each response contains a single element with the `Ok` variant containing the transaction index of the collection-level approval in the success case or an error `Err` otherwise. The response is a vector of such elements.
+Each response item contains either a single `Ok` variant containing the transaction index of the collection-level approval in the success case or an error `Err` variant otherwise. A `null` element in the response indicates that the corresponding request element has not been processed. The batch response comprises a vector of this `(Ok, Err)` variant, one per request element. The response is a positional argument w.r.t. the request, i.e., the `i`-the response element is the response to the `i`-th` request element.
 
-The ledger returns an `InvalidSpender` error if the spender account owner is equal to the caller account owner. I.e., a principal cannot create an approval for themselves, because a principal always has an implicit approval to act on their own tokens.
+Only one approval can be active for a given `(spender, from_subaccount)` pair. Note that it is not required that tokens be held by the caller on their `from_subaccount` for the approval to be active.
 
-Only one approval can be active for a given `(spender, from_subaccount)` pair. Note that it is not required that tokens are held by the caller on their `from_subaccount` for the approval to be active.
+In accordance with ICRC-2, multiple approvals can exist for the collection for a caller but different `spender`s and `from_subaccount`s, i.e., one approval per `(spender, from_subaccount)` pair. In case an approval for the specified `spender` and `from_subaccount` of the caller for the collection already exists, a new approval is created that replaces the existing approval. The replaced approval is superseded with the effect that the new parameters (`expires_at`, `memo`, `created_at_time`) apply to the approval defined by `from_subaccount` and `spender`. The ledger SHOULD limit the number of approvals that can be active per collection to constrain unlimited growth of ledger memory. Such limit is exposed as ledger metadata through the metadata attribute `icrc37:max_approvals_per_token_or_collection`.
 
-In accordance with ICRC-2, multiple approvals can exist for the collection for a caller but different `spender`s and `from_subaccount`s, i.e., one approval per `(spender, from_subaccount)` pair. In case an approval for the specified `spender` and `from_subaccount` of the caller for the collection already exists, a new approval is created that replaces the existing approval. The replaced approval is superseded with the effect that the new parameters for the approval (`expires_at`, `memo`, `created_at_time`) apply. The ledger SHOULD limit the number of approvals that can be active per collection to constrain unlimited growth of ledger memory. Such limit is exposed as ledger metadata through the metadata attribute `icrc37:max_approvals_per_token_or_collection`.
-
-An ICRC-7 ledger implementation does not need to keep track of expired approvals in its memory. This is important to help constrain unlimited growth of ledger memory over time. All historic approvals are contained in the block history the ledger creates.
+An ICRC-7 ledger implementation does not need to keep track of expired approvals in its memory. This is important to help constrain unlimited growth of ledger memory over time. All historic approvals are contained in the block log history the ledger creates.
 
 It is left to the ledger implementation to decide whether collection-level approvals can be successfully created independently of currently owning tokens of the collection at approval time.
 
-The `created_at_time` parameter indicates the time (as nanoseconds since the UNIX epoch in the UTC timezone) at which the client constructed the transaction.
-The ledger SHOULD reject transactions that have the `created_at_time` argument too far in the past or the future, returning `variant { TooOld }` and `variant { CreatedInFuture = record { ledger_time = ... } }` errors correspondingly.
+The `created_at_time` parameter indicates the time (as nanoseconds since the UNIX epoch in the UTC timezone) at which the client constructed the transaction, the `memo` parameter is an arbitrary blob that is not interpreted by the ledger. The ledger SHOULD reject transactions that have the `created_at_time` argument too far in the past or the future, returning `variant { TooOld }` and `variant { CreatedInFuture = record { ledger_time = ... } }` errors correspondingly.
 
-Note that this method is analogous to `icrc37_approve_tokens`, but for approving whole collections. `ApprovalInfo` specifies the approval to be made for the collection.
+The ledger returns an `InvalidSpender` error if the spender account owner is equal to the caller account owner. I.e., a principal cannot create an approval for themselves, because a principal always has an implicit approval to act on their own tokens.
+
+Note that this method is analogous to `icrc37_approve_tokens`, but for approving whole collections. `ApproveCollectionArg` specifies the approval to be made for the collection.
 
 Collection-level approvals MUST be managed by the ledger as collection-level approvals and MUST NOT be translated into token-level approvals for all tokens the caller owns.
 
@@ -161,6 +164,7 @@ type ApproveCollectionError = variant {
     CreatedInFuture : record { ledger_time: nat64 };
     GenericError : record { error_code : nat; message : text };
     // FIX batch errors
+    BatchTermination;
     GenericBatchError : record { error_code : nat; message : text };
 };
 ```
@@ -176,7 +180,7 @@ Revokes the specified approvals for a token given by `token_id` from the set of 
 
 Only the owner of tokens can revoke approvals.
 
-Each response element is an optional success or error variant, the `Ok` variant comprising the transaction index for the successful operation, the `Err` variant comprising an error. The response is a vector of those optional variants, i.e., elements may be null in case processing of the corresponding request has not been attempted.
+Each response item contains either a single `Ok` variant containing the transaction index of the revoked token-level approval in the success case or an error `Err` variant otherwise. A `null` element in the response indicates that the corresponding request element has not been processed. The batch response comprises a vector of this `(Ok, Err)` variant, one per request element. The response is a positional argument w.r.t. the request, i.e., the `i`-the response element is the response to the `i`-th` request element.
 
 The `created_at_time` parameter indicates the time (as nanoseconds since the UNIX epoch in the UTC timezone) at which the client constructed the transaction.
 The ledger SHOULD reject transactions that have the `created_at_time` argument too far in the past or the future, returning `variant { TooOld }` and `variant { CreatedInFuture = record { ledger_time = ... } }` errors correspondingly.
@@ -187,9 +191,9 @@ An ICRC-37 ledger implementation does not need to keep track of revoked approval
 
 ```candid "Type definitions" +=
 type RevokeTokenApprovalArg = record {
-    token_id : vec nat;
     from_subaccount : opt blob; // null refers to the default subaccount
     spender : Account;
+    token_id : vec nat;
     memo : opt blob;
     created_at_time : opt nat64;
 };
@@ -206,20 +210,21 @@ type RevokeTokenApprovalError = variant {
     GenericError : record { error_code : nat; message : text };
     TooOld;
     CreatedInFuture : record { ledger_time: nat64 };
+    BatchTermination;
     GenericBatchError : record { error_code : nat; message : text };
 };
 ```
 
 ```candid "Methods" +=
-icrc37_revoke_token_approval: (vec RevokeTokenApprovalArg)
+icrc37_revoke_token_approvals: (vec RevokeTokenApprovalArg)
     -> (vec opt RevokeTokenApprovalResponse);
 ```
 
-### icrc37_revoke_collection_approval
+### icrc37_revoke_collection_approvals
 
 Revokes collection-level approvals from the set of active approvals. The `from_subaccount` parameter specifies the token owner's subaccount to which the approval applies, the `spender` the party for which the approval is to be revoked. A `null` value of `from_subaccount` indicates the default subaccount.
 
-The success variant of the response is a vector containing a record for each revoked approval. Each element is the `Ok` variant in the success case containing the transaction index and the `Err` variant in the error case containing an error.
+Each response item contains either a single `Ok` variant containing the transaction index of the revoked collection-level approval in the success case or an error `Err` variant otherwise. A `null` element in the response indicates that the corresponding request element has not been processed. The batch response comprises a vector of this `(Ok, Err)` variant, one per request element. The response is a positional argument w.r.t. the request, i.e., the `i`-the response element is the response to the `i`-th` request element.
 
 This is the analogous method to `icrc37_revoke_token_approvals` for revoking collection-level approvals.
 
@@ -251,17 +256,19 @@ type RevokeCollectionApprovalError = variant {
     TooOld;
     CreatedInFuture : record { ledger_time: nat64 };
     GenericError : record { error_code : nat; message : text };
+    BatchTermination;
+    GenericBatchError : record { error_code : nat; message : text };
 };
 ```
 
 ```candid "Methods" +=
-icrc37_revoke_collection_approval: (vec RevokeCollectionArg)
+icrc37_revoke_collection_approvals: (vec RevokeCollectionArg)
     -> (vec opt RevokeCollectionApprovalResult);
 ```
 
 ### icrc37_is_approved
 
-Returns `true` if an active approval exists that allows the `spender` to transfer the token `token_id` from the given `from_subaccount`, `false` otherwise.
+Returns `true` if an active approval, i.e., a token-level approval or collection-level approval, exists that allows the `spender` to transfer the token `token_id` from the given `from_subaccount`, `false` otherwise.
 
 ```candid "Type definitions" +=
 type IsApprovedArg = record {
@@ -286,9 +293,9 @@ The ordering of the elements in the response is undefined. An implementation of 
 
 ```candid "Type definitions" +=
 type TokenApproval = record {
-    token_id : nat;
-    from_subaccount : opt blob;
     spender : Account;             // Approval is given to an ICRC Account
+    from_subaccount : opt blob;
+    token_id : nat;
     expires_at : opt nat64;
     memo : opt blob;
     created_at_time : opt nat64;
@@ -300,7 +307,7 @@ icrc37_get_token_approvals : (token_ids : vec nat, prev : opt TokenApproval; tak
     -> (vec TokenApproval) query;
 ```
 
-Note: This methods deviates from the API best practice outlined in ICRC-7 of not having paginated batch APIs. The reason is that this method requires pagination, but is also expected to be useful as batch method for frequent use cases. Thus, the methods cannot use the typical positional arguments of other batch calls in the ICRC-7 and ICRC-37 standards.
+Note: This methods deviates from the API best practice outlined in ICRC-7 of not having paginated batch APIs. The reason is that this method requires pagination because of possibly large numbers of responses, but is also expected to be useful as batch method for frequently expected use cases. Thus, the methods cannot use the typical positional arguments of other batch calls in the ICRC-7 and ICRC-37 standards.
 
 ### icrc37_get_collection_approvals
 
@@ -312,8 +319,8 @@ The elements in the response are ordered following a sorting order defined by th
 
 ```candid "Type definitions" +=
 type CollectionApproval = {
-    from_subaccount : opt blob;
     spender : Account;             // Approval is given to an ICRC Account
+    from_subaccount : opt blob;
     expires_at : opt nat64;
     memo : opt blob;
     created_at_time : opt nat64;
@@ -333,7 +340,7 @@ The response is a vector of records each comprising a `token_id` and a correspon
 
 The ledger returns an `InvalidRecipient` error in case `to` equals `from`.
 
-A transfer clears all active token-level approvals for the successfully transferred tokens. This implicit clearing of approvals only clears token-level approvals and never touches collection-level approvals.
+A transfer implicitly clears all active token-level approvals for the successfully transferred tokens. This implicit clearing of approvals only clears token-level approvals and never touches collection-level approvals. No explicit entry in the block log is created for the clearing, but it is implied by the transfer entry.
 
 ```candid "Type definitions" +=
 TransferFromArg = record {
@@ -360,6 +367,8 @@ type TransferFromError = variant {
     TooOld;
     CreatedInFuture : record { ledger_time: nat64 };
     GenericError : record { error_code : nat; message : text };
+    BatchTermination;
+    GenericBatchError : record { error_code : nat; message : text };
 };
 ```
 
