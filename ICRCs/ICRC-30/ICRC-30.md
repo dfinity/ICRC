@@ -1,6 +1,6 @@
 |ICRC|Title|Author|Discussions|Status|Type|Category|Created|
 |:----:|:----:|:----:|:----:|:----:|:----:|:----:|:----:|
-|30|Approval Functionality for the Non-Fungible Token (NFT) Standard|Ben Zhai (@benjizhai), Austin Fatheree (@skilesare), Dieter Sommer (@dietersommer), Thomas (@sea-snake), Moritz Fuller (@letmejustputthishere), Matthew Harmon|https://github.com/dfinity/ICRC/issues/30|Draft|Standards Track||2023-11-22|
+|37|Approval Functionality for the Non-Fungible Token (NFT) Standard|Ben Zhai (@benjizhai), Austin Fatheree (@skilesare), Dieter Sommer (@dietersommer), Thomas (@sea-snake), Moritz Fuller (@letmejustputthishere), Matthew Harmon|https://github.com/dfinity/ICRC/issues/37|Draft|Standards Track||2023-11-22|
 
 
 # ICRC-37: Approval Support for the Minimal Non-Fungible Token (NFT) Standard
@@ -435,7 +435,7 @@ The following generic schema extends the generic schema of ICRC-3 with ICRC-37-s
 
 #### icrc37_approve_tokens Block Schema
 
-1. the `tx.op` field MUST be `"30appr"`
+1. the `tx.op` field MUST be `"37appr"`
 2. it MUST contain a field `tx.tid: Nat`
 3. it MUST contain a field `tx.from: Account`
 4. it MUST contain a field `tx.spender: Account`
@@ -445,27 +445,27 @@ Note that `tid` refers to the token id and `exp` to the expiry time of the appro
 
 #### icrc37_approve_collection Block Schema
 
-1. the `tx.op` field MUST be `"30appr_coll"`
+1. the `tx.op` field MUST be `"37appr_coll"`
 2. it MUST contain a field `tx.from: Account`
 3. it MUST contain a field `tx.spender: Account`
 4. it CAN contain a field `tx.exp: Nat` if set by the user
 
 #### icrc37_revoke_token_approvals Block Schema
 
-1. the `tx.op` field MUST be `"30revoke"`
+1. the `tx.op` field MUST be `"37revoke"`
 2. it MUST contain a field `tx.tid: Nat`
 3. it MUST contain a field `tx.from: Account`
 4. it MUST contain a field `tx.spender: Account`
 
 #### icrc37_revoke_collection_approvals Block Schema
 
-1. the `tx.op` field MUST be `"30revoke_coll"`
+1. the `tx.op` field MUST be `"37revoke_coll"`
 2. it MUST contain a field `tx.from: Account`
 3. it MUST contain a field `tx.spender: Account`
 
 #### icrc37_transfer_from Block Schema
 
-1. the `tx.op` field MUST be `"30xfer"`
+1. the `tx.op` field MUST be `"37xfer"`
 2. it MUST contain a field `tx.tid: Nat`
 3. it MUST contain a field `tx.spender: Account`
 4. it MUST contain a field `tx.from: Account`
