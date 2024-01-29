@@ -230,7 +230,7 @@ icrc7_max_memo_size : () -> (opt nat) query;
 
 ### icrc7_token_metadata
 
-Returns the token metadata for `token_ids`, a list of token ids. Each tuple in the response vector comprises a token id as first element and the metadata corresponding to this token expressed as an optional record comprising `text` and `Value` pairs expressing the token metadata as second element. In case a token does not exist, no element corresponding to it is returned in the response. If a token does not have metadata, its associated metadata vector is the empty vector.
+Returns the token metadata for `token_ids`, a list of token ids. Each tuple in the response vector comprises an optional `metadata` element with the metadata expressed as vector of `text` and `Value` pairs. In case a token does not exist, a `null` element corresponding to it is returned in the response. If a token does not have metadata, its associated metadata vector is the empty vector.
 
 ICRC-7 does not specify the representation of token metadata any further than that it is represented in a generic manner as a vector of `(text, Value)`-pairs. This is left to future standards, the collections, or the implementations in order to not constrain the utility and applicability of this standard.
 
@@ -258,7 +258,7 @@ icrc7_token_metadata : (token_ids : vec nat)
 
 Returns the owner `Account` of each token in a list `token_ids` of token ids. The ordering of the response elements corresponds to that of the request elements.
 
-Note that tokens for which an ICRC-1 account cannot be found have a `null` response. This can for example be the case for a ledger that has originally used a different token standard, e.g., based on the ICP account model, and tokens of this ledger have not been fully migrated yet to ICRC-7.
+Tokens for which an ICRC-1 account cannot be found have a `null` response. This can, for example, be the case for a ledger that has originally used a different token standard, e.g., based on the ICP account model, and tokens of this ledger have not been fully migrated yet to ICRC-7. Non-existing token ids also receive a `null` response.
 
 ```candid "Methods" +=
 icrc7_owner_of : (token_ids : vec nat)
