@@ -20,7 +20,7 @@ When an active approval exists for a token or for an account for the whole colle
 
 The owner principal can explicitly revoke an active approval at their discretion using the `icrc37_revoke_token_approvals` for revoking token-level approvals and `icrc37_revoke_collection_approvals` for revoking collection-level approvals.
 
-Analogous to ICRC-7, also ICRC-37 uses the ICRC-1 *account* as entity that the source account (`from`), destination account (`to`), and spending account (`spender`) are expressed with, i.e., a *subaccount* is always used besides the principal. In many practical the subaccount will be the default all-`0` subaccount.
+Analogous to ICRC-7, also ICRC-37 uses the ICRC-1 *account* as entity that the source account (`from`), destination account (`to`), and spending account (`spender`) are expressed with, i.e., a *subaccount* is always used besides the principal. In many practical situations, the default subaccount will be the all-`0` subaccount.
 
 ## Methods
 
@@ -315,7 +315,8 @@ icrc37_get_token_approvals : (token_ids : vec nat, prev : opt TokenApproval; tak
     -> (vec TokenApproval) query;
 ```
 
-> [!NOTE] This method deviates from the API best practice outlined in ICRC-7 of not having paginated batch APIs. The reason is that this method requires pagination because of possibly large numbers of responses, but is also expected to be useful as batch method for frequently expected use cases. Thus, the methods cannot use the typical positional arguments of other batch calls in the ICRC-7 and ICRC-37 standards.
+> [!NOTE] 
+> This method deviates from the API best practice outlined in ICRC-7 of not having paginated batch APIs. The reason is that this method requires pagination because of possibly large numbers of responses, but is also expected to be useful as batch method for frequently expected use cases. Thus, the methods cannot use the typical positional arguments of other batch calls in the ICRC-7 and ICRC-37 standards.
 
 ### icrc37_get_collection_approvals
 
