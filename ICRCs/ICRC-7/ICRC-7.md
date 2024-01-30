@@ -299,15 +299,19 @@ icrc7_tokens_of : (account : Account, prev : opt nat, take : opt nat)
 
 ### icrc7_transfer
 
-Performs a batch of transfers of tokens. Each transfer transfers a token `token_id` from the account defined by the caller principal and the specified `subaccount` to the `to` account. A `memo` and `created_at_time` can be given optionally. The transfer can only be initiated by the holder of the tokens.
+Performs a batch of transfers of tokens. Each transfer transfers a token `token_id` from the account defined by the caller principal and the specified `from_subaccount` to the `to` account. A `memo` and `created_at_time` can be given optionally. The transfer can only be initiated by the holder of the tokens.
 
 The method response comprises a vector of optional elements, one per request element. The response is a positional argument w.r.t. the request, i.e., the `i`-th response element is the response to the `i`-th request element. Each response item contains either an `Ok` variant containing the transaction index of the transfer in the success case or an `Err` variant in the error case. A `null` element in the response indicates that the corresponding request element has not been processed.
 
 A transfer clears all active token-level approvals for a successfully transferred token. This implicit clearing of approvals only clears token-level approvals and never touches collection-level approvals. This clearing does not create an ICRC-3 block in the transaction log, but it is implied by the transfer block in the log.
 
+// FIX make clear that batch transactions are not atomic by default; clients should not assume atomicity unless advertised otherwise by the ledger
+// metadata that specifies whether transfers are atomic; icrc7_transfers_are_atomic; make clear that this is set only if the implementer knows what they are doing, i.e., they can really make it atomic
+// note that implementations can make batches atomic; implementation semantics
+
 ```candid "Type definitions" +=
 TransferArg = record {
-    subaccount: opt blob; // the subaccount of the caller (used to identify the spender), null means the default all-zero subaccount
+    from_subaccount: opt blob; // the subaccount of the caller (used to identify the spender), null means the default all-zero subaccount
     to : Account;
     token_id : nat;
     // type: leave open for now
