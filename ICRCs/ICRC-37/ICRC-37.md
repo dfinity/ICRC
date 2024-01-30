@@ -120,7 +120,6 @@ type ApproveTokenError = variant {
     TooOld;
     CreatedInFuture : record { ledger_time: nat64 };
     GenericError : record { error_code : nat; message : text };
-    BatchTermination;
     GenericBatchError : record { error_code : nat; message : text };
 };
 ```
@@ -169,7 +168,6 @@ type ApproveCollectionError = variant {
     TooOld;
     CreatedInFuture : record { ledger_time: nat64 };
     GenericError : record { error_code : nat; message : text };
-    BatchTermination;
     GenericBatchError : record { error_code : nat; message : text };
 };
 ```
@@ -202,9 +200,9 @@ An ICRC-37 ledger implementation does not need to keep track of revoked approval
 
 ```candid "Type definitions" +=
 type RevokeTokenApprovalArg = record {
-    spender : Account;
+    spender : opt Account;      // null revokes for all spenders; FIX text
     from_subaccount : opt blob; // null refers to the default subaccount
-    token_id : vec nat;
+    token_id : nat;
     memo : opt blob;
     created_at_time : opt nat64;
 };
@@ -221,7 +219,6 @@ type RevokeTokenApprovalError = variant {
     TooOld;
     CreatedInFuture : record { ledger_time: nat64 };
     GenericError : record { error_code : nat; message : text };
-    BatchTermination;
     GenericBatchError : record { error_code : nat; message : text };
 };
 ```
@@ -266,7 +263,6 @@ type RevokeCollectionApprovalError = variant {
     TooOld;
     CreatedInFuture : record { ledger_time: nat64 };
     GenericError : record { error_code : nat; message : text };
-    BatchTermination;
     GenericBatchError : record { error_code : nat; message : text };
 };
 ```
@@ -311,12 +307,9 @@ type TokenApproval = record {
 ```
 
 ```candid "Methods" +=
-icrc37_get_token_approvals : (token_ids : vec nat, prev : opt TokenApproval; take : opt nat)
+icrc37_get_token_approvals : (token_id : nat, prev : opt TokenApproval; take : opt nat)
     -> (vec TokenApproval) query;
 ```
-
-> [!NOTE] 
-> This method deviates from the API best practice outlined in ICRC-7 of not having paginated batch APIs. The reason is that this method requires pagination because of possibly large numbers of responses, but is also expected to be useful as batch method for frequently expected use cases. Thus, the methods cannot use the typical positional arguments of other batch calls in the ICRC-7 and ICRC-37 standards.
 
 ### icrc37_get_collection_approvals
 
@@ -352,7 +345,7 @@ TransferFromArg = record {
     spender_subaccount: opt blob; // the subaccount of the caller (used to identify the spender)
     from : Account;
     to : Account;
-    token_id : vec nat;
+    token_id : nat;
     // type: leave open for now
     memo : opt blob;
     created_at_time : opt nat64;
@@ -361,7 +354,7 @@ TransferFromArg = record {
 type TransferFromResponse = variant {
     Ok : nat; // Transaction index for successful transfer
     Err : TransferFromError;
-}
+};
 
 type TransferFromError = variant {
     InvalidRecipient;
@@ -371,7 +364,6 @@ type TransferFromError = variant {
     CreatedInFuture : record { ledger_time: nat64 };
     Duplicate : record { duplicate_of : nat };
     GenericError : record { error_code : nat; message : text };
-    BatchTermination;
     GenericBatchError : record { error_code : nat; message : text };
 };
 ```
@@ -456,7 +448,7 @@ Note that `tid` refers to the token id and `exp` to the expiry time of the appro
 1. the `tx.op` field MUST be `"37revoke"`
 2. it MUST contain a field `tx.tid: Nat`
 3. it MUST contain a field `tx.from: Account`
-4. it MUST contain a field `tx.spender: Account`
+4. it MAY contain a field `tx.spender: Account`
 
 #### icrc37_revoke_collection_approvals Block Schema
 
