@@ -309,7 +309,7 @@ A transfer clears all active token-level approvals for a successfully transferre
 TransferArg = record {
     subaccount: opt blob; // the subaccount of the caller (used to identify the spender), null means the default all-zero subaccount
     to : Account;
-    token_id : vec nat;
+    token_id : nat;
     // type: leave open for now
     memo : opt blob;
     created_at_time : opt nat64;
