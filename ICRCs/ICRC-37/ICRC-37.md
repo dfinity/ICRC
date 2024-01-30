@@ -200,7 +200,7 @@ An ICRC-37 ledger implementation does not need to keep track of revoked approval
 
 ```candid "Type definitions" +=
 type RevokeTokenApprovalArg = record {
-    spender : opt Account;      // null revokes for all spenders; FIX text
+    spender : opt Account;      // null revokes approvals for all spenders that match the remaining parameters
     from_subaccount : opt blob; // null refers to the default subaccount
     token_id : nat;
     memo : opt blob;
@@ -247,7 +247,7 @@ An ICRC-37 ledger implementation does not need to keep track of revoked approval
 
 ```candid "Type definitions" +=
 type RevokeCollectionApprovalArg = record {
-    spender : Account;
+    spender : opt Account;      // null revokes approvals for all spenders that match the remaining parameters
     from_subaccount : opt blob; // null refers to the default subaccount
     memo : opt blob;
     created_at_time : opt nat64;
@@ -291,7 +291,7 @@ icrc37_is_approved : (vec IsApprovedArg)
 
 ### icrc37_get_token_approvals
 
-Returns the token-level approvals that exist for the given vector of `token_ids`.  The result is paginated, the mechanics of pagination are analogous to `icrc7_tokens` using `prev` and `take` to control pagination, with `prev` being of type `TokenApproval`. Note that `take` refers to the number of returned elements to be requested. The `prev` parameter is a `TokenApproval` element with the meaning that `TokenApproval`s following the provided one are returned, based on a sorting order over `TokenApproval`s implemented by the ledger.
+Returns the token-level approvals that exist for the given `token_id`.  The result is paginated, the mechanics of pagination are analogous to `icrc7_tokens` using `prev` and `take` to control pagination, with `prev` being of type `TokenApproval`. Note that `take` refers to the number of returned elements to be requested. The `prev` parameter is a `TokenApproval` element with the meaning that `TokenApproval`s following the provided one are returned, based on a sorting order over `TokenApproval`s implemented by the ledger.
 
 The response is a vector of `TokenApproval` elements. If multiple approvals exist for a token id, multiple entries of type `TokenApproval` with the same token id are contained in the response.
 
@@ -450,11 +450,15 @@ Note that `tid` refers to the token id and `exp` to the expiry time of the appro
 3. it MUST contain a field `tx.from: Account`
 4. it MAY contain a field `tx.spender: Account`
 
+If the field `spender` is omitted, approvals are revoked for all spenders for which approvals exist as specified by the remaining parameters `tid` and `from`. This helps reduce the log storage required for explicit token-level revocations.
+
 #### icrc37_revoke_collection_approvals Block Schema
 
 1. the `tx.op` field MUST be `"37revoke_coll"`
 2. it MUST contain a field `tx.from: Account`
-3. it MUST contain a field `tx.spender: Account`
+3. it MAY contain a field `tx.spender: Account`
+
+If the field `spender` is omitted, approvals are revoked for all spenders for which approvals exist as specified by the remaining parameter `from`. This helps reduce the log storage required for collection-level revocations.
 
 #### icrc37_transfer_from Block Schema
 
