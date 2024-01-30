@@ -48,7 +48,7 @@ type TransferError = variant {
     GenericError : record { error_code : nat; message : text };
 };
 
-type TransferBatchResult = vec ?variant {
+type TransferBatchResult = variant {
     Ok : nat; // Transaction indices for successful transfers
     Err : TransferError;
 };
@@ -60,7 +60,7 @@ type TransferBatchResult = vec ?variant {
 */
 
 // icrc4_transfer_batch method definition
-icrc4_transfer_batch: (vec TransferArg) -> async TransferBatchResult;
+icrc4_transfer_batch: (vec TransferArg) -> async vec (opt TransferBatchResult);
 ```
 
 #### Preconditions for Transfer Batch
