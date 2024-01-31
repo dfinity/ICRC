@@ -96,7 +96,7 @@ type ApprovalInfo = {
     expires_at : opt nat64;
     memo : opt blob;
     created_at_time : nat64; 
-}
+};
 
 type ApproveTokenArg = record {
     token_id : nat;
@@ -106,7 +106,7 @@ type ApproveTokenArg = record {
 type ApproveTokenResult = variant {
     Ok : nat; // Transaction index for successful approval
     Err : ApproveTokenError;
-}
+};
 
 type ApproveTokenError = variant {
     InvalidSpender;
@@ -147,8 +147,6 @@ Note that this method is analogous to `icrc37_approve_tokens`, but for approving
 To ensure proper semantics, collection-level approvals MUST be managed by the ledger as collection-level approvals and MUST NOT be translated into token-level approvals for all tokens the caller currently owns.
 
 See the [#icrc37_approve_tokens](#icrc37_approve_tokens) for the `ApprovalInfo` type.
-
-// FIX Should we use ApproveCollectionArg = ApprovalInfo?
 
 ```candid "Type definitions" +=
 type ApproveCollectionArg = record {
@@ -206,7 +204,7 @@ type RevokeTokenApprovalArg = record {
 type RevokeTokenApprovalResponse = variant {
     Ok : nat; // Transaction indices for successful approval revocation
     Err : RevokeTokenApprovalError;
-}
+};
 
 type RevokeTokenApprovalError = variant {
     ApprovalDoesNotExist;
