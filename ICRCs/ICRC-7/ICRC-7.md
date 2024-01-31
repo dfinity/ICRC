@@ -314,7 +314,7 @@ The method response comprises a vector of optional elements, one per request ele
 
 A transfer clears all active token-level approvals for a successfully transferred token. This implicit clearing of approvals only clears token-level approvals and never touches collection-level approvals. This clearing does not create an ICRC-3 block in the transaction log, but it is implied by the transfer block in the log.
 
-Batch transfers are *not atomic* by default, i.e., a user SHOULD not assume that either all or none of the transfers have been executed. A ledger implementation MAY choose to implement atomic batch transfers, in which case the metadata attribute `icrc7_atomic_batch_transfers` is set to `true`. If an implementation does not specifically implement batch atomicity, batch transfers are not atomic due to the asynchronous call semantics of the Internet Computer platform. An implementor ot this standard who implements atomic batch transfers and advertises those through the `icrc7_atomic_batch_transfers` metadata attribute SHOULD take great care to ensure everything required has been considered to achieve atomicity of the batch of transfers.
+Batch transfers are *not atomic* by default, i.e., a user SHOULD not assume that either all or none of the transfers have been executed. A ledger implementation MAY choose to implement atomic batch transfers, in which case the metadata attribute `icrc7_atomic_batch_transfers` is set to `true`. If an implementation does not specifically implement batch atomicity, batch transfers are not atomic due to the asynchronous call semantics of the Internet Computer platform. An implementor of this standard who implements atomic batch transfers and advertises those through the `icrc7_atomic_batch_transfers` metadata attribute MUST take great care to ensure everything required has been considered to achieve atomicity of the batch of transfers.
 
 ```candid "Type definitions" +=
 TransferArg = record {
@@ -341,7 +341,6 @@ type TransferError = variant {
     GenericError : record { error_code : nat; message : text };
     GenericBatchError : record { error_code : nat; message : text };
 };
-
 ```
 
 ```candid "Methods" +=
@@ -380,20 +379,20 @@ record { name = "ICRC-7"; url = "https://github.com/dfinity/ICRC/ICRCs/ICRC-7"; 
 
 ## ICRC-7 Block Schema
 
-ICRC-7 builds on the ICRC-3 specification for defining the format for storing transactions in blocks of the log of the ledger. ICRC-3 defines a generic, extensible, block schema that can be further instantiated in standards implementing ICRC-3. We next define the concrete block schema for ICRC-7 as extension of the ICRC-3 block schema.
+ICRC-7 builds on the [ICRC-3](https://github.com/dfinity/ICRC-1/tree/main/standards/ICRC-3) specification for defining the format for storing transactions in blocks of the log of the ledger. ICRC-3 defines a generic, extensible, block schema that can be further instantiated in standards implementing ICRC-3. We next define the concrete block schema for ICRC-7 as extension of the ICRC-3 block schema.
 
 ### Generic ICRC-7 Block Schema
 
 1. it MUST contain a field `ts: Nat` which is the timestamp of when the block was added to the Ledger
 2. its field `tx`
-    1. CAN contain a field `memo: Blob` if specified by the user
-    2. CAN contain a field `ts: Nat` if the user sets the `created_at_time` field in the request.
+    1. MAY contain a field `memo: Blob` if specified by the user
+    2. MAY contain a field `ts: Nat` if the user sets the `created_at_time` field in the request.
 
 ### Mint Block Schema
 
 1. the `tx.op` field MUST be `"7mint"`
 2. it MUST contain a field `tx.tid: Nat`
-3. it CAN contain a field `tx.from: Account`
+3. it MAY contain a field `tx.from: Account`
 4. it MUST contain a field `tx.to: Account`
 5. it MUST contain a field `tx.meta: Value`
 
@@ -404,7 +403,7 @@ Note that `tid` refers to the token id. The size of the `meta` field expressing 
 1. the `tx.op` field MUST be `"7burn"`
 2. it MUST contain a field `tx.tid: Nat`
 3. it MUST contain a field `tx.from: Account`
-4. it CAN contain a field `tx.to: Account`
+4. it MAY contain a field `tx.to: Account`
 
 ### icrc7_transfer Block Schema
 
@@ -413,7 +412,7 @@ Note that `tid` refers to the token id. The size of the `meta` field expressing 
 3. it MUST contain a field `tx.from: Account`
 4. it MUST contain a field `tx.to: Account`
 
-As `icrc7_transfer` is a batch method, it results in one block per `token_id` in the batch. The blocks MUST appear in the block log in the same sequence as the token ids are listed in the `token_ids` vector. Blocks from one batch transfer invocation can be interleaved from other such method calls. // t.b.d. for the new API
+As `icrc7_transfer` is a batch method, it results in one block per `token_id` in the batch. The method results in one block per input of the batch. The blocks need not appear in the block log in the same relative sequence as the token ids appear in the vector of input token identifiers in order to not unnecessarily constrain the potential concurrency of an implementation. The block sequence corresponding to the token ids in the input can be interspersed with blocks from other (batch) methods executed by the ledger in an interleaved execution sequence. This allows for high-performance ledger implementations that can make asynchronous calls to other canisters in the scope of operations on tokens and process multiple batch update calls concurrently.
 
 ## Migration Path for Ledgers Using ICP AccountId
 
