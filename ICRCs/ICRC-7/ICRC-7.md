@@ -358,9 +358,11 @@ The ledger SHOULD reject transactions with the `Duplicate` error variant in case
 The `created_at_time` parameter indicates the time (as nanoseconds since the UNIX epoch in the UTC timezone) at which the client constructed the transaction.
 The ledger SHOULD reject transactions that have the `created_at_time` argument too far in the past or the future, returning `variant { TooOld }` and `variant { CreatedInFuture = record { ledger_time = ... } }` errors correspondingly.
 
-> [!NOTE] Note that multiple concurrently executing batch transfers triggered by method invocations can lead to an interleaved execution of the corresponding sequences of token transfers.
+> [!NOTE]
+> Note that multiple concurrently executing batch transfers triggered by method invocations can lead to an interleaved execution of the corresponding sequences of token transfers.
 
-> [!NOTE] Note further that deduplication is performed independently on the different items of the batch.
+> [!NOTE]
+> Note further that deduplication is performed independently on the different items of the batch.
 
 ### icrc7_supported_standards
 
@@ -470,7 +472,7 @@ It is strongly recommended that implementations of this standard take steps towa
   * Enforcing rate limits, such as the number of transactions such as approvals or approval revocations, can be performed on a per-token and per-principal basis to constrain the size of the transaction log for the ledger.
   * The execution of operations such as approving collections and revoking such approvals could be constrained to parties who own at least one token on a ledger. This helps prevent DoS by attackers who create a large number of principals and perform such operations without holding tokens.
 
-### Protection Against Attacks Against Web Applications
+### Protection Against Web Application Attacks
 
 We strongly advise developers who display untrusted user-generated data like images (e.g., the token logo or images referenced from NFT metadata) or strings in a Web application to follow Web application security best practices to avoid attacks such as XSS and CSRF resulting from malicious content provided by a ledger. As one particular example, images in the SVG format provide potential for attacks if used improperly. See, for example, the OWASP guidelines for protecting against [XSS](https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html) or [CSRF](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html). The above examples are only selected examples and by no means provide an exhaustive view of security issues.
 
