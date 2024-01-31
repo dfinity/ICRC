@@ -5,16 +5,16 @@
 
 # ICRC-37: Approval Support for the Minimal Non-Fungible Token (NFT) Standard
 
-This document specifies approval support for the ICRC-7 minimal NFT standard for the Internet Computer. It defines all the methods required for managing approval semantics for an NFT token ledger, i.e., creating approvals, revoking approvals, querying approval information, and making transfers based on approvals. The scope of ICRC-37 has been part of ICRC-7 originally, however, the NFT Working Group has decided to split it out into a separate standard for the following reasons:
-  * ICRC-7 and ICRC-37 are much easier to navigate and shorter on their own due to their respective foci;
+This document specifies approval support for the ICRC-7 minimal NFT standard for the Internet Computer. It defines all the methods required for realizing approval semantics for an NFT token ledger, i.e., creating approvals, revoking approvals, querying approval information, and making transfers based on approvals. The scope of ICRC-37 has been part of ICRC-7 originally, however, the NFT Working Group has decided to split it out into a separate standard for the following reasons:
+  * ICRC-7 and ICRC-37 are much shorter and hence easier to navigate on their own due to their respective foci;
   * Ledgers that do not want to implement approval and transfer from semantics do not need to provide dummy implementations of the corresponding methods that fail by default.
 
-This standard extends the ICRC-7 NFT standard and is intended to be implemented by token ledgers that implement ICRC-7.
+This standard extends the ICRC-7 NFT standard and is intended to be implemented by token ledgers that implement ICRC-7. Principles put forth in ICRC-7 apply to ICRC-37 as well.
 
 
 ## Concepts
 
-*Approvals* allow a principal, the *spender*, to transfer tokens owned by another account that has approved the spender, where the transfer is performed on behalf of the owner. Approvals can be created on a per-token basis using `icrc37_approve_tokens` or for the whole collection, i.e., all tokens of the collection, using `icrc37_approve_collection`. An approval that has been created, has not expired (i.e., the `expires_at` field is a date in the future), has not been revoked, and has not been replaced with a new approval is *active*, i.e., can allow the approved party to initiate a transfer.
+*Approvals* allow a principal, the *spender*, to transfer tokens owned by another account that has approved the spender, where the transfer is performed on behalf of the owner. Approvals can be created on a per-token basis using `icrc37_approve_tokens` or for the whole collection, i.e., all tokens of the collection, using `icrc37_approve_collection`. An approval that has been created, has not expired (i.e., the `expires_at` field is a date in the future), has not been revoked implicitly through a transfer of the approved token, has not been revoked explicitly, and has not been replaced with a new approval is *active*, i.e., can allow the approved party to initiate a transfer.
 
 When an active approval exists for a token or for an account for the whole collection, the spender specified in the approval can transfer tokens within the scope of the approval using the `transfer_from` method. A successful transfer also implicitly revokes the corresponding approval in case it is a token-level approval. Collection-level approvals are never revoked by transfers.
 
@@ -26,11 +26,9 @@ Analogous to ICRC-7, also ICRC-37 uses the ICRC-1 *account* as entity that the s
 
 ### Generally-Applicable Specification
 
-The API follows the style introduced in [ICRC-7](https://github.com/dfinity/ICRC/ICRC-7/ICRC-7.md#generally-applicable-specification). See the aforementioned link to ICRC-7 for details.
+The general principles on the API as put forth in [ICRC-7](https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-7/ICRC-7.md) apply also to ICRC-37.
 
-To summarize, batch-eligible update and query calls receive a vector of request items as input and return a vector or response items. Those are *positional arguments*, i.e., `i`-th element of the response corresponds to the `i`-th element of the request. The response may correspond to a proper prefix of the request: It must be a contiguous sequence of response items, where each item corresponds to an item of a proper prefix of the request.
-
-For update calls, `null` elements in the response have the meaning that processing for the corresponding request items has not been initiated. For query calls, `null` elements have meaning as defined by the respective query call.
+To summarize, all eligible calls, i.e., such with (at most) one response element per request, are batch calls. Batch calls have *positional responses*, i.e., the `i`-th response element is the response to the `i`-th request element. The response can contain responses only to a prefix of the request. For update calls, responses can contain `null` elements, with the meaning that processing of the corresponding request has not been initiated. For query calls, `null` responses have a meaning as determined by the respective query call.
 
 ### icrc37_metadata
 
@@ -40,7 +38,7 @@ The following metadata property is defined for ICRC-37:
   * `icrc37:max_approvals_per_token_or_collection` of type `nat` (optional): The maximum number of active approvals this ledger implementation allows per token or per principal for the collection. When present, should be the same as the result of the [`icrc37_max_approvals_per_token_or_collection`](#icrc37_max_approvals_per_token_or_collection) query call.
   * `icrc37:max_revoke_approvals` of type `nat` (optional): The maximum number of approvals that may be revoked in a single invocation of `icrc37_revoke_token_approvals` or `icrc37_revoke_collection_approvals`. When present, should be the same as the result of the [`icrc37_max_revoke_approvals`](#icrc37_max_revoke_approvals) query call.
 
-Note that all other relevant metadata properties from the ICRC-7 implementation that this standard is an extension of apply to this standard, e.g., the maximum batch sizes for queries and updates.
+Note that all other relevant ``icrc7:...` metadata properties from the ICRC-7 implementation that this standard is an extension of apply to this standard, e.g., the maximum batch sizes for queries and updates.
 
 ```candid "Type definitions" +=
 // Generic value in accordance with ICRC-3
@@ -76,7 +74,7 @@ icrc37_max_revoke_approvals : () -> (opt nat) query;
 
 ### icrc37_approve_tokens
 
-Entitles a `spender`, indicated through an `Account`, to transfer NFTs on behalf of the caller of this method from `account { owner = caller; subaccount = from_subaccount }`, where `caller` is the caller of this method (and also the owner principal of the tokens that are subject to approval) and `from_subaccount` is the subaccount of the token owner principal the approval should apply to (i.e., the subaccount which the tokens must be held on and can be transferred out from). Note that the `from_subaccount` parameter needs to be explicitly specified because accounts are a primary concept in this standard and thereby the `from_subaccount` needs to be specified as part of the account that holds the token. The `expires_at` value specifies the expiration date of the approval. The method has batch semantics and allows for submitting a batch of such token-level approvals with a single invocation.
+Entitles a `spender`, specified through an `Account`, to transfer NFTs on behalf of the caller of this method from `account { owner = caller; subaccount = from_subaccount }`, where `caller` is the caller of this method (and also the owner principal of the tokens that are subject to approval) and `from_subaccount` is the subaccount of the token owner principal the approval should apply to (i.e., the subaccount which the tokens must be held on and can be transferred out from). The `from_subaccount` being `null` refers to the default subaccount. Note that the `from_subaccount` parameter needs to be specified because accounts are a primary concept in this standard and thereby the `from_subaccount` needs to be specified as part of the account that holds the token. The `expires_at` value specifies the expiration date of the approval. The method has batch semantics and allows for submitting a batch of such token-level approvals with a single invocation.
 
 The method response comprises a vector of optional elements, one per request element. The response is a positional argument w.r.t. the request, i.e., the `i`-th response element is the response to the `i`-th request element. Each response item contains either an `Ok` variant containing the transaction index of the token-level approval in the success case or an `Err` variant in the error case. A `null` element in the response indicates that the corresponding request element has not been processed.
 
@@ -97,7 +95,7 @@ The `created_at_time` parameter indicates the time (as nanoseconds since the UNI
 ```candid "Type definitions" +=
 type ApprovalInfo = {
     spender : Account;             // Approval is given to an ICRC Account
-    from_subaccount : opt blob;    // null refers to the default subaccount
+    from_subaccount : opt blob;    // the subaccount the token can be transferred out from with the approval
     expires_at : opt nat64;
     memo : opt blob;
     created_at_time : nat64; 
@@ -131,7 +129,7 @@ icrc37_approve_tokens : (vec ApproveTokenArg)
 
 ### icrc37_approve_collection
 
-Entitles a `spender`, indicated through an `Account`, to transfer any NFT of the collection hosted on this ledger and owned by the caller at the time of transfer on behalf of the caller of this method from `account { owner = caller; subaccount = from_subaccount }`, where `caller` is the caller of this method and `from_subaccount` is the subaccount of the token owner principal the approval should apply to (i.e., the subaccount which tokens the approval should apply to must be held on and can be transferred out from). Note that the `from_subaccount` parameter needs to be explicitly specified not only because accounts are a primary concept in this standard, but also because the approval applies to the collection, i.e., all tokens on the ledger the caller holds, and those tokens may be held on different subaccounts. The `expires_at` value specifies the expiration date of the approval. The method has batch semantics and allows for submitting a batch of such collection approvals with a single invocation.
+Entitles a `spender`, specified through an `Account`, to transfer any NFT of the collection hosted on this ledger and owned by the caller at the time of transfer on behalf of the caller of this method from `account { owner = caller; subaccount = from_subaccount }`, where `caller` is the caller of this method and `from_subaccount` is the subaccount of the token owner principal the approval should apply to (i.e., the subaccount which tokens the approval should apply to must be held on and can be transferred out from). The `from_subaccount` being `null` refers to the default subaccount. Note that the `from_subaccount` parameter needs to be specified not only because accounts are a primary concept in this standard, but also because the approval applies to the collection, i.e., all tokens on the ledger the caller holds, and those tokens may be held on different subaccounts. The `expires_at` value specifies the expiration date of the approval. The method has batch semantics and allows for submitting a batch of such collection approvals with a single invocation.
 
 The method response comprises a vector of optional elements, one per request element. The response is a positional argument w.r.t. the request, i.e., the `i`-th response element is the response to the `i`-th request element. Each response item contains either an `Ok` variant containing the transaction index of the collection-level approval in the success case or an `Err` variant in the error case. A `null` element in the response indicates that the corresponding request element has not been processed.
 
@@ -149,7 +147,7 @@ The `created_at_time` parameter indicates the time (as nanoseconds since the UNI
 
 Note that this method is analogous to `icrc37_approve_tokens`, but for approving whole collections. `ApproveCollectionArg` specifies the approval to be made for the collection.
 
-To ensure proper semantics, collection-level approvals MUST be managed by the ledger as collection-level approvals and MUST NOT be translated into token-level approvals for all tokens the caller owns.
+To ensure proper semantics, collection-level approvals MUST be managed by the ledger as collection-level approvals and MUST NOT be translated into token-level approvals for all tokens the caller currently owns.
 
 See the [#icrc37_approve_tokens](#icrc37_approve_tokens) for the `ApprovalInfo` type.
 
@@ -340,6 +338,8 @@ The ledger returns an `InvalidRecipient` error in case `to` equals `from`.
 
 A transfer implicitly clears all active token-level approvals for the successfully transferred tokens. This implicit clearing of approvals only clears token-level approvals and never touches collection-level approvals. No explicit entry in the block log is created for the clearing, but it is implied by the transfer entry.
 
+Batch transfers are not atomic by default, i.e., a user SHOULD not assume that either all or none of the transfers have been executed. A ledger implementation MAY choose to implement atomic batch transfers, in which case the metadata attribute `icrc7_atomic_batch_transfers` is set to `true`. If an implementation does not specifically implement batch atomicity, batch transfers are not atomic due to the asynchronous call semantics of the Internet Computer platform. An implementor ot this standard who implements atomic batch transfers and advertises those through the `icrc7_atomic_batch_transfers` metadata attribute SHOULD take great care to ensure everything required has been considered to achieve atomicity of the batch of transfers.
+
 ```candid "Type definitions" +=
 TransferFromArg = record {
     spender_subaccount: opt blob; // the subaccount of the caller (used to identify the spender)
@@ -421,10 +421,10 @@ The following generic schema extends the generic schema of ICRC-3 with ICRC-37-s
 // FIX What is `memo` at the top-level used for? Can we remove it?
 
 1. it MUST contain a field `ts: Nat` which is the timestamp of when the block was added to the Ledger
-2. it CAN contain a field `memo: Blob` if specified by the canister
+2. it MAY contain a field `memo: Blob` if specified by the canister
 3. its field `tx`
-    1. CAN contain the `memo: Blob` field if specified by the user
-    2. CAN contain the `ts: Nat` field if the user sets the `created_at_time` field in the request.
+    1. MAY contain the `memo: Blob` field if specified by the user
+    2. MAY contain the `ts: Nat` field if the user sets the `created_at_time` field in the request.
 
 #### icrc37_approve_tokens Block Schema
 
@@ -432,7 +432,7 @@ The following generic schema extends the generic schema of ICRC-3 with ICRC-37-s
 2. it MUST contain a field `tx.tid: Nat`
 3. it MUST contain a field `tx.from: Account`
 4. it MUST contain a field `tx.spender: Account`
-5. it CAN contain a field `tx.exp: Nat` if set by the user
+5. it MAY contain a field `tx.exp: Nat` if set by the user
 
 Note that `tid` refers to the token id and `exp` to the expiry time of the approval, the names of the other fiels should speak for themselves.
 
@@ -441,7 +441,7 @@ Note that `tid` refers to the token id and `exp` to the expiry time of the appro
 1. the `tx.op` field MUST be `"37appr_coll"`
 2. it MUST contain a field `tx.from: Account`
 3. it MUST contain a field `tx.spender: Account`
-4. it CAN contain a field `tx.exp: Nat` if set by the user
+4. it MAY contain a field `tx.exp: Nat` if set by the user
 
 #### icrc37_revoke_token_approvals Block Schema
 
@@ -450,7 +450,7 @@ Note that `tid` refers to the token id and `exp` to the expiry time of the appro
 3. it MUST contain a field `tx.from: Account`
 4. it MAY contain a field `tx.spender: Account`
 
-If the field `spender` is omitted, approvals are revoked for all spenders for which approvals exist as specified by the remaining parameters `tid` and `from`. This helps reduce the log storage required for explicit token-level revocations.
+If the field `spender` is omitted, token-level approvals are revoked for all spenders for which approvals exist as specified by the remaining parameters `tid` (token id) and `from`. This helps reduce the log storage space required for handling explicit token-level revocations.
 
 #### icrc37_revoke_collection_approvals Block Schema
 
@@ -458,7 +458,7 @@ If the field `spender` is omitted, approvals are revoked for all spenders for wh
 2. it MUST contain a field `tx.from: Account`
 3. it MAY contain a field `tx.spender: Account`
 
-If the field `spender` is omitted, approvals are revoked for all spenders for which approvals exist as specified by the remaining parameter `from`. This helps reduce the log storage required for collection-level revocations.
+If the field `spender` is omitted, collection-level approvals are revoked for all spenders for which approvals exist as specified by the remaining parameter `from`. This helps reduce the log storage space required for handling collection-level revocations.
 
 #### icrc37_transfer_from Block Schema
 
@@ -471,3 +471,4 @@ If the field `spender` is omitted, approvals are revoked for all spenders for wh
 ## Extensions
 
 If extension standards are used in the context of ICRC-37, those are listed with the according `supported_standards` method of the base standard that gets extended.
+
