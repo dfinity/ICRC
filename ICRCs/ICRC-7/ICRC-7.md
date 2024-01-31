@@ -77,14 +77,14 @@ Depending on the concurrent execution of the individual operations, there may be
 #### Batch Query Methods
 
 There are two different classes of query methods in terms of their API styles defined in this standard:
-1. Query methods that have (at most) one response per request in the batch. For example, `icrc7_balance_of`, which receives a vector of token ids as input and each output element is the balance of the corresponding input. Those methods perfectly lend themselves for implementation with a batch API. Those queries have an analogous API style as batch update calls.
-1. Query methods that may have multiple responses for an input element. An example is `icrc7_tokens_of`, which may have many response elements for an account. Those methods require pagination. Pagination is hard to combine with the batch API style of the reponses corresponding to the requests by index of the respective vectors. Thus, the guiding principle is that such methods be non-batch paginated methods, unless there is a strong reason for a deviation from this.
+1. Query methods that have (at most) one response per request in the batch. For example, `icrc7_balance_of`, which receives a vector of token ids as input and each output element is the balance of the corresponding input. Those methods perfectly lend themselves for implementation with a batch API. Those queries have an analogous API style as batch update calls, with a difference in the meaning of `null` responses.
+1. Query methods that may have multiple responses for an input element. An example is `icrc7_tokens_of`, which may have many response elements for an account. Those methods require pagination. Pagination is hard to combine with the batch API style and positional responses and they complicate both the API and the implementation. Thus, the guiding principle is that such methods be non-batch paginated methods, unless there is a strong reason for a deviation from this.
 
-The class 1 of query calls above is handled with an API style that is *almost identical* to that of batch update calls as outlined above. The main and only difference is the meaning of `null` values. For update calls, a `null` response means that processing has not been initiated, e.g., after a batch error has occurred. For query calls, errors that prevent further processing of queries are not expected as queries are read operations that should not fail. For queries, `null` may be defined to have a specific meaning per query. Queries must process the complete contiguous request sequence from index 0 up to a given request element index and may not have further response elements, but must, unlike queries, not skip processing of some elements. As queries are read-only operations that don't have the numerous failure modes of updates, this should not impose any undue constraints on an implementation.
+The class 1 of query calls above is handled with an API style that is *almost identical* to that of batch update calls as outlined above. The main and only difference is the meaning of `null` values. For update calls, a `null` response always means that processing of the corresponding request has not been initiated, e.g., after a batch error has occurred. For query calls, errors that prevent further processing of queries are not expected as queries are read operations that should not fail. For queries, `null` may be defined to have a specific meaning per query and do not have the default semantics that the corresponding request has not been processed. Queries must process the complete contiguous request sequence from index 0 up to a given request element index and may not have further response elements after that index, but must, unlike update calls, not skip processing of some elements in the returned sequence. As queries are read-only operations that don't have the numerous failure modes of updates, this should not impose any undue constraints on an implementation.
 
 #### Error Handling
 
-It is recommended that neither query nor update calls trap unless completely unavoidable. The API is designed such that errors do not need to cause a trap, but can be communicated back to the client and the processing of large batches may be short-circuited to processing only a prefix thereof.
+It is recommended that neither query nor update calls trap unless completely unavoidable. The API is designed such that many error cases do not need to cause a trap, but can be communicated back to the client and the processing of large batches may be short-circuited to processing only a prefix thereof in case of an error.
 
 For example, if a limit expressed through an `icrc7:max_...` metadata attribute is violated, e.g., the maximum batch size is exceeded and the response size would exceed the system's permitted maximum, the ledger should process only a prefix of the input and return a corresponding response vector with elements corresponding to this prefix. Only a prefix of the request being responded to means that the suffix of the request has not been processed and the processing of its elements has not even been attempted to be initiated.
 
@@ -94,7 +94,7 @@ The size of responses to messages sent to a canister smart contract on the IC is
 
 All update methods take `memo` parameters as input. An implementation of this standard SHOULD allow memos of at least 32 bytes in length for all methods.
 
-Each defined Candid type is only specified once in the standard text upon its first use. Likewise, error responses are not always explained repeatedly for all methods after having been explained already upon their first use.
+Each used Candid type is only specified once in the standard text upon its first use and subsequent uses refer to this first use. Likewise, error responses may not be explained repeatedly for all methods after having been explained already upon their first use, so the reader may need to refer back to a previous use.
 
 ### icrc7_collection_metadata
 
@@ -120,6 +120,7 @@ The following are the more technical, implementation-oriented, metadata elements
   * `icrc7:default_take_value` of type `nat` (optional): The default value this ledger uses for the `take` pagination parameter which is used in some queries. When present, should be the same as the result of the [`icrc7_default_take_value`](#icrc7_default_take_value) query call.
   * `icrc7:max_take_value` of type `nat` (optional): The maximum `take` value for paginated query calls this ledger implementation supports. The value applies to all paginated queries the ledger exposes. When present, should be the same as the result of the [`icrc7_max_take_value`](#icrc7_max_take_value) query call.
   * `icrc7:max_memo_size` of type `nat` (optional): The maximum size of `memo`s as supported by an implementation. When present, should be the same as the result of the [`icrc7_max_memo_size`](#icrc7_max_memo_size) query call.
+  * `icrc7_atomic_batch_transfers` of type `bool` (optional): `true` if and only if batch transfers of the ledger are executed atomically, i.e., either all transfers execute or none, `false` otherwise. Defaults to `false` if the attribute is not defined.
 
 Note that if `icrc7_max...` limits specified through metadata are violated in a query call by providing larger argument lists or resulting in larger responses than permitted, the canister SHOULD return a response only to a prefix of the request items.
 
@@ -228,11 +229,19 @@ Returns the maximum size of `memo`s as supported by an implementation.
 icrc7_max_memo_size : () -> (opt nat) query;
 ```
 
+### icrc7_atomic_batch_transfers
+
+Returns `true` if and only if batch transfers of the ledger are executed atomically, i.e., either all transfers execute or none, `false` otherwise.
+
+```candid "Methods" +=
+icrc7_atomic_batch_transfers : () -> (opt bool) query;
+```
+
 ### icrc7_token_metadata
 
 Returns the token metadata for `token_ids`, a list of token ids. Each tuple in the response vector comprises an optional `metadata` element with the metadata expressed as vector of `text` and `Value` pairs. In case a token does not exist, a `null` element corresponding to it is returned in the response. If a token does not have metadata, its associated metadata vector is the empty vector.
 
-ICRC-7 does not specify the representation of token metadata any further than that it is represented in a generic manner as a vector of `(text, Value)`-pairs. This is left to future standards, the collections, or the implementations in order to not constrain the utility and applicability of this standard.
+ICRC-7 does not specify the representation of token metadata any further than that it is represented in a generic manner as a vector of `(text, Value)`-pairs. This is left to future standards, the collections, the implementations, or emerging best practices, in order to not unnecessarily constrain the utility and applicability of this standard.
 
 > [!NOTE]
 > Encoding of types not contained in the `Value` type SHOULD be handled according to best practices as put forth in the context of the ICRC-3 standard.
@@ -279,7 +288,7 @@ Returns the list of tokens in this ledger, sorted by their token id.
 
 The result is paginated and pagination is controlled via the `prev` and `take` parameters: The response to a request results in at most `take` many token ids, starting with the next id following `prev`. The token ids in the response are sorted in any consistent sorting order used by the ledger. If `prev` is `null`, the response elements start with the smallest ids in the ledger according to the sorting order. If the response to a call with a non-null `prev` value contains no token ids, there are no further tokens following `prev`. If the response to a call contains fewer token ids than the provided or default `take` value, there are no further tokens in the ledger following the largest returned token id. If `take` is omitted, the ledger's default `take` value as specified through `icrc7:default_take_value` is assumed.
 
-For retrieving all tokens of the ledger, the pagination API is used such that the first call sets `prev = null` and specifies a suitable `take` value. Then, the method is called repeatedly such that the greatest token id of the previous response is used as `prev` value for the next call to the method. The method is called in this manner as long as the response comprises `take` many elements if take has been specified or `icrc7:default_take_value` many elements if `take` has not been specified. Using this approach, all tokens can be enumerated in ascending order, provided the ledger state does not change between the method calls.
+For retrieving all tokens of the ledger, the pagination API is used such that the first call sets `prev = null` and specifies a suitable `take` value. Then, the method is called repeatedly such that the greatest token id of the previous response is used as `prev` value for the next call to the method. The method is called in this manner as long as the response comprises `take` many elements if take has been specified or `icrc7:default_take_value` many elements if `take` has not been specified. When a response comprises fewer elements than `take` or the `icrc7:default_take_value`, respectively, iterating can be stopped as the end of the token sequence has been reached. Using this approach, all tokens can be enumerated in ascending order, provided the ledger state does not change between the method calls.
 
 Each invocation is executed on the current memory state of the ledger. I.e., it is not possible to enumerate the exact list of token ids of the ledger at a given time or of a "snapshot" of the ledger state. Rather, the ledger state can change between the multiple calls required to enumerate all the tokens.
 
@@ -299,19 +308,17 @@ icrc7_tokens_of : (account : Account, prev : opt nat, take : opt nat)
 
 ### icrc7_transfer
 
-Performs a batch of transfers of tokens. Each transfer transfers a token `token_id` from the account defined by the caller principal and the specified `from_subaccount` to the `to` account. A `memo` and `created_at_time` can be given optionally. The transfer can only be initiated by the holder of the tokens.
+Performs a batch of token transfers. Each of those transfers transfers a token `token_id` from the account defined by the caller principal and the specified `from_subaccount` to the `to` account. A `null` for the `from_subaccount` refers to the default subaccount comprising all zeroes. A `memo` and `created_at_time` can be given optionally. The transfer can only be initiated by the holder of the tokens.
 
 The method response comprises a vector of optional elements, one per request element. The response is a positional argument w.r.t. the request, i.e., the `i`-th response element is the response to the `i`-th request element. Each response item contains either an `Ok` variant containing the transaction index of the transfer in the success case or an `Err` variant in the error case. A `null` element in the response indicates that the corresponding request element has not been processed.
 
 A transfer clears all active token-level approvals for a successfully transferred token. This implicit clearing of approvals only clears token-level approvals and never touches collection-level approvals. This clearing does not create an ICRC-3 block in the transaction log, but it is implied by the transfer block in the log.
 
-// FIX make clear that batch transactions are not atomic by default; clients should not assume atomicity unless advertised otherwise by the ledger
-// metadata that specifies whether transfers are atomic; icrc7_transfers_are_atomic; make clear that this is set only if the implementer knows what they are doing, i.e., they can really make it atomic
-// note that implementations can make batches atomic; implementation semantics
+Batch transfers are *not atomic* by default, i.e., a user SHOULD not assume that either all or none of the transfers have been executed. A ledger implementation MAY choose to implement atomic batch transfers, in which case the metadata attribute `icrc7_atomic_batch_transfers` is set to `true`. If an implementation does not specifically implement batch atomicity, batch transfers are not atomic due to the asynchronous call semantics of the Internet Computer platform. An implementor ot this standard who implements atomic batch transfers and advertises those through the `icrc7_atomic_batch_transfers` metadata attribute SHOULD take great care to ensure everything required has been considered to achieve atomicity of the batch of transfers.
 
 ```candid "Type definitions" +=
 TransferArg = record {
-    from_subaccount: opt blob; // the subaccount of the caller (used to identify the spender), null means the default all-zero subaccount
+    from_subaccount: opt blob; // the subaccount to transfer the token from
     to : Account;
     token_id : nat;
     // type: leave open for now
@@ -325,7 +332,6 @@ type TransferResult = variant {
 };
 
 type TransferError = variant {
-    // per-transfer errors
     NonExistingTokenId;
     InvalidRecipient;
     Unauthorized;
@@ -333,8 +339,6 @@ type TransferError = variant {
     CreatedInFuture : record { ledger_time: nat64 };
     Duplicate : record { duplicate_of : nat };
     GenericError : record { error_code : nat; message : text };
-    // batch errors
-    BatchTermination;
     GenericBatchError : record { error_code : nat; message : text };
 };
 
@@ -346,11 +350,9 @@ icrc7_transfer : (vec TransferArg) -> (vec opt TransferResult);
 
 The ledger returns an `InvalidRecipient` error in case `to` equals `from` for a `TransferArg`.
 
-If the caller principal is not permitted to act on a token id, then the corresponding request item receives the `Unauthorized` error response. This may be the case if the token is not held in the subaccount specified in the `from` account.
+If the caller principal is not permitted to act on a token id, then the corresponding request item receives the `Unauthorized` error response. This may be the case if the token is not held in the specified subaccount `from_subaccount`.
 
-The `memo` parameter is an arbitrary blob that is not interpreted by the ledger.
-The ledger SHOULD allow memos of at least 32 bytes in length.
-The ledger SHOULD use the `memo` argument for [transaction deduplication](#transaction-deduplication).
+The `memo` parameter is an arbitrary blob that is not interpreted by the ledger. The ledger SHOULD allow memos of at least 32 bytes in length. The ledger SHOULD use the `memo` argument for [transaction deduplication](#transaction-deduplication).
 
 The ledger SHOULD reject transactions with the `Duplicate` error variant in case the transaction is found to be a duplicate based on the [transaction deduplication](#transaction-deduplication).
 
