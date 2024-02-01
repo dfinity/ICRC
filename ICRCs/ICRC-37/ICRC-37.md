@@ -92,7 +92,7 @@ The `created_at_time` parameter indicates the time (as nanoseconds since the UNI
 ```candid "Type definitions" +=
 type ApprovalInfo = {
     spender : Account;             // Approval is given to an ICRC Account
-    from_subaccount : opt blob;    // the subaccount the token can be transferred out from with the approval
+    from_subaccount : opt blob;    // The subaccount the token can be transferred out from with the approval
     expires_at : opt nat64;
     memo : opt blob;
     created_at_time : nat64; 
@@ -202,7 +202,7 @@ type RevokeTokenApprovalArg = record {
 };
 
 type RevokeTokenApprovalResponse = variant {
-    Ok : nat; // Transaction indices for successful approval revocation
+    Ok : nat; // Transaction index for successful approval revocation
     Err : RevokeTokenApprovalError;
 };
 
@@ -247,7 +247,7 @@ type RevokeCollectionApprovalArg = record {
 };
 
 type RevokeCollectionApprovalResult = variant {
-    Ok : nat; // Transaction index for successful revocation
+    Ok : nat; // Transaction index for successful approval revocation
     Err : RevokeCollectionApprovalError;
 };
 
@@ -337,11 +337,10 @@ Batch transfers are not atomic by default, i.e., a user SHOULD not assume that e
 
 ```candid "Type definitions" +=
 TransferFromArg = record {
-    spender_subaccount: opt blob; // the subaccount of the caller (used to identify the spender)
+    spender_subaccount: opt blob; // The subaccount of the caller (used to identify the spender)
     from : Account;
     to : Account;
     token_id : nat;
-    // type: leave open for now
     memo : opt blob;
     created_at_time : opt nat64;
 };
