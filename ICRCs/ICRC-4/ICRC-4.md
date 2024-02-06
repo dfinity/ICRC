@@ -78,8 +78,7 @@ icrc4_transfer_batch: (vec TransferArg) -> async vec (opt TransferBatchResult);
 
 #### Fee Structure
 
-- While individual fees for each transaction could be lower than a standard single transfer to reflect cost savings in batch processing, the practical aspects of how fees are collected, applied, and recorded in the ledger must be straightforward.
-- Each transfer within the batch MAY incur an individual fee as specified in the ledger's batch metadata. There is NO separate batch-level fee.
+- While individual fees for each transaction MAY be lower than a standard single transfer to reflect cost savings in batch processing, the practical aspects of how fees are collected, applied, and recorded results in charging the same fee as for ICRC-1 transfers SHOULD be followed.
 - Since the length of storage in the ledger contributes significantly to associated costs, the fee per transfer reflects the requirement for immortal ledger history.
 
 ### icrc4_balance_of_batch
@@ -128,7 +127,7 @@ icrc4_maximum_balance_size: () -> async ?Nat query;
 
 ## Batch Transfer Metadata
 
-Ledgers supporting ICRC-4 SHOULD provide metadata via the icrc1_metadata() function including maximum batch size and MAY provide a fee per transfer to enable principals to structure batch transactions appropriately. If the fee per transfer is not included the user of the ledger should assume the value for icrc1:fee.
+Ledgers supporting ICRC-4 SHOULD provide metadata via the icrc1_metadata() function including maximum batch and balance query sizes.
 
 ### Standard metadata entries
 | Key | Semantics | Example value
