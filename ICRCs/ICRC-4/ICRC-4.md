@@ -108,6 +108,23 @@ icrc4_balance_of_batch: (BalanceQueryArgs) -> async (BalanceQueryResult) query;
 - If too many requests are provided the ledger MAY truncate the responses at the limit.
 - Every balance included in the result corresponds directly to an account in the input query, maintaining the same order to facilitate mapping between requested accounts and their balances.
 
+### icrc4_maximum_balance_size
+
+Queries the metadata entry for the maximum number of balance queries that can be included in one batch call.
+
+```candid "Type definitions" +=
+// icrc4_balance_of_batch method definition
+icrc4_maximum_balance_size: () -> async ?Nat query;
+```
+
+#### Query Assumptions and Prerequisites
+
+- The canister implementation has a maximum balance threshold
+
+#### Expected Response
+
+- If the canister does not have a maximum balance threshold set the response should be null.
+- If the canister does have a maximum balance threshold it should be returned as a nat.
 
 ## Batch Transfer Metadata
 
@@ -116,8 +133,8 @@ Ledgers supporting ICRC-4 SHOULD provide metadata via the icrc1_metadata() funct
 ### Standard metadata entries
 | Key | Semantics | Example value
 | --- | ------------- | --------- |
-| `icrc4:maximum_batch_size` | The IC has a ~2MB limit on ingress and responses there for an implementor must provide guidance on the maximum number of transactions that can be handled in one call | `variant { Nat = 10_000 }` | 
-| `icrc4:maximum_balance_size` | The IC has a ~2MB limit on ingress and responses there for an implementor must provide guidance on the maximum number of balance inquiries that can be handled in one call | `variant { Nat = 10_000 }` | 
+| `icrc4:maximum_batch_size` | The IC has a ~2MB limit on ingress and responses there for an implementor must provide guidance on the maximum number of transactions that can be handled in one call | `variant { Nat = 200 }` | 
+| `icrc4:maximum_balance_size` | The IC has a ~2MB limit on ingress and responses there for an implementor must provide guidance on the maximum number of balance inquiries that can be handled in one call | `variant { Nat = 200 }` | 
 
 ## Updates to Transfer Block Schema
 
