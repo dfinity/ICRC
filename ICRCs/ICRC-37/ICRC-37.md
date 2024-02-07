@@ -11,6 +11,20 @@ This document specifies approval support for the ICRC-7 minimal NFT standard for
 
 This standard extends the ICRC-7 NFT standard and is intended to be implemented by token ledgers that implement ICRC-7. An ICRC-7 ledger may implement ICRC-37 in case it intends to offer approve and transfer from semantics. Principles put forth in ICRC-7 apply to ICRC-37 as well, e.g., the design of the update and query API.
 
+> The keywords "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be interpreted as described in RFC 2119.
+
+**Canisters implementing the `ICRC-37` standard MUST implement all the functions in the `ICRC-7` interface**.
+
+**Canisters implementing the `ICRC-37` standard MUST include `ICRC-37` in the list returned by the `icrc7_supported_standards` method**.
+
+## Metadata
+
+The following metadata properties are defined for ICRC-37:
+  * `icrc37:max_approvals_per_token_or_collection` of type `nat` (optional): The maximum number of active approvals this ledger implementation allows per token or per principal for the collection. When present, should be the same as the result of the [`icrc37_max_approvals_per_token_or_collection`](#icrc37_max_approvals_per_token_or_collection) query call.
+  * `icrc37:max_revoke_approvals` of type `nat` (optional): The maximum number of approvals that may be revoked in a single invocation of `icrc37_revoke_token_approvals` or `icrc37_revoke_collection_approvals`. When present, should be the same as the result of the [`icrc37_max_revoke_approvals`](#icrc37_max_revoke_approvals) query call.
+
+Those metadata attributes can be obtained through the `icrc7_collection_metadata` method of the ledger. All other relevant ``icrc7:...` metadata properties from the ICRC-7 implementation that implements this standard apply to this standard, e.g., the maximum batch sizes for queries and updates or the transaction deduplication parameters.
+
 ## Concepts
 
 *Approvals* allow a principal, the *spender*, to transfer tokens owned by another account that has approved the spender, where the transfer is performed on behalf of the owner. Approvals can be created on a per-token basis using `icrc37_approve_tokens` or for the whole collection, i.e., all tokens of the collection, using `icrc37_approve_collection`. The owner principal can explicitly revoke an active approval at their discretion using the `icrc37_revoke_token_approvals` for revoking token-level approvals and `icrc37_revoke_collection_approvals` for revoking collection-level approvals. A transfer of a token implicitly revokes all token-level approvals of the transferred token. A collection-level approval is not affected by any changes of token ownerships and is not related to specific tokens. An approval that has been created, has not expired (i.e., the `expires_at` field is a date in the future), has not been revoked implicitly through a transfer of the approved token, has not been revoked explicitly, and has not been replaced with a new approval is *active*, i.e., can allow the approved party to initiate a transfer.
@@ -26,32 +40,6 @@ Analogous to ICRC-7, also ICRC-37 uses the ICRC-1 *account* as entity that the s
 The general principles on the API as put forth in [ICRC-7](https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-7/ICRC-7.md) apply also to ICRC-37.
 
 To summarize, all eligible calls, i.e., such with (at most) one response element per request, are batch calls. Batch calls have *positional responses*, i.e., the `i`-th response element is the response to the `i`-th request element. The response may contain responses only to a prefix of the request. For update calls, responses can contain `null` elements, with the meaning that processing of the corresponding request has not been initiated. For query calls, `null` responses have a meaning as determined by the respective query call.
-
-### icrc37_metadata
-
-Returns the approval-related metadata of the ledger implementation. The metadata representation is analogous to that of [ICRC-7](https://github.com/dfinity/ICRC/ICRCs/ICRC-7/ICRC-7.md#icrc7_collection_metadata) using the `Value` type to represent properties.
-
-The following metadata property is defined for ICRC-37:
-  * `icrc37:max_approvals_per_token_or_collection` of type `nat` (optional): The maximum number of active approvals this ledger implementation allows per token or per principal for the collection. When present, should be the same as the result of the [`icrc37_max_approvals_per_token_or_collection`](#icrc37_max_approvals_per_token_or_collection) query call.
-  * `icrc37:max_revoke_approvals` of type `nat` (optional): The maximum number of approvals that may be revoked in a single invocation of `icrc37_revoke_token_approvals` or `icrc37_revoke_collection_approvals`. When present, should be the same as the result of the [`icrc37_max_revoke_approvals`](#icrc37_max_revoke_approvals) query call.
-
-Note that all other relevant ``icrc7:...` metadata properties from the ICRC-7 implementation that this standard is an extension of apply to this standard, e.g., the maximum batch sizes for queries and updates.
-
-```candid "Type definitions" +=
-// Generic value in accordance with ICRC-3
-type Value = variant { 
-    Blob : blob; 
-    Text : text; 
-    Nat : nat;
-    Int : int;
-    Array : vec Value; 
-    Map : vec record { text; Value }; 
-};
-```
-
-```candid "Methods" +=
-icrc37_metadata : () -> (vec record { text; Value } ) query;
-```
 
 ### icrc37_max_approvals_per_token_or_collection
 
