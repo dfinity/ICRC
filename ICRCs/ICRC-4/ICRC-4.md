@@ -20,6 +20,65 @@ The keywords "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SH
 
 ## Methods
 
+### Generally-Applicable Specification
+
+We next outline general aspects of the specification and behaviour of query and update calls defined in this standard. Those general aspects are not repeated with the specification of every method, but specified once for all query and update calls in this section.
+
+#### Batch Update Methods
+
+The methods that have at most one result per input value are modeled as *batch methods*, i.e., they operate on a vector of inputs and return a vector of outputs. The elements of the output are sorted in the same order as the elements of the input, meaning that the `i`-the element in the result is the reponse to the `i`-th element in the request. We call this property of the arguments "positional". The response may have fewer elements than the request in case processing has stopped through a batch processing error that prevents it from moving forward. In case of such batch processing error, the element which caused the batch processing to terminate receives an error response with the batch processing error. This element can not have a specific per-element error as it expresses the batch error. This element need not be the element with the highest index in the response as processing of requests can be concurrent in an implementation and any element earlier in the request may cause the batch processing failure.
+
+The response of a batch method may be shorter than the request and then contain only responses to a prefix of the request vector. This happens when the processing is terminated due to an error. However, due to the ordering requirements of the response elements w.r.t. the request elements (positional arguments), the response must be contiguous, possibly containing `null` elements, i.e., it contains response elements to a contiguous prefix of the request vector.
+
+The standard does not impose any constraints on aspects such as no duplicate token ids being contained in the elements of a request batch. Rather, each element is independent of the others and its execution may succeed or lead to an error. We do not impose any constraints on the sequence of processing of the elements of a batch in order to not have undue constraints on the implementation in terms of performance. A client SHOULD not assume any specific sequence of processing of batch elements. I.e., if a client intends to make dependent transactions, e.g., to move a token from its current subaccount to a specific "vendor subaccount" and from there transfer it to a customer, those two operations should be part of subsequent batches to assure both transfers to complete without assumptions on the implementation of the ledger.
+
+Note that the items in a batch are processed independently of each other and processing can independently succeed or fail. This choice does not impose relevant constraints on the ledger implementation. The only constraint resulting from this is that the response must contain response items up to the largest element index processing of which has been initiated by the ledger, regardless of its result. The response items following this highest-index processed request item can be left out.
+
+The API style we employ for batch APIs is simple, does not repeat request information in the response, and does not unnecessarily constrain the implementation, i.e., permits highly-concurrent implementations. On the client side it has no major drawbacks as it is straightforward to associated the corresponding request data with the responses by using positional alignment of the request and response vectors.
+
+The guiding principle is to have all suitable update methods be batch methods, i.e., all update calls that have at most one response per request.
+
+For batch update calls, each element in the request for which processing has been attempted, i.e., started, regardless of the success thereof, needs to contain a non-null response at the corresponding index. Elements for which processing has not been attempted, may contain a `null` response. The response vector may contain responses only to a prefix of the request vector, with further non-processed elements being omitted from the response.
+
+Update calls, i.e., methods that modify the state of the ledger, always have responses that comprise transaction indices in the success case. Such a transaction index is an index into the chain of blocks containing the transaction history of this ledger. The details of how to access the transaction history of ICRC-7 ledgers is not part of the ICRC-7 standard, but will use the separately published [ICRC-3](https://github.com/dfinity/ICRC-1/tree/main/standards/ICRC-3) standard that specifies access to the block log of ICRC ledgers.
+
+*Example*
+
+Consider an input comprising the batch of transactions `A, B, C, D, E, F, G, H`, each of the items being one operation to perform and letters abstract the request items in the example.
+```
+Input : [A, B, C, D, E, F, G, H];
+```
+Depending on the concurrent execution of the individual operations, there may be different outcomes:
+
+1. Assume an error that prevents further processing has occurred while processing `D`, with successfully processed `A`. Processing of `B` and `C` has not been initated yet, therefore they receive `null` responses.
+  * Output: `[opt #Ok(5), null ,null, opt #Err(#GenericBatchError(...)];`
+2. Assume an error that prevents further processing has occurred while processing `B` with successfully processed `A` and `D`, but processing for `C` has not been initiated. `A` and `D` receive a success response with their transaction id, `B` the batch error, and `C` is filled with a `null`:
+  * Output: `[opt #Ok(5), opt #Err(#GenericBatchError(...), null , opt #Ok(6)];`
+3. Assume an error that prevents further processing has occurred while processing `A`, but processing of `B` and `H` has already been initiated and succeeds. The not-processed elements are filled up with `null` elements up to the rightmost processed element `H`.
+  * Output: `[opt #Err(#GenericBatchError(...), opt #Ok(5), null, null, null, null, null, opt #Ok(6)];`
+
+#### Batch Query Methods
+
+There are two different classes of query methods in terms of their API styles defined in this standard:
+1. Query methods that have (at most) one response per request in the batch. For example, `icrc7_balance_of`, which receives a vector of token ids as input and each output element is the balance of the corresponding input. Those methods perfectly lend themselves for implementation with a batch API. Those queries have an analogous API style as batch update calls, with a difference in the meaning of `null` responses.
+1. Query methods that may have multiple responses for an input element. An example is `icrc7_tokens_of`, which may have many response elements for an account. Those methods require pagination. Pagination is hard to combine with the batch API style and positional responses and they complicate both the API and the implementation. Thus, the guiding principle is that such methods be non-batch paginated methods, unless there is a strong reason for a deviation from this.
+
+The class 1 of query calls above is handled with an API style that is *almost identical* to that of batch update calls as outlined above. The main and only difference is the meaning of `null` values. For update calls, a `null` response always means that processing of the corresponding request has not been initiated, e.g., after a batch error has occurred. For query calls, errors that prevent further processing of queries are not expected as queries are read operations that should not fail. For queries, `null` may be defined to have a specific meaning per query and do not have the default semantics that the corresponding request has not been processed. Queries must process the complete contiguous request sequence from index 0 up to a given request element index and may not have further response elements after that index, but must, unlike update calls, not skip processing of some elements in the returned sequence. As queries are read-only operations that don't have the numerous failure modes of updates, this should not impose any undue constraints on an implementation.
+
+#### Error Handling
+
+It is recommended that neither query nor update calls trap unless completely unavoidable. The API is designed such that many error cases do not need to cause a trap, but can be communicated back to the client and the processing of large batches may be short-circuited to processing only a prefix thereof in case of an error.
+
+For example, if a limit expressed through an `icrc7:max_...` metadata attribute is violated, e.g., the maximum batch size is exceeded and the response size would exceed the system's permitted maximum, the ledger should process only a prefix of the input and return a corresponding response vector with elements corresponding to this prefix. Only a prefix of the request being responded to means that the suffix of the request has not been processed and the processing of its elements has not even been attempted to be initiated.
+
+#### Other Aspects
+
+The size of responses to messages sent to a canister smart contract on the IC is constrained to a fixed constant size. For requests that could potentially result in larger response messages that breach this limit, the caller SHOULD ensure to constrain the input of the methods accordingly so that the response remains below the maximum allowed size, e.g., the caller should not query too many token ids in one batch call. To avoid hitting the size limit, the ledger may process only a prefix of the request. The ledger MAY make sure that the response size does not exceed the permitted maximum *before* making any changes that might be committed to replicated state.
+
+All update methods take `memo` parameters as input. An implementation of this standard SHOULD allow memos of at least 32 bytes in length for all methods.
+
+Each used Candid type is only specified once in the standard text upon its first use and subsequent uses refer to this first use. Likewise, error responses may not be explained repeatedly for all methods after having been explained already upon their first use, so the reader may need to refer back to a previous use.
+
 ### icrc4_transfer_batch
 
 Executes a batch of transfer operations from the sender's subaccounts to various recipient accounts.
@@ -107,13 +166,29 @@ icrc4_balance_of_batch: (BalanceQueryArgs) -> async (BalanceQueryResult) query;
 - If too many requests are provided the ledger MAY truncate the responses at the limit.
 - Every balance included in the result corresponds directly to an account in the input query, maintaining the same order to facilitate mapping between requested accounts and their balances.
 
+### icrc4_maximum_batch_size
+
+Queries the metadata entry for the maximum number of batch transactions that can be included in one batch call.
+
+```candid "Type definitions" +=
+icrc4_maximum_batch_size: () -> async ?Nat query;
+```
+
+#### Query Assumptions and Prerequisites
+
+- The canister implementation has a maximum bach threshold
+
+#### Expected Response
+
+- If the canister does not have a maximum batch threshold set the response should be null.
+- If the canister does have a maximum batch threshold it should be returned as a nat.
+
 ### icrc4_maximum_balance_size
 
 Queries the metadata entry for the maximum number of balance queries that can be included in one batch call.
 
 ```candid "Type definitions" +=
-// icrc4_balance_of_batch method definition
-icrc4_maximum_balance_size: () -> async ?Nat query;
+icrc4_maximum_batch_size: () -> async ?Nat query;
 ```
 
 #### Query Assumptions and Prerequisites
