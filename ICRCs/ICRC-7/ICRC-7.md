@@ -120,7 +120,9 @@ The following are the more technical, implementation-oriented, metadata elements
   * `icrc7:default_take_value` of type `nat` (optional): The default value this ledger uses for the `take` pagination parameter which is used in some queries. When present, should be the same as the result of the [`icrc7_default_take_value`](#icrc7_default_take_value) query call.
   * `icrc7:max_take_value` of type `nat` (optional): The maximum `take` value for paginated query calls this ledger implementation supports. The value applies to all paginated queries the ledger exposes. When present, should be the same as the result of the [`icrc7_max_take_value`](#icrc7_max_take_value) query call.
   * `icrc7:max_memo_size` of type `nat` (optional): The maximum size of `memo`s as supported by an implementation. When present, should be the same as the result of the [`icrc7_max_memo_size`](#icrc7_max_memo_size) query call.
-  * `icrc7_atomic_batch_transfers` of type `bool` (optional): `true` if and only if batch transfers of the ledger are executed atomically, i.e., either all transfers execute or none, `false` otherwise. Defaults to `false` if the attribute is not defined.
+  * `icrc7:atomic_batch_transfers` of type `bool` (optional): `true` if and only if batch transfers of the ledger are executed atomically, i.e., either all transfers execute or none, `false` otherwise. Defaults to `false` if the attribute is not defined.
+  * `icrc7:tx_window` of type `nat` (optional): The time window in seconds during which transactions can be deduplicated. Corresponds to the parameter `TX_WINDOW` as specified in the section on [transaction deduplication](#transaction_deduplication).
+  * `icrc7:permitted_drift` of type `nat` (optional): The time duration in seconds by which the transaction deduplication window can be extended. Corresponds to the parameter `PERMITTED_DRIFT` as specified in the section on [transaction deduplication](#transaction_deduplication).
 
 Note that if `icrc7_max...` limits specified through metadata are violated in a query call by providing larger argument lists or resulting in larger responses than permitted, the canister SHOULD return a response only to a prefix of the request items.
 
@@ -235,6 +237,22 @@ Returns `true` if and only if batch transfers of the ledger are executed atomica
 
 ```candid "Methods" +=
 icrc7_atomic_batch_transfers : () -> (opt bool) query;
+```
+
+### icrc7_tx_window
+
+Returns the time window in seconds during which transactions can be deduplicated. Corresponds to the parameter `TX_WINDOW` as specified in the section on [transaction deduplication](#transaction_deduplication).
+
+```candid "Methods" +=
+icrc7_tx_window : () -> (opt nat) query;
+```
+
+### icrc7_permitted_drift
+
+Returns the time duration in seconds by which the transaction deduplication window can be extended. Corresponds to the parameter `PERMITTED_DRIFT` as specified in the section on [transaction deduplication](#transaction_deduplication).
+
+```candid "Methods" +=
+icrc7_permitted_drift : () -> (opt nat) query;
 ```
 
 ### icrc7_token_metadata
