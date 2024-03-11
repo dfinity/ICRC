@@ -403,34 +403,39 @@ ICRC-7 builds on the [ICRC-3](https://github.com/dfinity/ICRC-1/tree/main/standa
 
 ### Generic ICRC-7 Block Schema
 
-1. it MUST contain a field `ts: Nat` which is the timestamp of when the block was added to the Ledger
-2. its field `tx`
-    1. MAY contain a field `memo: Blob` if specified by the user
-    2. MAY contain a field `ts: Nat` if the user sets the `created_at_time` field in the request.
+An ICRC-7 block is defined as follows:
+1. its `type` field MUST be set to the op name that starts with `7`
+2. it MUST contain a field `ts: Nat` which is the timestamp of when the block was added to the Ledger
+3. it MUST contain a field `tx`
+    1. `tx` MAY contain a field `memo: Blob` if specified by the user
+    2. `tx` MAY contain a field `ts: Nat` if the user sets the `created_at_time` field in the request.
 
 ### Mint Block Schema
 
-1. the `tx.op` field MUST be `"7mint"`
-2. it MUST contain a field `tx.tid: Nat`
-3. it MAY contain a field `tx.from: Account`
-4. it MUST contain a field `tx.to: Account`
-5. it MUST contain a field `tx.meta: Value`
+1. the `type` field of the block MUST be set to `"7mint"`
+2. the `tx` field
+    1. MUST contain a field `tid: Nat`
+    2. MAY contain a field `from: Account`
+    3. MUST contain a field `to: Account`
+    4. MUST contain a field `meta: Value`
 
-Note that `tid` refers to the token id. The size of the `meta` field expressing the token metadata must be less than the maximum size permitted for inter-canister calls. If the metadata is sufficiently small, it is recommended to add the full metadata into the `tx.meta` field, if the metadata is too large, it is recommended to add a hash of the metadata to the `meta` field.
+Note that `tid` refers to the token id. The size of the `meta` field expressing the token metadata must be less than the maximum size permitted for inter-canister calls. If the metadata is sufficiently small, it is recommended to add the full metadata into the `meta` field, if the metadata is too large, it is recommended to add a hash of the metadata to the `meta` field. // FIX best practices for modeling metadata or hash
 
 ### Burn Block Schema
 
-1. the `tx.op` field MUST be `"7burn"`
-2. it MUST contain a field `tx.tid: Nat`
-3. it MUST contain a field `tx.from: Account`
-4. it MAY contain a field `tx.to: Account`
+1. the `type` field of the block MUST be set to `"7burn"`
+2. the `tx` field
+    1. MUST contain a field `tid: Nat`
+    2. MUST contain a field `from: Account`
+    3. MAY contain a field `to: Account`
 
 ### icrc7_transfer Block Schema
 
-1. the `tx.op` field MUST be `"7xfer"`
-2. it MUST contain a field `tx.tid: Nat`
-3. it MUST contain a field `tx.from: Account`
-4. it MUST contain a field `tx.to: Account`
+1. the `type` field of the block MUST be set to `"7xfer"`
+2. the `tx` field
+    1. MUST contain a field `tid: Nat`
+    2. MUST contain a field `from: Account`
+    3. MUST contain a field `to: Account`
 
 As `icrc7_transfer` is a batch method, it results in one block per `token_id` in the batch. The method results in one block per input of the batch. The blocks need not appear in the block log in the same relative sequence as the token ids appear in the vector of input token identifiers in order to not unnecessarily constrain the potential concurrency of an implementation. The block sequence corresponding to the token ids in the input can be interspersed with blocks from other (batch) methods executed by the ledger in an interleaved execution sequence. This allows for high-performance ledger implementations that can make asynchronous calls to other canisters in the scope of operations on tokens and process multiple batch update calls concurrently.
 
