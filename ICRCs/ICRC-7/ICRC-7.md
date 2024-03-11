@@ -382,33 +382,31 @@ The ledger SHOULD reject transactions that have the `created_at_time` argument t
 > [!NOTE]
 > Note further that deduplication is performed independently on the different items of the batch.
 
-### icrc7_supported_standards
+### icrc61_supported_standards
 
-Returns the list of standards this ledger implements.
-See the ["Extensions"](#extensions) section below.
+An implementation of ICRC-7 MUST implement the method `icrc61_supported_standards` as put forth in ICRC-61.
 
-```candid "Methods" +=
-icrc7_supported_standards : () -> (vec record { name : text; url : text }) query;
-```
-
-The result of the call should always have at least one entry:
+The result of the call MUST always have at least the following entries:
 
 ```candid
 record { name = "ICRC-7"; url = "https://github.com/dfinity/ICRC/ICRCs/ICRC-7"; }
+record { name = "ICRC-61"; url = "https://github.com/dfinity/ICRC/ICRCs/ICRC-61"; }
 ```
 
 ## ICRC-7 Block Schema
 
-ICRC-7 builds on the [ICRC-3](https://github.com/dfinity/ICRC-1/tree/main/standards/ICRC-3) specification for defining the format for storing transactions in blocks of the log of the ledger. ICRC-3 defines a generic, extensible, block schema that can be further instantiated in standards implementing ICRC-3. We next define the concrete block schema for ICRC-7 as extension of the ICRC-3 block schema.
+ICRC-7 builds on the [ICRC-3](https://github.com/dfinity/ICRC-1/tree/main/standards/ICRC-3) specification for defining the format for storing transactions in blocks of the log of the ledger. ICRC-3 defines a generic, extensible, block schema that can be further instantiated in standards implementing ICRC-3. We next define the concrete block schema for ICRC-7 as extension of the ICRC-3 block schema. This schema must be implemented by a ledger implementing ICRC-7 if it claims to implement ICRC-3 through the method listing the supported standards.
 
 ### Generic ICRC-7 Block Schema
 
 An ICRC-7 block is defined as follows:
 1. its `type` field MUST be set to the op name that starts with `7`
 2. it MUST contain a field `ts: Nat` which is the timestamp of when the block was added to the Ledger
-3. it MUST contain a field `tx`
-    1. `tx` MAY contain a field `memo: Blob` if specified by the user
-    2. `tx` MAY contain a field `ts: Nat` if the user sets the `created_at_time` field in the request.
+3. it MUST contain a field `tx`, which
+    1. MAY contain a field `memo: Blob` if specified by the user
+    2. MAY contain a field `ts: Nat` if the user sets the `created_at_time` field in the request.
+
+The `tx` field contains the transaction data as provided by the caller and is further refined for each the different update calls as specified below.
 
 ### Mint Block Schema
 
@@ -457,8 +455,8 @@ The base standard intentionally excludes some ledger functions essential for bui
   * The block structure and the interface for fetching blocks.
   * Pre-signed transactions.
 
-The standard defines the `icrc7_supported_standards` endpoint to accommodate these and other future extensions.
-This endpoint returns names of all specifications (e.g., `"ICRC-42"` or `"DIP-20"`) implemented by the ledger as well as URLs.
+The standard uses the `icrc61_supported_standards` endpoint to accommodate these and other future extensions.
+This endpoint returns names of all specifications (e.g., `"ICRC-3"` or `"ICRC-61"`) implemented by the ledger as well as URLs.
 
 ## Transaction Deduplication
 
