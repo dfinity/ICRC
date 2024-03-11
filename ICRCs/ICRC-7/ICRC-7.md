@@ -120,7 +120,9 @@ The following are the more technical, implementation-oriented, metadata elements
   * `icrc7:default_take_value` of type `nat` (optional): The default value this ledger uses for the `take` pagination parameter which is used in some queries. When present, should be the same as the result of the [`icrc7_default_take_value`](#icrc7_default_take_value) query call.
   * `icrc7:max_take_value` of type `nat` (optional): The maximum `take` value for paginated query calls this ledger implementation supports. The value applies to all paginated queries the ledger exposes. When present, should be the same as the result of the [`icrc7_max_take_value`](#icrc7_max_take_value) query call.
   * `icrc7:max_memo_size` of type `nat` (optional): The maximum size of `memo`s as supported by an implementation. When present, should be the same as the result of the [`icrc7_max_memo_size`](#icrc7_max_memo_size) query call.
-  * `icrc7_atomic_batch_transfers` of type `bool` (optional): `true` if and only if batch transfers of the ledger are executed atomically, i.e., either all transfers execute or none, `false` otherwise. Defaults to `false` if the attribute is not defined.
+  * `icrc7:atomic_batch_transfers` of type `bool` (optional): `true` if and only if batch transfers of the ledger are executed atomically, i.e., either all transfers execute or none, `false` otherwise. Defaults to `false` if the attribute is not defined.
+  * `icrc7:tx_window` of type `nat` (optional): The time window in seconds during which transactions can be deduplicated. Corresponds to the parameter `TX_WINDOW` as specified in the section on [transaction deduplication](#transaction_deduplication).
+  * `icrc7:permitted_drift` of type `nat` (optional): The time duration in seconds by which the transaction deduplication window can be extended. Corresponds to the parameter `PERMITTED_DRIFT` as specified in the section on [transaction deduplication](#transaction_deduplication).
 
 Note that if `icrc7_max...` limits specified through metadata are violated in a query call by providing larger argument lists or resulting in larger responses than permitted, the canister SHOULD return a response only to a prefix of the request items.
 
@@ -235,6 +237,22 @@ Returns `true` if and only if batch transfers of the ledger are executed atomica
 
 ```candid "Methods" +=
 icrc7_atomic_batch_transfers : () -> (opt bool) query;
+```
+
+### icrc7_tx_window
+
+Returns the time window in seconds during which transactions can be deduplicated. Corresponds to the parameter `TX_WINDOW` as specified in the section on [transaction deduplication](#transaction_deduplication).
+
+```candid "Methods" +=
+icrc7_tx_window : () -> (opt nat) query;
+```
+
+### icrc7_permitted_drift
+
+Returns the time duration in seconds by which the transaction deduplication window can be extended. Corresponds to the parameter `PERMITTED_DRIFT` as specified in the section on [transaction deduplication](#transaction_deduplication).
+
+```candid "Methods" +=
+icrc7_permitted_drift : () -> (opt nat) query;
 ```
 
 ### icrc7_token_metadata
@@ -363,55 +381,58 @@ The ledger SHOULD reject transactions that have the `created_at_time` argument t
 > [!NOTE]
 > Note further that deduplication is performed independently on the different items of the batch.
 
-### icrc7_supported_standards
+### icrc61_supported_standards
 
-Returns the list of standards this ledger implements.
-See the ["Extensions"](#extensions) section below.
+An implementation of ICRC-7 MUST implement the method `icrc61_supported_standards` as put forth in ICRC-61.
 
-```candid "Methods" +=
-icrc7_supported_standards : () -> (vec record { name : text; url : text }) query;
-```
-
-The result of the call should always have at least one entry:
+The result of the call MUST always have at least the following entries:
 
 ```candid
 record { name = "ICRC-7"; url = "https://github.com/dfinity/ICRC/ICRCs/ICRC-7"; }
+record { name = "ICRC-61"; url = "https://github.com/dfinity/ICRC/ICRCs/ICRC-61"; }
 ```
 
 ## ICRC-7 Block Schema
 
-ICRC-7 builds on the [ICRC-3](https://github.com/dfinity/ICRC-1/tree/main/standards/ICRC-3) specification for defining the format for storing transactions in blocks of the log of the ledger. ICRC-3 defines a generic, extensible, block schema that can be further instantiated in standards implementing ICRC-3. We next define the concrete block schema for ICRC-7 as extension of the ICRC-3 block schema.
+ICRC-7 builds on the [ICRC-3](https://github.com/dfinity/ICRC-1/tree/main/standards/ICRC-3) specification for defining the format for storing transactions in blocks of the log of the ledger. ICRC-3 defines a generic, extensible, block schema that can be further instantiated in standards implementing ICRC-3. We next define the concrete block schema for ICRC-7 as extension of the ICRC-3 block schema. This schema must be implemented by a ledger implementing ICRC-7 if it claims to implement ICRC-3 through the method listing the supported standards.
 
 ### Generic ICRC-7 Block Schema
 
-1. it MUST contain a field `ts: Nat` which is the timestamp of when the block was added to the Ledger
-2. its field `tx`
+An ICRC-7 block is defined as follows:
+1. its `type` field MUST be set to the op name that starts with `7`
+2. it MUST contain a field `ts: Nat` which is the timestamp of when the block was added to the Ledger
+3. it MUST contain a field `tx`, which
     1. MAY contain a field `memo: Blob` if specified by the user
     2. MAY contain a field `ts: Nat` if the user sets the `created_at_time` field in the request.
 
+The `tx` field contains the transaction data as provided by the caller and is further refined for each the different update calls as specified below.
+
 ### Mint Block Schema
 
-1. the `tx.op` field MUST be `"7mint"`
-2. it MUST contain a field `tx.tid: Nat`
-3. it MAY contain a field `tx.from: Account`
-4. it MUST contain a field `tx.to: Account`
-5. it MUST contain a field `tx.meta: Value`
+1. the `type` field of the block MUST be set to `"7mint"`
+2. the `tx` field
+    1. MUST contain a field `tid: Nat`
+    2. MAY contain a field `from: Account`
+    3. MUST contain a field `to: Account`
+    4. MUST contain a field `meta: Value`
 
-Note that `tid` refers to the token id. The size of the `meta` field expressing the token metadata must be less than the maximum size permitted for inter-canister calls. If the metadata is sufficiently small, it is recommended to add the full metadata into the `tx.meta` field, if the metadata is too large, it is recommended to add a hash of the metadata to the `meta` field.
+Note that `tid` refers to the token id. The size of the `meta` field expressing the token metadata must be less than the maximum size permitted for inter-canister calls. If the metadata is sufficiently small, it is recommended to add the full metadata into the `meta` field, if the metadata is too large, it is recommended to add a hash of the metadata to the `meta` field. // FIX best practices for modeling metadata or hash
 
 ### Burn Block Schema
 
-1. the `tx.op` field MUST be `"7burn"`
-2. it MUST contain a field `tx.tid: Nat`
-3. it MUST contain a field `tx.from: Account`
-4. it MAY contain a field `tx.to: Account`
+1. the `type` field of the block MUST be set to `"7burn"`
+2. the `tx` field
+    1. MUST contain a field `tid: Nat`
+    2. MUST contain a field `from: Account`
+    3. MAY contain a field `to: Account`
 
 ### icrc7_transfer Block Schema
 
-1. the `tx.op` field MUST be `"7xfer"`
-2. it MUST contain a field `tx.tid: Nat`
-3. it MUST contain a field `tx.from: Account`
-4. it MUST contain a field `tx.to: Account`
+1. the `type` field of the block MUST be set to `"7xfer"`
+2. the `tx` field
+    1. MUST contain a field `tid: Nat`
+    2. MUST contain a field `from: Account`
+    3. MUST contain a field `to: Account`
 
 As `icrc7_transfer` is a batch method, it results in one block per `token_id` in the batch. The method results in one block per input of the batch. The blocks need not appear in the block log in the same relative sequence as the token ids appear in the vector of input token identifiers in order to not unnecessarily constrain the potential concurrency of an implementation. The block sequence corresponding to the token ids in the input can be interspersed with blocks from other (batch) methods executed by the ledger in an interleaved execution sequence. This allows for high-performance ledger implementations that can make asynchronous calls to other canisters in the scope of operations on tokens and process multiple batch update calls concurrently.
 
@@ -433,8 +454,8 @@ The base standard intentionally excludes some ledger functions essential for bui
   * The block structure and the interface for fetching blocks.
   * Pre-signed transactions.
 
-The standard defines the `icrc7_supported_standards` endpoint to accommodate these and other future extensions.
-This endpoint returns names of all specifications (e.g., `"ICRC-42"` or `"DIP-20"`) implemented by the ledger as well as URLs.
+The standard uses the `icrc61_supported_standards` endpoint to accommodate these and other future extensions.
+This endpoint returns names of all specifications (e.g., `"ICRC-3"` or `"ICRC-61"`) implemented by the ledger as well as URLs.
 
 ## Transaction Deduplication
 
