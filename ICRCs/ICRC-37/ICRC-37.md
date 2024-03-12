@@ -403,9 +403,8 @@ The following generic schema extends the generic schema of ICRC-3 with ICRC-37-s
 // FIX What is `memo` at the top-level used for? Can we remove it? There is now a possibly available `memo` field defined in the `tx` record
 
 An ICRC-37 block is defined as follows:
-1. its `type` field MUST be set to the op name that starts with `7`
+1. its `type` field MUST be set to the op name that starts with `37`
 2. it MUST contain a field `ts: Nat` which is the timestamp of when the block was added to the Ledger
-3. it MAY contain a field `memo: Blob` if specified by the canister // can we remove this?
 4. it MUST contain a field `tx`, which
     1. MAY contain a field `memo: Blob` if specified by the user
     2. MAY contain a field `ts: Nat` if the user sets the `created_at_time` field in the request.
