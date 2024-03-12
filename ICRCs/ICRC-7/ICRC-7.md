@@ -436,6 +436,16 @@ Note that `tid` refers to the token id. The size of the `meta` field expressing 
 
 As `icrc7_transfer` is a batch method, it results in one block per `token_id` in the batch. The method results in one block per input of the batch. The blocks need not appear in the block log in the same relative sequence as the token ids appear in the vector of input token identifiers in order to not unnecessarily constrain the potential concurrency of an implementation. The block sequence corresponding to the token ids in the input can be interspersed with blocks from other (batch) methods executed by the ledger in an interleaved execution sequence. This allows for high-performance ledger implementations that can make asynchronous calls to other canisters in the scope of operations on tokens and process multiple batch update calls concurrently.
 
+### icrc7_update Block Schema
+
+1. the `type` field of the block MUST be set to `"7update"`
+2. the `tx` field
+    1. MUST contain a field `tid: Nat`
+    2. MUST contain a field `metadata: Blob` with the metadata or metadata hash
+    3. MAY contain a field `from: Account` with an account that initiated the update
+
+Note that there is no method defined in this specification for the metadata update, but this is left to the implementation of the ledger or a future standard.
+
 ## Migration Path for Ledgers Using ICP AccountId
 
 For historical reasons, multiple NFT standards, such as the EXT standard, use the ICP `AccountIdentifier` or `AccountId` (a hash of the principal and subaccount) instead of the ICRC-1 `Account` (a pair of principal and subaccount) to store the owners. Since the ICP `AccountId` can be calculated from an ICRC-1 `Account`, but computability does not hold in the inverse direction, there is no way for a ledger implementing ICP `AccountId` to display `icrc7_owner_of` data.
