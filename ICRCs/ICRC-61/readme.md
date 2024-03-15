@@ -45,23 +45,25 @@ This method is for discovering what APIs or protocols a given canister complies 
 icrc61_supported_standards : () -> (SupportedStandardsResponse) query;
 ```
 
-The result MUST include entries for `ICRC-1` and `ICRC-7` if the canister supports these standards. This mandate ensures that clients querying for supported standards can upgrade to ICRC-61 for discoverability. 
+The result MUST include entries for `ICRC-1` if the canister supports these standards. This mandate ensures that clients querying for supported standards can upgrade to ICRC-61 for discoverability. 
+
+The result MUST include a self-reference for `record{name="ICRC-61"; url="https://github.com/dfinity/ICRCs/ICRC-61"}`;
 
 Additionally, the result SHOULD include entries for other supported standards, offering a flexible and extensible way to advertise capabilities.
 
 ## Reasoning
 
-The rationale behind the `icrc61_supported_standards` method over implementing similar endpoints within ICRC-1 or ICRC-7 individually is that it alleviates the need for developers to adhere to the full specifications of either standard to disclose supported features. This approach streamlines the integration process, broadens the compatibility across different protocols, and fosters a more interconnected and versatile ecosystem.
+The rationale behind the `icrc61_supported_standards` method over implementing similar endpoints within ICRC-1 individually is that it alleviates the need for developers to adhere to the full specifications of either standard to disclose supported features. This approach streamlines the integration process, broadens the compatibility across different protocols, and fosters a more interconnected and versatile ecosystem.
 
 In effect, `icrc61_supported_standards` serves as a universal discovery mechanism, enabling canisters to succinctly communicate their supported interfaces. This capability is particularly valuable in a decentralized environment like the Internet Computer, where discovering and leveraging the functionalities of various services can significantly enhance application development and user experiences.
 
 Through standardization of the `icrc61_supported_standards` method, the ICRC-61 aims to simplify interoperability, reduce implementation complexity, and foster a more vibrant and accessible ecosystem of services on the Internet Computer.
 
-## Migration Path for Ledgers Using ICRC-1 and ICRC-7
+## Migration Path for Ledgers Using ICRC-1
 
 Ledgers and other services that already exist, to the extent that they are capable, SHOULD add the ICRC-61 to increase interoperability on the Internet Computer.
 
-For historical interoperability, existing ledgers should maintain their implementation of  `icrc1_supported_standards` and `icrc7_supported_standards`.  The new `icrc61_supported_standards` should return the same data, or a combination of data from those endpoints.
+For historical interoperability, existing ledgers MUST maintain their implementation of  `icrc1_supported_standards` .  The new `icrc61_supported_standards` should return at least same data, but MAY be augmented with additional ICRC features or supported standards.
 
 ## Versioning
 
