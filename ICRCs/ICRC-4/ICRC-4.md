@@ -98,6 +98,7 @@ type TransferArg = record {
 };
 
 type TransferError = variant {
+    BadBurn : record {min_burn_amount : nat};
     BadFee : record { expected_fee : nat };
     InsufficientFunds : record { balance : nat;};
     TooOld;
