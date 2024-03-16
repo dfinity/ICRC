@@ -104,6 +104,7 @@ type TransferError = variant {
     GenericBatchError : record { error_code : nat; message : text };
     CreatedInFuture : record { ledger_time: nat64 };
     Duplicate : record { duplicate_of : nat };
+    TooManyRequests : record { limit: nat };
     TemporarilyUnavailable;
     GenericError : record { error_code : nat; message : text };
 };
