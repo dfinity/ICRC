@@ -399,7 +399,7 @@ ICRC-7 builds on the [ICRC-3](https://github.com/dfinity/ICRC-1/tree/main/standa
 ### Generic ICRC-7 Block Schema
 
 An ICRC-7 block is defined as follows:
-1. its `type` field MUST be set to the op name that starts with `7`
+1. its `btype` field MUST be set to the op name that starts with `7`
 2. it MUST contain a field `ts: Nat` which is the timestamp of when the block was added to the Ledger
 3. it MUST contain a field `tx`, which
     1. MAY contain a field `memo: Blob` if specified by the user
@@ -409,7 +409,7 @@ The `tx` field contains the transaction data as provided by the caller and is fu
 
 ### Mint Block Schema
 
-1. the `type` field of the block MUST be set to `"7mint"`
+1. the `btype` field of the block MUST be set to `"7mint"`
 2. the `tx` field
     1. MUST contain a field `tid: Nat`
     2. MAY contain a field `from: Account`
@@ -420,7 +420,7 @@ Note that `tid` refers to the token id. The size of the `meta` field expressing 
 
 ### Burn Block Schema
 
-1. the `type` field of the block MUST be set to `"7burn"`
+1. the `btype` field of the block MUST be set to `"7burn"`
 2. the `tx` field
     1. MUST contain a field `tid: Nat`
     2. MUST contain a field `from: Account`
@@ -428,7 +428,7 @@ Note that `tid` refers to the token id. The size of the `meta` field expressing 
 
 ### icrc7_transfer Block Schema
 
-1. the `type` field of the block MUST be set to `"7xfer"`
+1. the `btype` field of the block MUST be set to `"7xfer"`
 2. the `tx` field
     1. MUST contain a field `tid: Nat`
     2. MUST contain a field `from: Account`
@@ -438,7 +438,7 @@ As `icrc7_transfer` is a batch method, it results in one block per `token_id` in
 
 ### icrc7_update Block Schema
 
-1. the `type` field of the block MUST be set to `"7update"`
+1. the `btype` field of the block MUST be set to `"7update"`
 2. the `tx` field
     1. MUST contain a field `tid: Nat`
     2. MUST contain a field `metadata: Blob` with the metadata or metadata hash
