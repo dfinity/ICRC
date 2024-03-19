@@ -98,12 +98,14 @@ type TransferArg = record {
 };
 
 type TransferError = variant {
+    BadBurn : record {min_burn_amount : nat};
     BadFee : record { expected_fee : nat };
     InsufficientFunds : record { balance : nat;};
     TooOld;
     GenericBatchError : record { error_code : nat; message : text };
     CreatedInFuture : record { ledger_time: nat64 };
     Duplicate : record { duplicate_of : nat };
+    TooManyRequests : record { limit: nat };
     TemporarilyUnavailable;
     GenericError : record { error_code : nat; message : text };
 };
