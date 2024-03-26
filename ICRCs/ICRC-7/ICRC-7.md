@@ -416,7 +416,7 @@ The `tx` field contains the transaction data as provided by the caller and is fu
     3. MUST contain a field `to: Account`
     4. MUST contain a field `meta: Value`
 
-Note that `tid` refers to the token id. The size of the `meta` field expressing the token metadata must be less than the maximum size permitted for inter-canister calls. If the metadata is sufficiently small, it is recommended to add the full metadata into the `meta` field, if the metadata is too large, it is recommended to add a hash of the metadata to the `meta` field. // FIX best practices for modeling metadata or hash
+Note that `tid` refers to the token id. The size of the `meta` field expressing the token metadata must be small enough such that the block fits the size limit for inter-canister calls. The `meta` field SHOULD contain a `Map` variant of `Value` with the single entry `("icrc7:token_metadata", metadata)`, where `metadata` is the actual metadata of the token expressed in a `Map` variant of `Value`. This approach of including the full metadata guarantees that the ledger state can be completely reproduced from the block log.
 
 ### Burn Block Schema
 
@@ -436,15 +436,19 @@ Note that `tid` refers to the token id. The size of the `meta` field expressing 
 
 As `icrc7_transfer` is a batch method, it results in one block per `token_id` in the batch. The method results in one block per input of the batch. The blocks need not appear in the block log in the same relative sequence as the token ids appear in the vector of input token identifiers in order to not unnecessarily constrain the potential concurrency of an implementation. The block sequence corresponding to the token ids in the input can be interspersed with blocks from other (batch) methods executed by the ledger in an interleaved execution sequence. This allows for high-performance ledger implementations that can make asynchronous calls to other canisters in the scope of operations on tokens and process multiple batch update calls concurrently.
 
-### icrc7_update Block Schema
+### Update token Block Schema
 
-1. the `btype` field of the block MUST be set to `"7update"`
+1. the `btype` field of the block MUST be set to `"7update_token"`
 2. the `tx` field
     1. MUST contain a field `tid: Nat`
-    2. MUST contain a field `metadata: Blob` with the metadata or metadata hash
-    3. MAY contain a field `from: Account` with an account that initiated the update
+    2. MAY contain a field `from: Account` with an account that initiated the update
+    3. MUST contain a field `meta: Value` with the metadata or metadata hash
+
+Analogous to the mint block schema, `meta` SHOULD contain a `Map` variant of `Value` with the single entry `("icrc7:token_metadata", metadata)`, where `metadata` is the actual updated metadata of the token expressed in a `Map` variant of `Value`. This approach of including the full udpated metadata guarantees that the ledger state can be completely reproduced from the block log.
 
 Note that there is no method defined in this specification for the metadata update, but this is left to the implementation of the ledger or a future standard.
+
+Future extension standards can define more storage-efficient mechanisms for storing only deltas in update blocks as well as mechanisms for storing metadata outside the NFT ledger.
 
 ## Migration Path for Ledgers Using ICP AccountId
 
