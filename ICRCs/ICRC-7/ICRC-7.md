@@ -416,7 +416,7 @@ The `tx` field contains the transaction data as provided by the caller and is fu
     3. MUST contain a field `to: Account`
     4. MUST contain a field `meta: Value`
 
-Note that `tid` refers to the token id. The size of the `meta` field expressing the token metadata must be small enough such that the block fits the size limit for inter-canister calls. The `meta` field SHOULD contain a `Map` variant of `Value` with the single entry `("icrc7:token_metadata", metadata)`, where `metadata` is the actual metadata of the token expressed in a `Map` variant of `Value`. This approach of including the full metadata guarantees that the ledger state can be completely reproduced from the block log.
+Note that `tid` refers to the token id. The size of the `meta` field expressing the token metadata must be small enough such that the block fits the size limit for inter-canister calls. The `meta` field SHOULD, if no extension standard is used that defines a different means of expressing the metadata, contain a `Map` variant of `Value` with the single entry `("icrc7:token_metadata", metadata)`, where `metadata` is the actual metadata of the token expressed in a `Map` variant of `Value`. This approach of including the full metadata guarantees that the ledger state can be completely reproduced from the block log.
 
 ### Burn Block Schema
 
@@ -444,7 +444,7 @@ As `icrc7_transfer` is a batch method, it results in one block per `token_id` in
     2. MAY contain a field `from: Account` with an account that initiated the update
     3. MUST contain a field `meta: Value` with the metadata or metadata hash
 
-Analogous to the mint block schema, `meta` SHOULD contain a `Map` variant of `Value` with the single entry `("icrc7:token_metadata", metadata)`, where `metadata` is the actual updated metadata of the token expressed in a `Map` variant of `Value`. This approach of including the full udpated metadata guarantees that the ledger state can be completely reproduced from the block log.
+Analogous to the mint block schema, `meta` SHOULD, if no extension standard is used that defines a different means of expressing the metadata, contain a `Map` variant of `Value` with the single entry `("icrc7:token_metadata", metadata)`, where `metadata` is the actual updated metadata of the token expressed in a `Map` variant of `Value`. This approach of including the full udpated metadata guarantees that the ledger state can be completely reproduced from the block log.
 
 Note that there is no method defined in this specification for the metadata update, but this is left to the implementation of the ledger or a future standard.
 
