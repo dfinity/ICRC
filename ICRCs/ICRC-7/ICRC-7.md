@@ -278,7 +278,7 @@ type Value = variant {
 
 ```candid "Methods" +=
 icrc7_token_metadata : (token_ids : vec nat)
-    -> (vec opt metadata: vec record { text; Value }) query;
+    -> (vec opt vec record { text; Value }) query;
 ```
 
 ### icrc7_owner_of
@@ -381,15 +381,15 @@ The ledger SHOULD reject transactions that have the `created_at_time` argument t
 > [!NOTE]
 > Note further that deduplication is performed independently on the different items of the batch.
 
-### icrc61_supported_standards
+### icrc10_supported_standards
 
-An implementation of ICRC-7 MUST implement the method `icrc61_supported_standards` as put forth in ICRC-61.
+An implementation of ICRC-7 MUST implement the method `icrc10_supported_standards` as put forth in ICRC-10.
 
 The result of the call MUST always have at least the following entries:
 
 ```candid
 record { name = "ICRC-7"; url = "https://github.com/dfinity/ICRC/ICRCs/ICRC-7"; }
-record { name = "ICRC-61"; url = "https://github.com/dfinity/ICRC/ICRCs/ICRC-61"; }
+record { name = "ICRC-10"; url = "https://github.com/dfinity/ICRC/ICRCs/ICRC-10"; }
 ```
 
 ## ICRC-7 Block Schema
@@ -436,7 +436,7 @@ Note that `tid` refers to the token id. The size of the `meta` field expressing 
 
 As `icrc7_transfer` is a batch method, it results in one block per `token_id` in the batch. The method results in one block per input of the batch. The blocks need not appear in the block log in the same relative sequence as the token ids appear in the vector of input token identifiers in order to not unnecessarily constrain the potential concurrency of an implementation. The block sequence corresponding to the token ids in the input can be interspersed with blocks from other (batch) methods executed by the ledger in an interleaved execution sequence. This allows for high-performance ledger implementations that can make asynchronous calls to other canisters in the scope of operations on tokens and process multiple batch update calls concurrently.
 
-### Update token Block Schema
+### Update Token Block Schema
 
 1. the `btype` field of the block MUST be set to `"7update_token"`
 2. the `tx` field
@@ -468,8 +468,8 @@ The base standard intentionally excludes some ledger functions essential for bui
   * The block structure and the interface for fetching blocks.
   * Pre-signed transactions.
 
-The standard uses the `icrc61_supported_standards` endpoint to accommodate these and other future extensions.
-This endpoint returns names of all specifications (e.g., `"ICRC-3"` or `"ICRC-61"`) implemented by the ledger as well as URLs.
+The standard uses the `icrc10_supported_standards` endpoint to accommodate these and other future extensions.
+This endpoint returns names of all specifications (e.g., `"ICRC-3"` or `"ICRC-10"`) implemented by the ledger as well as URLs.
 
 ## Transaction Deduplication
 
