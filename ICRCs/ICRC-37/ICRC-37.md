@@ -334,7 +334,7 @@ TransferFromArg = record {
     created_at_time : opt nat64;
 };
 
-type TransferFromResponse = variant {
+type TransferFromResult = variant {
     Ok : nat; // Transaction index for successful transfer
     Err : TransferFromError;
 };
@@ -353,7 +353,7 @@ type TransferFromError = variant {
 
 ```candid "Methods" +=
 icrc37_transfer_from : (vec TransferFromArg)
-    -> (vec opt TransferFromResponse);
+    -> (vec opt TransferFromResult);
 ```
 
 If the caller principal is not permitted to act on a token id, then the token id receives the `Unauthorized` error response. This is the case if someone not owning a token and not being the spender in an active token-level or collection-level approval attempts to transfer a token or the token is not held in the subaccount specified in the `from` account.
@@ -458,7 +458,7 @@ If the field `spender` is present, only the one collection-level approval for th
 
 ## Extensions
 
-If extension standards are used in the context of ICRC-37, those are listed with the according `icrc61_supported_standards` method of the base standard.
+If extension standards are used in the context of ICRC-37, those are listed with the according `icrc10_supported_standards` method of the base standard.
 
 Conceptually, it would seem a good idea to expose a separate `supported_standards` method in ICRC-37 and list all ICRC-37 extensions with this method. However, it has been decided to expose only a single such method per ledger implementation, i.e., the `icrc7_supported_standards` method. The rationale behind not exposing a separate `icrc37_supported_standards` method that covers extensions of ICRC-37 is the following: In case of doing so, the caller would need to invoke multiple, in the general case a tree of, `supported_standards` methods, one per supported standard listed in the base method, in order to get the complete view of standards implemented by a given leder. By subsuming all supported standards in the base standard, the client can obtain this information with a single call. In most practical cases, the number of supported standards is expected to be easily manageable with this simpler approach.
 
