@@ -264,7 +264,8 @@ ICRC-7 does not specify the representation of token metadata any further than th
 > [!NOTE]
 > Encoding of types not contained in the `Value` type SHOULD be handled according to best practices as put forth in the context of the ICRC-3 standard.
 
-```candid "Type definitions" +=
+Token metadata is expressed using the same `Value` type as used for collection metadata:
+```candid
 // Generic value in accordance with ICRC-3
 type Value = variant { 
     Blob : blob; 
