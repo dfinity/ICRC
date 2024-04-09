@@ -335,7 +335,7 @@ A transfer clears all active token-level approvals for a successfully transferre
 Batch transfers are *not atomic* by default, i.e., a user SHOULD not assume that either all or none of the transfers have been executed. A ledger implementation MAY choose to implement atomic batch transfers, in which case the metadata attribute `icrc7_atomic_batch_transfers` is set to `true`. If an implementation does not specifically implement batch atomicity, batch transfers are not atomic due to the asynchronous call semantics of the Internet Computer platform. An implementor of this standard who implements atomic batch transfers and advertises those through the `icrc7_atomic_batch_transfers` metadata attribute MUST take great care to ensure everything required has been considered to achieve atomicity of the batch of transfers.
 
 ```candid "Type definitions" +=
-TransferArg = record {
+type TransferArg = record {
     from_subaccount: opt blob; // The subaccount to transfer the token from
     to : Account;
     token_id : nat;
@@ -512,7 +512,7 @@ We strongly advise developers who display untrusted user-generated data like ima
 
 
 <!--
-```candid ICRC-1.did +=
+```candid ICRC-7.did +=
 <<<Type definitions>>>
 
 service : {
