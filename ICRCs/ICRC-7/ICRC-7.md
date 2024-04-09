@@ -278,7 +278,7 @@ type Value = variant {
 
 ```candid "Methods" +=
 icrc7_token_metadata : (token_ids : vec nat)
-    -> (vec opt metadata: vec record { text; Value }) query;
+    -> (vec opt vec record { text; Value }) query;
 ```
 
 ### icrc7_owner_of
@@ -335,7 +335,7 @@ A transfer clears all active token-level approvals for a successfully transferre
 Batch transfers are *not atomic* by default, i.e., a user SHOULD not assume that either all or none of the transfers have been executed. A ledger implementation MAY choose to implement atomic batch transfers, in which case the metadata attribute `icrc7_atomic_batch_transfers` is set to `true`. If an implementation does not specifically implement batch atomicity, batch transfers are not atomic due to the asynchronous call semantics of the Internet Computer platform. An implementor of this standard who implements atomic batch transfers and advertises those through the `icrc7_atomic_batch_transfers` metadata attribute MUST take great care to ensure everything required has been considered to achieve atomicity of the batch of transfers.
 
 ```candid "Type definitions" +=
-TransferArg = record {
+type TransferArg = record {
     from_subaccount: opt blob; // The subaccount to transfer the token from
     to : Account;
     token_id : nat;
@@ -381,15 +381,15 @@ The ledger SHOULD reject transactions that have the `created_at_time` argument t
 > [!NOTE]
 > Note further that deduplication is performed independently on the different items of the batch.
 
-### icrc61_supported_standards
+### icrc10_supported_standards
 
-An implementation of ICRC-7 MUST implement the method `icrc61_supported_standards` as put forth in ICRC-61.
+An implementation of ICRC-7 MUST implement the method `icrc10_supported_standards` as put forth in ICRC-10.
 
 The result of the call MUST always have at least the following entries:
 
 ```candid
 record { name = "ICRC-7"; url = "https://github.com/dfinity/ICRC/ICRCs/ICRC-7"; }
-record { name = "ICRC-61"; url = "https://github.com/dfinity/ICRC/ICRCs/ICRC-61"; }
+record { name = "ICRC-10"; url = "https://github.com/dfinity/ICRC/ICRCs/ICRC-10"; }
 ```
 
 ## ICRC-7 Block Schema
@@ -436,7 +436,7 @@ Note that `tid` refers to the token id. The size of the `meta` field expressing 
 
 As `icrc7_transfer` is a batch method, it results in one block per `token_id` in the batch. The method results in one block per input of the batch. The blocks need not appear in the block log in the same relative sequence as the token ids appear in the vector of input token identifiers in order to not unnecessarily constrain the potential concurrency of an implementation. The block sequence corresponding to the token ids in the input can be interspersed with blocks from other (batch) methods executed by the ledger in an interleaved execution sequence. This allows for high-performance ledger implementations that can make asynchronous calls to other canisters in the scope of operations on tokens and process multiple batch update calls concurrently.
 
-### Update token Block Schema
+### Update Token Block Schema
 
 1. the `btype` field of the block MUST be set to `"7update_token"`
 2. the `tx` field
@@ -468,8 +468,8 @@ The base standard intentionally excludes some ledger functions essential for bui
   * The block structure and the interface for fetching blocks.
   * Pre-signed transactions.
 
-The standard uses the `icrc61_supported_standards` endpoint to accommodate these and other future extensions.
-This endpoint returns names of all specifications (e.g., `"ICRC-3"` or `"ICRC-61"`) implemented by the ledger as well as URLs.
+The standard uses the `icrc10_supported_standards` endpoint to accommodate these and other future extensions.
+This endpoint returns names of all specifications (e.g., `"ICRC-3"` or `"ICRC-10"`) implemented by the ledger as well as URLs.
 
 ## Transaction Deduplication
 
@@ -510,9 +510,8 @@ It is strongly recommended that implementations of this standard take steps towa
 
 We strongly advise developers who display untrusted user-generated data like images (e.g., the token logo or images referenced from NFT metadata) or strings in a Web application to follow Web application security best practices to avoid attacks such as XSS and CSRF resulting from malicious content provided by a ledger. As one particular example, images in the SVG format provide potential for attacks if used improperly. See, for example, the OWASP guidelines for protecting against [XSS](https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html) or [CSRF](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html). The above examples are only selected examples and by no means provide an exhaustive view of security issues.
 
-
 <!--
-```candid ICRC-1.did +=
+```candid ICRC-7.did +=
 <<<Type definitions>>>
 
 service : {
