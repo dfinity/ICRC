@@ -11,6 +11,20 @@ This document specifies approval support for the ICRC-7 minimal NFT standard for
 
 This standard extends the ICRC-7 NFT standard and is intended to be implemented by token ledgers that implement ICRC-7. An ICRC-7 ledger may implement ICRC-37 in case it intends to offer approve and transfer from semantics. Principles put forth in ICRC-7 apply to ICRC-37 as well, e.g., the design of the update and query API.
 
+> The keywords "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be interpreted as described in RFC 2119.
+
+**Canisters implementing the `ICRC-37` standard MUST implement all the functions in the `ICRC-7` interface**.
+
+**Canisters implementing the `ICRC-37` standard MUST include `ICRC-37` in the list returned by the `icrc7_supported_standards` method**.
+
+## Metadata
+
+The following metadata properties are defined for ICRC-37:
+  * `icrc37:max_approvals_per_token_or_collection` of type `nat` (optional): The maximum number of active approvals this ledger implementation allows per token or per principal for the collection. When present, should be the same as the result of the [`icrc37_max_approvals_per_token_or_collection`](#icrc37_max_approvals_per_token_or_collection) query call.
+  * `icrc37:max_revoke_approvals` of type `nat` (optional): The maximum number of approvals that may be revoked in a single invocation of `icrc37_revoke_token_approvals` or `icrc37_revoke_collection_approvals`. When present, should be the same as the result of the [`icrc37_max_revoke_approvals`](#icrc37_max_revoke_approvals) query call.
+
+Those metadata attributes can be obtained through the `icrc7_collection_metadata` method of the ledger. All other relevant `icrc7:...` metadata properties from the ICRC-7 implementation that implements this standard apply to this standard, e.g., the maximum batch sizes for queries and updates or the transaction deduplication parameters.
+
 ## Concepts
 
 *Approvals* allow a principal, the *spender*, to transfer tokens owned by another account that has approved the spender, where the transfer is performed on behalf of the owner. Approvals can be created on a per-token basis using `icrc37_approve_tokens` or for the whole collection, i.e., all tokens of the collection, using `icrc37_approve_collection`. The owner principal can explicitly revoke an active approval at their discretion using the `icrc37_revoke_token_approvals` for revoking token-level approvals and `icrc37_revoke_collection_approvals` for revoking collection-level approvals. A transfer of a token implicitly revokes all token-level approvals of the transferred token. A collection-level approval is not affected by any changes of token ownerships and is not related to specific tokens. An approval that has been created, has not expired (i.e., the `expires_at` field is a date in the future), has not been revoked implicitly through a transfer of the approved token, has not been revoked explicitly, and has not been replaced with a new approval is *active*, i.e., can allow the approved party to initiate a transfer.
@@ -26,32 +40,6 @@ Analogous to ICRC-7, also ICRC-37 uses the ICRC-1 *account* as entity that the s
 The general principles on the API as put forth in [ICRC-7](https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-7/ICRC-7.md) apply also to ICRC-37.
 
 To summarize, all eligible calls, i.e., such with (at most) one response element per request, are batch calls. Batch calls have *positional responses*, i.e., the `i`-th response element is the response to the `i`-th request element. The response may contain responses only to a prefix of the request. For update calls, responses can contain `null` elements, with the meaning that processing of the corresponding request has not been initiated. For query calls, `null` responses have a meaning as determined by the respective query call.
-
-### icrc37_metadata
-
-Returns the approval-related metadata of the ledger implementation. The metadata representation is analogous to that of [ICRC-7](https://github.com/dfinity/ICRC/ICRCs/ICRC-7/ICRC-7.md#icrc7_collection_metadata) using the `Value` type to represent properties.
-
-The following metadata property is defined for ICRC-37:
-  * `icrc37:max_approvals_per_token_or_collection` of type `nat` (optional): The maximum number of active approvals this ledger implementation allows per token or per principal for the collection. When present, should be the same as the result of the [`icrc37_max_approvals_per_token_or_collection`](#icrc37_max_approvals_per_token_or_collection) query call.
-  * `icrc37:max_revoke_approvals` of type `nat` (optional): The maximum number of approvals that may be revoked in a single invocation of `icrc37_revoke_token_approvals` or `icrc37_revoke_collection_approvals`. When present, should be the same as the result of the [`icrc37_max_revoke_approvals`](#icrc37_max_revoke_approvals) query call.
-
-Note that all other relevant ``icrc7:...` metadata properties from the ICRC-7 implementation that this standard is an extension of apply to this standard, e.g., the maximum batch sizes for queries and updates.
-
-```candid "Type definitions" +=
-// Generic value in accordance with ICRC-3
-type Value = variant { 
-    Blob : blob; 
-    Text : text; 
-    Nat : nat;
-    Int : int;
-    Array : vec Value; 
-    Map : vec record { text; Value }; 
-};
-```
-
-```candid "Methods" +=
-icrc37_metadata : () -> (vec record { text; Value } ) query;
-```
 
 ### icrc37_max_approvals_per_token_or_collection
 
@@ -337,15 +325,16 @@ Batch transfers are not atomic by default, i.e., a user SHOULD not assume that e
 
 ```candid "Type definitions" +=
 TransferFromArg = record {
-    spender_subaccount: opt blob; // The subaccount of the caller (used to identify the spender)
+    spender_subaccount: opt blob; // the subaccount of the caller (used to identify the spender)
     from : Account;
     to : Account;
     token_id : nat;
+    // type: leave open for now
     memo : opt blob;
     created_at_time : opt nat64;
 };
 
-type TransferFromResponse = variant {
+type TransferFromResult = variant {
     Ok : nat; // Transaction index for successful transfer
     Err : TransferFromError;
 };
@@ -364,7 +353,7 @@ type TransferFromError = variant {
 
 ```candid "Methods" +=
 icrc37_transfer_from : (vec TransferFromArg)
-    -> (vec opt TransferFromResponse);
+    -> (vec opt TransferFromResult);
 ```
 
 If the caller principal is not permitted to act on a token id, then the token id receives the `Unauthorized` error response. This is the case if someone not owning a token and not being the spender in an active token-level or collection-level approval attempts to transfer a token or the token is not held in the subaccount specified in the `from` account.
@@ -409,63 +398,76 @@ All ICRC-37 batch methods result in one block per input of the batch. The blocks
 
 #### Generic ICRC-37 Block Schema
 
-The following generic schema extends the generic schema of ICRC-3 with ICRC-37-specific elements and applies to all block defintions for blocks generated by ICRC-37.
+The following generic schema extends the generic schema of ICRC-3 with ICRC-37-specific elements and applies to all block defintions for blocks generated by ICRC-37. This schema must be implemented by a ledger implementing ICRC-37 if it claims to implement ICRC-3 through the method listing the supported standards.
 
-// FIX What is `memo` at the top-level used for? Can we remove it? There is now a possibly available `memo` field defined in the `tx` record
-
-1. it MUST contain a field `ts: Nat` which is the timestamp of when the block was added to the Ledger
-2. it MAY contain a field `memo: Blob` if specified by the canister
-3. its field `tx`
-    1. MAY contain the `memo: Blob` field if specified by the user
-    2. MAY contain the `ts: Nat` field if the user sets the `created_at_time` field in the request.
+An ICRC-37 block is defined as follows:
+1. its `btype` field MUST be set to the op name that starts with `37`
+2. it MUST contain a field `ts: Nat` which is the timestamp of when the block was added to the Ledger
+4. it MUST contain a field `tx`, which
+    1. MAY contain a field `memo: Blob` if specified by the user
+    2. MAY contain a field `ts: Nat` if the user sets the `created_at_time` field in the request.
 
 The `tx` field contains the transaction data as provided by the caller and is further refined for each the different update calls as specified below.
 
 #### icrc37_approve_tokens Block Schema
 
-1. the `tx.op` field MUST be `"37appr"`
-2. it MUST contain a field `tx.tid: Nat`
-3. it MUST contain a field `tx.from: Account`
-4. it MUST contain a field `tx.spender: Account`
-5. it MAY contain a field `tx.exp: Nat` if set by the user
+1. the `btype` field of the block MUST be set to `"37appr"`
+2. the `tx` field
+    2. MUST contain a field `tid: Nat`
+    3. MUST contain a field `from: Account`
+    4. MUST contain a field `spender: Account`
+    5. MAY contain a field `exp: Nat` if set by the user
 
 Note that `tid` refers to the token id and `exp` to the expiry time of the approval. The names of the other fiels should speak for themselves.
 
 #### icrc37_approve_collection Block Schema
 
-1. the `tx.op` field MUST be `"37appr_coll"`
-2. it MUST contain a field `tx.from: Account`
-3. it MUST contain a field `tx.spender: Account`
-4. it MAY contain a field `tx.exp: Nat` if set by the user
+1. the `btype` field of the block MUST be set to `"37appr_coll"`
+2. the `tx` field
+    1. MUST contain a field `from: Account`
+    2. MUST contain a field `spender: Account`
+    3. MAY contain a field `exp: Nat` if set by the user
 
 #### icrc37_revoke_token_approvals Block Schema
 
-1. the `tx.op` field MUST be `"37revoke"`
-2. it MUST contain a field `tx.tid: Nat`
-3. it MUST contain a field `tx.from: Account`
-4. it MAY contain a field `tx.spender: Account`
+1. the `btype` field of the block MUST be set to `"37revoke"`
+2. the `tx` field
+    1. MUST contain a field `tid: Nat`
+    2. MUST contain a field `from: Account`
+    3. MAY contain a field `spender: Account`
 
 If the field `spender` is present, only the one token-level approval for this `spender`, `tid` (token id) and `from` is revoked, if the field `spender` is omitted, token-level approvals are revoked for all spenders for which approvals exist as specified by the remaining parameters `tid` (token id) and `from`. This helps reduce the log storage space required for handling explicit token-level revocations.
 
 #### icrc37_revoke_collection_approvals Block Schema
 
-1. the `tx.op` field MUST be `"37revoke_coll"`
-2. it MUST contain a field `tx.from: Account`
-3. it MAY contain a field `tx.spender: Account`
+1. the `btype` field of the block MUST be set to `"37revoke_coll"`
+2. the `tx` field
+    1. MUST contain a field `tx.from: Account`
+    2. MAY contain a field `tx.spender: Account`
 
 If the field `spender` is present, only the one collection-level approval for this `spender` and the given `from` value is revoked, if the field `spender` is omitted, collection-level approvals are revoked for all spenders for which approvals exist as specified by the remaining parameter `from`. This helps reduce the log storage space required for handling collection-level revocations.
 
 #### icrc37_transfer_from Block Schema
 
-1. the `tx.op` field MUST be `"37xfer"`
-2. it MUST contain a field `tx.tid: Nat`
-3. it MUST contain a field `tx.spender: Account`
-4. it MUST contain a field `tx.from: Account`
-5. it MUST contain a field `tx.to: Account`
+1. the `btype` field of the block MUST be set to `"37xfer"`
+2. the `tx` field
+    1. MUST contain a field `tx.tid: Nat`
+    2. MUST contain a field `tx.spender: Account`
+    3. MUST contain a field `tx.from: Account`
+    4. MUST contain a field `tx.to: Account`
 
 ## Extensions
 
-If extension standards are used in the context of ICRC-37, those are listed with the according `supported_standards` method of the base standard that gets extended.
+If extension standards are used in the context of ICRC-37, those are listed with the according `icrc10_supported_standards` method of the base standard.
 
 Conceptually, it would seem a good idea to expose a separate `supported_standards` method in ICRC-37 and list all ICRC-37 extensions with this method. However, it has been decided to expose only a single such method per ledger implementation, i.e., the `icrc7_supported_standards` method. The rationale behind not exposing a separate `icrc37_supported_standards` method that covers extensions of ICRC-37 is the following: In case of doing so, the caller would need to invoke multiple, in the general case a tree of, `supported_standards` methods, one per supported standard listed in the base method, in order to get the complete view of standards implemented by a given leder. By subsuming all supported standards in the base standard, the client can obtain this information with a single call. In most practical cases, the number of supported standards is expected to be easily manageable with this simpler approach.
 
+<!--
+```candid ICRC-37.did +=
+<<<Type definitions>>>
+
+service : {
+  <<<Methods>>>
+}
+```
+-->
