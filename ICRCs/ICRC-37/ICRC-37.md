@@ -462,3 +462,12 @@ If extension standards are used in the context of ICRC-37, those are listed with
 
 Conceptually, it would seem a good idea to expose a separate `supported_standards` method in ICRC-37 and list all ICRC-37 extensions with this method. However, it has been decided to expose only a single such method per ledger implementation, i.e., the `icrc7_supported_standards` method. The rationale behind not exposing a separate `icrc37_supported_standards` method that covers extensions of ICRC-37 is the following: In case of doing so, the caller would need to invoke multiple, in the general case a tree of, `supported_standards` methods, one per supported standard listed in the base method, in order to get the complete view of standards implemented by a given leder. By subsuming all supported standards in the base standard, the client can obtain this information with a single call. In most practical cases, the number of supported standards is expected to be easily manageable with this simpler approach.
 
+<!--
+```candid ICRC-37.did +=
+<<<Type definitions>>>
+
+service : {
+  <<<Methods>>>
+}
+```
+-->
