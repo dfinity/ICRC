@@ -264,7 +264,8 @@ ICRC-7 does not specify the representation of token metadata any further than th
 > [!NOTE]
 > Encoding of types not contained in the `Value` type SHOULD be handled according to best practices as put forth in the context of the ICRC-3 standard.
 
-```candid "Type definitions" +=
+Token metadata is expressed using the same `Value` type as used for collection metadata:
+```candid
 // Generic value in accordance with ICRC-3
 type Value = variant { 
     Blob : blob; 
@@ -289,7 +290,7 @@ Tokens for which an ICRC-1 account cannot be found have a `null` response. This 
 
 ```candid "Methods" +=
 icrc7_owner_of : (token_ids : vec nat)
-    -> (vec opt account : Account) query;
+    -> (vec opt Account) query;
 ```
 
 ### icrc7_balance_of
@@ -297,7 +298,7 @@ icrc7_owner_of : (token_ids : vec nat)
 Returns the balance of the `account` provided as an argument, i.e., the number of tokens held by the account. For a non-existing account, the value `0` is returned.
 
 ```candid "Methods" +=
-icrc7_balance_of : (vec account : Account) -> (vec nat) query;
+icrc7_balance_of : (vec Account) -> (vec nat) query;
 ```
 
 ### icrc7_tokens
