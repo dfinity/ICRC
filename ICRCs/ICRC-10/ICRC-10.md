@@ -17,7 +17,7 @@ type SupportedStandardsResponse = vec SupportedStandard;
 
 ### name
 
-For ICRC standards the text SHOULD be in the form `ICRC-X` where `X` is the official ICRC number assigned at https://github.com/dfinity/ICRC/issues. New ICRC numbers can be procured by filing an issue at https://github.com/dfinity/ICRC/issues/new. The resulting issue number MUST be used as ICRC number.
+For ICRC standards the text SHOULD be in the form `ICRC-X` where `X` is the official ICRC number assigned at https://github.com/dfinity/ICRC/issues. New ICRC numbers can be procured by filing an issue at https://github.com/dfinity/ICRC/issues/new. The resulting issue number MUST be used for numbering the new ICRC standard.
 
 For non-ICRC standards, the text SHOULD be a human-readable namespace with a small likelihood of collision. The Internet Computer shares a global namespace. Please be polite to other developers and make namespaces specific. See https://forum.dfinity.org/t/prefix-all-the-methods-of-the-icrc-1-token-standard-with-icrc1/13865 for more discussion.
 
