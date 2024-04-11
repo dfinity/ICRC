@@ -35,7 +35,7 @@ The url SHOULD point to a stable URL that explains the referenced standard.
 
 ### icrc10_supported_standards
 
-Standard developers MUST implement the `icrc10_supported_standards` query endpoint for new standards.
+Standard developers MUST implement the `icrc10_supported_standards` query endpoint.
 
 The method returns a list of standards supported by the canister.
 
@@ -63,7 +63,7 @@ Through standardization of the `icrc10_supported_standards` method, ICRC-10 aims
 
 Ledgers and other services that already exist, to the extent that they are capable, SHOULD implement ICRC-10 to increase interoperability on the Internet Computer.
 
-For maintaining interoperability with ICRC-1, existing ICRC-1 ledgers MUST maintain their implementation of  `icrc1_supported_standards`.  The new `icrc10_supported_standards` SHOULD return at least the same data, but MAY be augmented with additional ICRC features or supported standards.
+For maintaining interoperability with ICRC-1, existing ICRC-1 ledgers MUST maintain their implementation of  `icrc1_supported_standards`.  The new `icrc10_supported_standards` method SHOULD return at least the same data, but MAY be augmented with additional ICRC features or supported standards.
 
 ## Versioning
 
