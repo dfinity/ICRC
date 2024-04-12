@@ -33,6 +33,21 @@ When an active approval exists for a token or for an account for the whole colle
 
 Analogous to ICRC-7, also ICRC-37 uses the ICRC-1 *account* as entity that the source account (`from`), destination account (`to`), and spending account (`spender`) are expressed with, i.e., a *subaccount* is always used besides the principal. We follow the naming convention of using `from_subaccount` for subaccounts being part of the source account and `spender_subaccount` for subaccounts being part the spender account. In many practical situations the default subaccount, i.e., the all-`0` subaccount, is expected to be used.
 
+## Data Representation
+
+### Accounts
+
+A `principal` can have multiple accounts. Each account of a `principal` is identified by a 32-byte string called `subaccount`. Therefore, an account corresponds to a pair `(principal, subaccount)`.
+
+The account identified by the subaccount with all bytes set to 0 is the *default account* of the `principal`.
+
+```candid "Type definitions" +=
+type Subaccount = blob;
+type Account = record { owner : principal; subaccount : opt Subaccount };
+```
+
+See [ICRC-7](https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-7/ICRC-7.md#accounts) for further details on the concept of accounts and subaccounts.
+
 ## Methods
 
 ### Generally-Applicable Specification
@@ -78,7 +93,7 @@ A `NonExistingTokenId` error is returned in case the referred-to token does not 
 The `created_at_time` parameter indicates the time (as nanoseconds since the UNIX epoch in the UTC timezone) at which the client constructed the transaction, the `memo` parameter is an arbitrary blob that is not interpreted by the ledger. The ledger SHOULD reject transactions that have the `created_at_time` argument too far in the past or the future, returning `variant { TooOld }` and `variant { CreatedInFuture = record { ledger_time = ... } }` errors correspondingly.
 
 ```candid "Type definitions" +=
-type ApprovalInfo = {
+type ApprovalInfo = record {
     spender : Account;             // Approval is given to an ICRC Account
     from_subaccount : opt blob;    // The subaccount the token can be transferred out from with the approval
     expires_at : opt nat64;
@@ -288,7 +303,7 @@ type TokenApproval = record {
 ```
 
 ```candid "Methods" +=
-icrc37_get_token_approvals : (token_id : nat, prev : opt TokenApproval; take : opt nat)
+icrc37_get_token_approvals : (token_id : nat, prev : opt TokenApproval, take : opt nat)
     -> (vec TokenApproval) query;
 ```
 
@@ -324,8 +339,8 @@ Each of the successful transfers in the batch implicitly clears all active token
 Batch transfers are not atomic by default, i.e., a user SHOULD not assume that either all or none of the transfers have been executed. A ledger implementation MAY choose to implement atomic batch transfers, in which case the metadata attribute `icrc7_atomic_batch_transfers` is set to `true`. If an implementation does not specifically implement batch atomicity, batch transfers are not atomic due to the asynchronous call semantics of the Internet Computer platform. An implementor of this standard who implements atomic batch transfers and advertises those through the `icrc7_atomic_batch_transfers` metadata attribute MUST take great care to ensure everything required has been considered to achieve atomicity of the batch of transfers.
 
 ```candid "Type definitions" +=
-TransferFromArg = record {
-    spender_subaccount: opt blob; // the subaccount of the caller (used to identify the spender)
+type TransferFromArg = record {
+    spender_subaccount: opt blob; // The subaccount of the caller (used to identify the spender)
     from : Account;
     to : Account;
     token_id : nat;
