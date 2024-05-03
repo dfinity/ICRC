@@ -1,6 +1,7 @@
 type Subaccount = blob;
 
 type Account = record { owner : principal; subaccount : opt Subaccount };
+
 type ApprovalInfo = record {
     spender : Account;             // Approval is given to an ICRC Account
     from_subaccount : opt blob;    // The subaccount the token can be transferred out from with the approval
