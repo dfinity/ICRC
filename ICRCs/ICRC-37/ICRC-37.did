@@ -1,17 +1,6 @@
 type Subaccount = blob;
 
 type Account = record { owner : principal; subaccount : opt Subaccount };
-
-// Generic value in accordance with ICRC-3
-type Value = variant { 
-    Blob : blob; 
-    Text : text; 
-    Nat : nat;
-    Int : int;
-    Array : vec Value; 
-    Map : vec record { text; Value }; 
-};
-
 type ApprovalInfo = record {
     spender : Account;             // Approval is given to an ICRC Account
     from_subaccount : opt blob;    // The subaccount the token can be transferred out from with the approval
@@ -122,7 +111,7 @@ type TransferFromArg = record {
     created_at_time : opt nat64;
 };
 
-type TransferFromResponse = variant {
+type TransferFromResult = variant {
     Ok : nat; // Transaction index for successful transfer
     Err : TransferFromError;
 };
@@ -139,7 +128,6 @@ type TransferFromError = variant {
 };
 
 service : {
-  icrc37_metadata : () -> (vec record { text; Value } ) query;
   icrc37_max_approvals_per_token_or_collection : () -> (opt nat) query;
   icrc37_max_revoke_approvals : () -> (opt nat) query;
   icrc37_approve_tokens : (vec ApproveTokenArg)
@@ -157,5 +145,5 @@ service : {
   icrc37_get_collection_approvals : (owner : Account, prev : opt CollectionApproval, take : opt nat)
       -> (vec CollectionApproval) query;
   icrc37_transfer_from : (vec TransferFromArg)
-      -> (vec opt TransferFromResponse);
+      -> (vec opt TransferFromResult);
 }
