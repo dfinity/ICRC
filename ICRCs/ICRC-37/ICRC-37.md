@@ -5,7 +5,7 @@
 
 # ICRC-37: Approval Support for the Minimal Non-Fungible Token (NFT) Standard
 
-This document specifies approval support for the ICRC-7 minimal NFT standard for the Internet Computer. It defines all the methods required for realizing approval semantics for an NFT token ledger, i.e., creating approvals, revoking approvals, querying approval information, and making transfers based on approvals. The scope of ICRC-37 has been part of ICRC-7 originally, however, the NFT Working Group has decided to split it out into a separate standard for the following reasons:
+This document specifies approval support for the [ICRC-7 minimal NFT standard for the Internet Computer](https://github.com/dfinity/ICRC/ICRCs/ICRC-7/ICRC-7.md). It defines all the methods required for realizing approval semantics for an NFT token ledger, i.e., creating approvals, revoking approvals, querying approval information, and making transfers based on approvals. The scope of ICRC-37 has been part of ICRC-7 originally, however, the NFT Working Group has decided to split it out into a separate standard for the following reasons:
   * ICRC-7 and ICRC-37 are much shorter and hence easier to navigate on their own due to their respective foci;
   * Ledgers that do not want to implement approval and transfer from semantics do not need to provide dummy implementations of the corresponding methods that fail by default.
 
@@ -427,7 +427,7 @@ The `tx` field contains the transaction data as provided by the caller and is fu
 
 #### icrc37_approve_tokens Block Schema
 
-1. the `btype` field of the block MUST be set to `"37appr"`
+1. the `btype` field of the block MUST be set to `"37approve"`
 2. the `tx` field
     2. MUST contain a field `tid: Nat`
     3. MUST contain a field `from: Account`
@@ -438,7 +438,7 @@ Note that `tid` refers to the token id and `exp` to the expiry time of the appro
 
 #### icrc37_approve_collection Block Schema
 
-1. the `btype` field of the block MUST be set to `"37appr_coll"`
+1. the `btype` field of the block MUST be set to `"37approve_coll"`
 2. the `tx` field
     1. MUST contain a field `from: Account`
     2. MUST contain a field `spender: Account`
