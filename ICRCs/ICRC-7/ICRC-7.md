@@ -1,6 +1,6 @@
 |ICRC|Title|Author|Discussions|Status|Type|Category|Created|
 |:----:|:----:|:----:|:----:|:----:|:----:|:----:|:----:|
-|7|Minimal Non-Fungible Token (NFT) Standard|Ben Zhai (@benjizhai), Austin Fatheree (@skilesare), Dieter Sommer (@dietersommer), Thomas (@sea-snake), Moritz Fuller (@letmejustputthishere), Matthew Harmon|https://github.com/dfinity/ICRC/issues/7|Draft|Standards Track||2023-01-31|
+|7|Minimal Non-Fungible Token (NFT) Standard|Ben Zhai (@benjizhai), Austin Fatheree (@skilesare), Dieter Sommer (@dietersommer), Thomas (@sea-snake), Moritz Fuller (@letmejustputthishere), Matthew Harmon|https://github.com/dfinity/ICRC/issues/7|[Accepted](https://dashboard.internetcomputer.org/proposal/129626)|Standards Track||2023-01-31|
 
 
 
