@@ -1,6 +1,6 @@
 |ICRC|Title|Author|Discussions|Status|Type|Category|Created|
 |:----:|:----:|:----:|:----:|:----:|:----:|:----:|:----:|
-|37|Approval Functionality for the ICRC-7 Non-Fungible Token (NFT) Standard|Ben Zhai (@benjizhai), Austin Fatheree (@skilesare), Dieter Sommer (@dietersommer), Thomas (@sea-snake), Moritz Fuller (@letmejustputthishere), Matthew Harmon|https://github.com/dfinity/ICRC/issues/37|Draft|Standards Track||2023-11-22|
+|37|Approval Functionality for the ICRC-7 Non-Fungible Token (NFT) Standard|Ben Zhai (@benjizhai), Austin Fatheree (@skilesare), Dieter Sommer (@dietersommer), Thomas (@sea-snake), Moritz Fuller (@letmejustputthishere), Matthew Harmon|https://github.com/dfinity/ICRC/issues/37|[Accepted](https://dashboard.internetcomputer.org/proposal/129640)|Standards Track||2023-11-22|
 
 
 # ICRC-37: Approval Support for the Minimal Non-Fungible Token (NFT) Standard
