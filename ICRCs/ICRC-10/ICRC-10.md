@@ -2,7 +2,7 @@
 
 |ICRC|Title|Author|Discussions|Status|Type|Category|Created|
 |:----:|:----:|:----:|:----:|:----:|:----:|:----:|:----:|
-|10|Supported Standards Generalization|Austin Fatheree (@skilesare), Dieter Sommer (@dietersommer), Mario Pastorelli (@MarioDfinity)|[Issue 10](https://github.com/dfinity/ICRC/issues/10)|Draft|Standards Track||2024-03-05|
+|10|Supported Standards Generalization|Austin Fatheree (@skilesare), Dieter Sommer (@dietersommer), Mario Pastorelli (@MarioDfinity)|[Issue 10](https://github.com/dfinity/ICRC/issues/10)|[Accepted](https://dashboard.internetcomputer.org/proposal/129625)|Standards Track||2024-03-05|
 
 ICRC-10 is a standard aimed at simplifying the discovery of the supported standards of canisters on the Internet Computer. By providing a unified method, `icrc10_supported_standards`, canisters can easily expose the standards they implement, enhancing interoperability and easing integration efforts across the ecosystem.
 
