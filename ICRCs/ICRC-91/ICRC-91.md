@@ -29,16 +29,16 @@ Note: not all boundary node providers will provide access to each canister. Thus
         / path-empty
 ```
 
-For a new URI scheme, like also for the ic-http scheme, a subset of the language defined by this grammar needs to be defined.
+For a new URI scheme, like also for the `ic-http` scheme, a subset of the language defined by this grammar needs to be defined.
 
 
 ## Specification
 
-The "ic-http" scheme is used to locate blockchain network resources exposed by ICP canisters via the HTTP semantics for IC-HTTP URIs independently of the hostname of the boundary nodes via which the resources can be accessed.
+The `ic-http` scheme is used to locate blockchain network resources exposed by ICP canisters via the HTTP semantics for IC-HTTP URIs independently of the hostname of the boundary nodes via which the resources can be accessed.
 
-URI schemes are lowercase according to [RFC-3986, Section 3.1](https://datatracker.ietf.org/doc/html/rfc3986#section-3.1).
+We follow the specificiation of URI schemes being lowercase according to [RFC-3986, Section 3.1](https://datatracker.ietf.org/doc/html/rfc3986#section-3.1).
 
-The ic-http scheme defined in this standard has the following grammar expressed following the formal language put forth in RFC-5234:
+The `ic-http` scheme defined in this standard has the following grammar expressed following the formal language put forth in RFC-5234:
 
 
 ```
@@ -84,23 +84,22 @@ We refer the reader to [RFC-3986 \[BFM05\]]([https://datatracker.ietf.org/doc/ht
 ## Examples
 
 The following is an example for a regular HTTP URI. The problem is that it includes the domain name for boundary nodes and thus is not generically referring to the resource on ICP, but referring to the resource through this specific boundary node domain.
-`https://d6g4o-amaaa-aaaaa-qaaoq-cai.ic0.app/token/12345678/image?format=jpeg&res=high&hash=e18c9d041a3b66b794a37c52a49d1f4c9173c8aeadd6fc4cb1f3677d66873ddd&hash_algorithm=sha256`
+`https://d6g4o-amaaa-aaaaa-qaaoq-cai.ic0.app/token/12345678/image?format=jpeg&res=high&hash=e18c9d041a3b66b794a37c52a49d1f4c9173c8aeadd6fc4cb1f3677d66873ddd`
 
 The same URI expressed using the approach using an ic-http URI is the following:
-`ic-http://d6g4o-amaaa-aaaaa-qaaoq-cai/token/12345678/image?format=jpeg&res=high&hash=e18c9d041a3b66b794a37c52a49d1f4c9173c8aeadd6fc4cb1f3677d66873ddd&hash_algorithm=sha256`
+`ic-http://d6g4o-amaaa-aaaaa-qaaoq-cai/token/12345678/image?format=jpeg&res=high&hash=e18c9d041a3b66b794a37c52a49d1f4c9173c8aeadd6fc4cb1f3677d66873ddd`
 This URI expresses the resource on ICP in a generic way independent of any boundary node domain.
 
-FIX further examples to show all the features
-
-
-## IANA Registration
-
-The current proposal has not yet been registered with [IANA's URI scheme registry](https://www.iana.org/assignments/uri-schemes) \[IANA\] to make it an official URI scheme. This is a future step that should be taken once the approach has been sufficiently validated in reference implementations and found to be fit for the intended purpose.
+FIX further examples to show different use cases we consider important
 
 
 ## Conclusions
 
 With the boundary node edge infrastructure being opened up to community participants, additional boundary nodes with their own host names are expected to emerge. This ICRC standard is intended to unify the addressing of HTTP-exposed resources of canister smart contracts on the Internet Computer. It abstracts away the hostname of the boundary node used so far in HTTP URIs to address resources. This is important for any use case that references HTTP-exposed canister resources.
+
+## Future Work
+
+The current proposal has not yet been registered with [IANA's URI scheme registry](https://www.iana.org/assignments/uri-schemes) \[IANA\] to make it an official URI scheme. This is a future step that should be taken once the approach has been sufficiently validated in reference implementations and found to be fit for the intended purpose.
 
 
 ## References
@@ -108,4 +107,4 @@ With the boundary node edge infrastructure being opened up to community particip
 * [BFM05] T. Berners-Lee, R. Fielding, L. Masinter: Uniform Resource Identifier (URI): Generic Syntax. 2005, https://datatracker.ietf.org/doc/html/rfc3986
 * [CO08] D. Crocker, Ed., P. Overell: Augmented BNF for Syntax Specifications: ABNF. 2008, https://datatracker.ietf.org/doc/html/rfc5234
 * [IANA] IANA URI scheme registry. https://www.iana.org/assignments/uri-schemes
-* [DFI24] DFINITY Foundation, The HTTP Gateway Protocol Specification. https://internetcomputer.org/docs/current/references/http-gateway-protocol-spec, accessed July 2024
+* [DFI24] DFINITY Foundation, The HTTP Gateway Protocol Specification. Accessed July 2024, https://internetcomputer.org/docs/current/references/http-gateway-protocol-spec
