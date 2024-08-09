@@ -5,7 +5,7 @@
 
 Canister smart contracts on ICP can expose an HTTP interface that can be accessed from an HTTP client like a regular browser via an HTTP gateway. The HTTP Gateway Protocol Specification mandates regular HTTP URIs to specify a resource of a canister. That is, the HTTP URI for a canister contains the boundary node as the authority, or host name. This is inflexible as the URI contains a specific boundary node host name node and multiple different URIs with different boundary node hostnames refer to the same resource. 
 
-Example: `<canister_id>.ic0.app/path/to/resource?par1=abcd&par2=efgh`
+Example: `dlbnd-beaaa-aaaaa-qaana-cai.ic0.app/tokens/12345678/image`
 
 Boundary node host names should be transparent for the addressing of HTTP resources. This standard introduces a new `ic-http` URI scheme which abstracts from the host name of the boundary node and thereby allows for uniquely referring to HTTP-exposed resources on the Internet Computer without reference to the boundary node's host name. This is crucial because with the opening up of the Internet Computer's edge infrastructure by allowing community-operated boundary nodes, there will be many host names available to access the same resource.
 
@@ -18,18 +18,18 @@ Note: not all boundary node providers will provide access to each canister. Thus
 
 ## Background
 
-RFC-3986 specifies the syntax and semantics of URIs. The following grammar defines all valid URIs:
+[RFC-3986 \[BFM05\]](https://datatracker.ietf.org/doc/html/rfc3986) specifies the syntax and semantics of URIs. The following grammar defines all valid URIs:
 
 ```
-   URI = scheme ":" hier-part [ "?" query ] [ "#" fragment ]
+    URI = scheme ":" hier-part [ "?" query ] [ "#" fragment ]
 
-   hier-part = "//" authority path-abempty
-         / path-absolute
-         / path-rootless
-         / path-empty
+    hier-part = "//" authority path-abempty
+        / path-absolute
+        / path-rootless
+        / path-empty
 ```
 
-For a new URI scheme, a subset of the language defined by this grammar needs to be defined.
+For a new URI scheme, like also for the ic-http scheme, a subset of the language defined by this grammar needs to be defined.
 
 
 ## Specification
@@ -42,59 +42,60 @@ The ic-http scheme defined in this standard has the following grammar expressed 
 
 
 ```
-   IC-HTTP-URI = "ic-http" ":" ic-http-hier-part [ "?" query ] [ "#" fragment ]
+    IC-HTTP-URI = "ic-http" ":" ic-http-hier-part [ "?" query ] [ "#" fragment ]
 
-   ic-http-hier-part   = "//" ic-canister-principal ic-http-path
+    ic-http-hier-part   = "//" ic-canister-principal ic-http-path
 
-   ic-canister-principal = 9*9( 5*5( base32char ) "-" ) 1*2( base32char )
-   / 9*9( 5*5( base32char ) )
-   / 1*8( 5*5( base32char ) "-" ) ( 1*5( base32char ) )
-   / 1*5( base32char )
+    ic-canister-principal = 9*9( 5*5( base32char ) "-" ) 1*2( base32char )
+        / 9*9( 5*5( base32char ) )
+        / 1*8( 5*5( base32char ) "-" ) ( 1*5( base32char ) )
+        / 1*5( base32char )
 
-   ic-http-path = path-abempty    ; begins with "/" or is empty
-           / path-absolute   ; begins with "/" but not "//"
-           / path-empty   ; zero characters
+    ic-http-path = path-abempty    ; begins with "/" or is empty
+        / path-absolute   ; begins with "/" but not "//"
+        / path-empty   ; zero characters
 
-   path-abempty  = *( "/" segment )
-   path-absolute = "/" [ segment-nz *( "/" segment ) ]
-   path-empty    = 0<pchar>
-   segment    = *pchar
-   segment-nz    = 1*pchar
-   segment-nz-nc = 1*( unreserved / pct-encoded / sub-delims / "@" )
-           ; non-zero-length segment without any colon ":"
+    path-abempty  = *( "/" segment )
+    path-absolute = "/" [ segment-nz *( "/" segment ) ]
+    path-empty    = 0<pchar>
+    segment       = *pchar
+    segment-nz    = 1*pchar
+    segment-nz-nc = 1*( unreserved / pct-encoded / sub-delims / "@" )
+        ; non-zero-length segment without any colon ":"
 
-   query       = *( pchar / "/" / "?" )
+    query         = *( pchar / "/" / "?" )
 
-   fragment    = *( pchar / "/" / "?" )
+    fragment      = *( pchar / "/" / "?" )
 
-   unreserved  = ALPHA / DIGIT / "-" / "." / "_" / "~"
-   pct-encoded = "%" HEXDIG HEXDIG
-   sub-delims  = "!" / "$" / "&" / "'" / "(" / ")"
-         / "*" / "+" / "," / ";" / "="
-   pchar      = unreserved / pct-encoded / sub-delims / ":" / "@"
-   base32char = base32letterlowercase / base32letterlowercase / base32digit
-   base32letterlowercase = a-z
-   base32letteruppercase = A-Z
-   base32digit = 2-7
+    unreserved    = ALPHA / DIGIT / "-" / "." / "_" / "~"
+    pct-encoded   = "%" HEXDIG HEXDIG
+    sub-delims    = "!" / "$" / "&" / "'" / "(" / ")"
+        / "*" / "+" / "," / ";" / "="
+    pchar         = unreserved / pct-encoded / sub-delims / ":" / "@"
+    base32char    = base32letterlowercase / base32letterlowercase / base32digit
+    base32letterlowercase = a-z
+    base32letteruppercase = A-Z
+    base32digit   = 2-7
 ```
 
-We refer the reader to [RFC-3986]([https://datatracker.ietf.org/doc/html/rfc3986](https://datatracker.ietf.org/doc/html/rfc3986#section-3.4)) for details on the components of a URI and [RFC-2234](https://datatracker.ietf.org/doc/html/rfc2234) for the definition of the productions in the above grammar that are not defined explicitly, such as `ALPHA` or `DIGIT`.
+We refer the reader to [RFC-3986 \[BFM05\]]([https://datatracker.ietf.org/doc/html/rfc3986](https://datatracker.ietf.org/doc/html/rfc3986#section-3.4)) for details on the components of a URI and [RFC-5234 \[CO08\]](https://datatracker.ietf.org/doc/html/rfc2234) for the definition of the productions in the above grammar that are not defined explicitly, such as `ALPHA` or `DIGIT`.
 
 
 ## Examples
 
-The following is an example for a regular HTTP URI
-`https://by6od-j4aaa-aaaaa-qaadq-cai.ic0.app/token-1234/image?format=jpeg&res=high&hash=1234...abcd&hash_algorithm=sha256`
+The following is an example for a regular HTTP URI. The problem is that it includes the domain name for boundary nodes and thus is not generically referring to the resource on ICP, but referring to the resource through this specific boundary node domain.
+`https://d6g4o-amaaa-aaaaa-qaaoq-cai.ic0.app/token/12345678/image?format=jpeg&res=high&hash=e18c9d041a3b66b794a37c52a49d1f4c9173c8aeadd6fc4cb1f3677d66873ddd&hash_algorithm=sha256`
 
 The same URI expressed using the approach using an ic-http URI is the following:
-`ic-http://by6od-j4aaa-aaaaa-qaadq-cai/token-1234/image?format=jpeg&res=high&hash=1234...abcd&hash_algorithm=sha256`
+`ic-http://d6g4o-amaaa-aaaaa-qaaoq-cai/token/12345678/image?format=jpeg&res=high&hash=e18c9d041a3b66b794a37c52a49d1f4c9173c8aeadd6fc4cb1f3677d66873ddd&hash_algorithm=sha256`
+This URI expresses the resource on ICP in a generic way independent of any boundary node domain.
 
 FIX further examples to show all the features
 
 
 ## IANA Registration
 
-The current proposal has not yet been registered with [IANA's URI scheme registry](https://www.iana.org/assignments/uri-schemes) to make it an official URI scheme. This is a future step that should be taken once the approach has been sufficiently validated in reference implementations and found to be fit for the intended purpose.
+The current proposal has not yet been registered with [IANA's URI scheme registry](https://www.iana.org/assignments/uri-schemes) \[IANA\] to make it an official URI scheme. This is a future step that should be taken once the approach has been sufficiently validated in reference implementations and found to be fit for the intended purpose.
 
 
 ## Conclusions
@@ -104,8 +105,7 @@ With the boundary node edge infrastructure being opened up to community particip
 
 ## References
 
-URI: https://datatracker.ietf.org/doc/html/rfc3986
-Syntax: https://datatracker.ietf.org/doc/html/rfc5234
-IANA URI scheme registry: https://www.iana.org/assignments/uri-schemes
-Internet Computer HTTP Gateway Protocol Specification: https://internetcomputer.org/docs/current/references/http-gateway-protocol-spec
-Augmented BNF for Syntax Specifications: ABNF: https://datatracker.ietf.org/doc/html/rfc2234
+* [BFM05] T. Berners-Lee, R. Fielding, L. Masinter: Uniform Resource Identifier (URI): Generic Syntax. 2005, https://datatracker.ietf.org/doc/html/rfc3986
+* [CO08] D. Crocker, Ed., P. Overell: Augmented BNF for Syntax Specifications: ABNF. 2008, https://datatracker.ietf.org/doc/html/rfc5234
+* [IANA] IANA URI scheme registry. https://www.iana.org/assignments/uri-schemes
+* [DFI24] DFINITY Foundation, The HTTP Gateway Protocol Specification. https://internetcomputer.org/docs/current/references/http-gateway-protocol-spec, accessed July 2024
