@@ -28,7 +28,7 @@ metadata.
 
 | Root Metadata Property | ICRC-3 Type     | Description                            |
 |------------------------|-----------------|----------------------------------------|
-| icrc99:metadata        | variant { Map } | Contains on-chain metadata properties. |
+| icrc97:metadata        | variant { Map } | Contains on-chain metadata properties. |
 
 Alternatively the following metadata property MUST be defined in the root of the token metadata if we want to return
 external
@@ -36,7 +36,7 @@ off-chain metadata instead of on-chain metadata.
 
 | Root Metadata Property   | ICRC-3 Type     | Description                                       |
 |--------------------------|-----------------|---------------------------------------------------|
-| icrc99:external_metadata | variant { Map } | Contains below external JSON metadata properties. |
+| icrc97:external_metadata | variant { Map } | Contains below external JSON metadata properties. |
 
 | External Metadata Property | Optional | ICRC-3 Type      | Description                                                                    |
 |----------------------------|----------|------------------|--------------------------------------------------------------------------------|
@@ -70,8 +70,8 @@ Purpose values can define additional asset properties.
 
 | Purpose Value  | Description                                                                                                                                                 |
 |----------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| icrc99:image   | Original size image that is shown on e.g. item details page. Additional optional `width` and `height` properties define the dimensions in number of pixels. |
-| icrc99:preview | Small image meant as preview within e.g. a list of items. Additional optional `width` and `height` properties define the dimensions in number of pixels.    |
+| icrc97:image   | Original size image that is shown on e.g. item details page. Additional optional `width` and `height` properties define the dimensions in number of pixels. |
+| icrc97:preview | Small image meant as preview within e.g. a list of items. Additional optional `width` and `height` properties define the dimensions in number of pixels.    |
 
 The following table list all (optional) attribute properties.
 
