@@ -55,8 +55,6 @@ The `transaction` parameter specifies the canister method to be called on the ca
 
 The `parameters` are the parameters of the method to be called. They SHOULD be given in the order in which they appear in the Candid specification of the method to be called. A subset of the parameters defind in the Candid specification of the method can be present, the remaining non-optional parameters MUST be filled in by the party executing the transaction.
 
-// FIX: Details need to be worked out to make it possible to call different methods we want to cover in the base standard (at least ICP and ICRC-1 transfer and ICRC-2 approve). The result may not be so far away from a generic standard covering the call of any method of canisters. Specifically: Should types be decomposed into their constituents or the compound values be provided using a specific or their Candid encoding?
-
 Next, we define the parameters required for realizing the supported transactions of the supported ledger standards:
 * `from_subaccount` (ICRC-1, ICRC-2): 32-byte subaccount in Base64 representation
 * `to` (ICRC-1, ICRC-2): The size-reduced human readable [textual representation](https://github.com/dfinity/ICRC-1/blob/main/standards/ICRC-1/TextualEncoding.md) of an ICRC-1 account as specified in this document.
@@ -75,14 +73,17 @@ Accounts are always represented through the size-reduced textual encoding as spe
 
 The `amount` should be provided as a nonnegative integer number. The amount represents the amount of tokens in the base unit used by the ledger, i.e., 4 ICP tokens would amount to 4 * 10^8 = 400000000 base units as managed by the ICP token ledger. It is strongly recommended to use scientific notation for the amount. Decimal representation can be combined with scientific representation, e.g., 4.042E8 ICP means a count of 404200000 base units as managed by the ICP ledger. As only integer numbers are allowed as amount, the exponent MUST be greater than or equal the decimal places of the number in scientific representation.
 
-// FIX How exactly can the mapping from the parameters to the Candid method signature be done? Is it sufficient to enumerate all named parameters, with the type inferable by the recipient using the canister's Candid specification which can be obtained from the canister?
-
-// FIX How to handle optional fields in the Candid specification of the method? As long as the input can be constructed unambiguously, they can be left out, otherwise be included as `key=null`.
-
 ## Generalization Towards Handling a Larger Class of Method Calls
 
 ICRC-22 does not handle generic calls of smart contract methods on ICP, but does allow for handling further requests that are sufficiently similar to the ones captured explicitly. This comprises requests that have parameters that can be represented as query parameters in a URI in a straightforward way and a canonical encoding exists for the parameters. Canonical encoding means that `text` parameters are represented as a strings, `number` paramters as the string of the number representation, binary `blob` parameters are hexadecimal encoded, records are "inlined", i.e., their fields are encoded sequentially in the query string while encoding the beginning of the record with the record name as key and the string `record` as value, and arrays are "inlined" as well so that every of its entries receives the array's name and the array starts with the array name as key and `array` as value. A large class of method interfaces can be handled with this method of canonical flattening of any nested Candid structure, however, this simple Candid-to-URI mapping may have its limits when parameters get nested in a too complex manner, contain the same names on different levels, or otherwise make it hard to re-assemble the Candid request in unambiguous form given the Candid specification of the method and the query string. Those cases may need a more elaborate approach of handling as outlined in the [Future Work](##Future-Work) section.
-// FIX too vague, work out and explain in more detail
+
+// FIX too vague, work out and explain in more detail; or decide to keep this out of the standard
+
+// FIX How exactly can the mapping from the parameters back to the Candid method signature be done? Is it sufficient to enumerate all named parameters, with the type inferable by the recipient using the canister's Candid specification which can be obtained from the canister?
+
+// FIX How to handle optional fields in the Candid specification of the method? As long as the input can be constructed unambiguously, they can be left out, otherwise be included as `key=null`.
+
+// FIX: Details need to be worked out to make it possible to call different methods we want to cover in the base standard (at least ICP and ICRC-1 transfer and ICRC-2 approve). The result may not be so far away from a generic standard covering the call of any method of canisters. Specifically: Should types be decomposed into their constituents or the compound values be provided using a specific or their Candid encoding?
 
 ## Size-Reduced ICRC-1 Textual Account Representation
 
