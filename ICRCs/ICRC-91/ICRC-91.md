@@ -5,9 +5,15 @@
 
 Canister smart contracts on ICP can expose an HTTP interface that can be accessed from an HTTP client like a regular browser via an HTTP gateway. The HTTP Gateway Protocol Specification mandates regular HTTP URIs to specify a resource of a canister. That is, the HTTP URI for a canister contains the boundary node as the authority, or host name. This is inflexible as the URI contains a specific boundary node host name node and multiple different URIs with different boundary node hostnames refer to the same resource. 
 
-Example: `dlbnd-beaaa-aaaaa-qaana-cai.ic0.app/tokens/12345678/image`
+Example: `https://dlbnd-beaaa-aaaaa-qaana-cai.ic0.app/tokens/12345678/image`
 
 Boundary node host names should be transparent for the addressing of HTTP resources. This standard introduces a new `ic-http` URI scheme which abstracts from the host name of the boundary node and thereby allows for uniquely referring to HTTP-exposed resources on the Internet Computer without reference to the boundary node's host name. This is crucial because with the opening up of the Internet Computer's edge infrastructure by allowing community-operated boundary nodes, there will be many host names available to access the same resource.
+
+The above example would give the following URI using ICRC-91:
+`ic-http://dlbnd-beaaa-aaaaa-qaana-cai/tokens/12345678/image`
+
+FIX: We should discuss to add a network id, e.g., (a prefix of) the hash of the DER-encoded network public key as unique identifier; this is important when we have private ICP-based networks or public testnets; we can have a default of ICP mainnet to keep it more convenient for the majority of use cases. The network could be added as top-level element in the authority hierarchy (`737ba355e855` is a prefix of the pub key hash) (we may want to add the full pb hash for reasons of security in order to not have collision potential with an adversarial's network)
+`ic-http://dlbnd-beaaa-aaaaa-qaana-cai.737ba355e855/tokens/12345678/image`
 
 For example, an NFT standard can use this mechanism to specify in NFT metadata HTTP-based canister-hosted resources of NFTs. Parties who read the metadata can transform the ic-http URIs to HTTP URIs with their preferred boundary node provider and load the resources with those URIs.
 
