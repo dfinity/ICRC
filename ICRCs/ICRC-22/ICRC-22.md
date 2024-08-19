@@ -14,27 +14,27 @@ Relevant prior work in other blockchain ecosystems comprises the standards on pa
 
 The below specification defines the syntax and (non-formal) semantics for an ICRC-22 payment request. The specification takes the approaches of \[Bit1, Bit2, Nag17, WLGH19\] into consideration. Particularly, an authority-less URI format has been chosen following this prior art in the domain.
 
-The following shows the structure of a URI for an example with the concrete parameters represented through `<>`-placeholders. Note that the URI does not contain an authority, but encodes the `network` as part of the URI path, directly following the URI scheme.
+The following shows the structure of a URI for an example with the concrete parameters represented through `<>`-placeholders. Note that the URI does not contain an authority, but encodes the `network` and `contract_address` as part of the URI path, directly following the URI scheme.
 ```
 icp:<network>:<contract_address>/exec/<transaction>?from_subaccount=<subaccount>&to=<account>&amount=4.042E8&fee=<fee>&memo=<memo>
 ```
 
 // FIX syntax details
-ABNF syntax:
+Next, we present the ABNF syntax for ICRC-22 URIs.
 ```
 request = protocol ":" network ":" contract_address "/" "exec" transaction [ "?" parameters ]
 protocol = "icp" ; always "icp" referring to the current version of the Internet Computer Protocol
-network = (1..12)[0..9a..fA..F] / ; specifies the network through a prefix of its public key hash
-contract_address = principal FIX: canister principal ABNF ; canister address to which to make the call
-transaction = ... ; canister method to call
+network = (1..10)[0..9a..fA..F] / ; specifies the network through a prefix of its public key hash
+contract_address = ICP principal FIX: canister principal ABNF ; canister address to which to make the call
+transaction = ... ; canister method to call FIX: Candid method syntax
 parameters = parameter [ "&" parameter ]
 parameter = key "=" value
-key = ...
-value = ...
+key = ... ; FIX: Candid parameter name syntax
+value = ... ; FIX Candid encoded value syntax
 ```
 
 // FIX: We should default the network to ICP's mainnet current value when omitted
-// Would result in `icp::<contract_address>/exec/<transaction>?` for current mainnet; the interpretation of what "current mainnet" is would be left to the client
+// Would result in `icp::<contract_address>/exec/<transaction>?` for current mainnet; the interpretation of what "current mainnet" is would be left to the client (the currently active key for mainnet, which can only change in the event of an NNS recovery after a large desaster event that destroys the NNS private threshold key)
 
 // FIX: Should we keep it open to other methods and supported ICRCs as long as their API can be canonically expressed using a sequential list of parameters encoded as query parameters
 
@@ -43,8 +43,9 @@ value = ...
 The grammar productions not further specified can be looked up in the syntax specification for URIs in RFC 3986 \[BFM05\]. Note that the production `transaction` above is part of the path and `parameters` part of the query string and the according constraints of RFC 3986 apply.
 
 The `network_identifier` uniquely identifies the network to make the transaction on. Following the ideas of the Chain Agnostic Standards Alliance \[Cha24\] of having a standardized way of referring to any blockchain network, ICP uses the following mechanism for referring to ICP mainnet or any other ICP-based network that may be available in the future, such as testnets or private networks based on the ICP protocol stack.
-The network identifier for an ICP-based network is comprised of the constant `icp` referring to the Internet Computer Protocol, followed by `:`, followed by `<pub_key_hash_prefix>` where `pub_key_hash_prefix` is a ??-character prefix in ?? encoding of the SHA256 hash of the binary representation of the public key of the network. The prefix length and encoding scheme used ensures that the probability of collision is negligible for all practical purposes. For ICP mainnet the public key of the network is the NNS public key.
+Base16 encoding of the SHA256 hash of the binary representation of the DER-encoded public key of the network. The prefix length used ensures that the probability of collision is negligible for all practical purposes. For ICP mainnet the public key of the network is the NNS public key.
 // FIX using Base64 encoding for the network allows for using a shorter prefix, which is crucial for usability and human readibility; prefix length t.b.d.
+// FIX Is it a security risk to use a prefix of the hash?
 
 The `contract_address` is the canister smart contract principal identifier of the contract the transaction is to be performed on. This is represented in the standardized format for principals. The address, together with the network identifier, unambiguously determines the token that is to be transacted.
 
