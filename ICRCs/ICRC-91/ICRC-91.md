@@ -49,7 +49,6 @@ We follow the specificiation of URI schemes being lowercase according to [RFC-39
 
 The `ic-http` scheme defined in this standard has the following grammar expressed following the formal language put forth in RFC-5234:
 
-
 ```
     IC-HTTP-URI = "ic-http" ":" ic-http-hier-part [ "?" query ] [ "#" fragment ]
 
@@ -106,9 +105,10 @@ FIX further examples to show different use cases we consider important
 
 With the boundary node edge infrastructure being opened up to community participants, additional sets of boundary nodes with their own host names are expected to emerge. This ICRC standard is intended to unify the addressing of `https`-exposed resources of canister smart contracts on the Internet Computer. It abstracts away the hostname of the boundary node used so far in `https` URIs to address resources. This is important for any use case that references `https`-exposed canister resources.
 
+
 ## Future Work
 
-The current proposal has not yet been registered with [IANA's URI scheme registry](https://www.iana.org/assignments/uri-schemes) \[IANA\] to make it an official URI scheme. This is a future step that should be taken once the approach has been sufficiently validated in reference implementations and found to be fit for the intended purpose.
+The current proposal has not yet been registered with [IANA's URI scheme registry](https://www.iana.org/assignments/uri-schemes) \[IANA\] to make it an official URI scheme. This is a future step that should be taken once the approach has been sufficiently validated in reference implementations and found to be fit for the intended purpose. The `ic-http` URI scheme can already be used before registration to prove its usefulness.
 
 
 ## References
