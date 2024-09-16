@@ -68,7 +68,7 @@ If the ledger implements the private version of the standard, then the endpoint 
 
 Otherwise, the endpoint returns a list of records of the form `(account_1, account_2, allowance)` in lexicographic order, with `account_1.owner = from_account.owner`.
  * If `prev_spender` is provided the list starts with the allowance immediately succeeding `(from_account, prev_spender)`.
-* If `prev_spender` is not provided the list starts with the first allowance from `from_subaccount`.
+ * If `prev_spender` is not provided the list starts with the first allowance from `from_account`.
 
 The list is limited to at most `take` entries or a maximum number of entries (which is an internal constant of the ledger).
 
