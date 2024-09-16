@@ -6,7 +6,7 @@
 
 ## 1. Introduction
 
-Although calls to the `icrc2_approve` and `icrc2_transfer_from` methods are recorded in the ledger, it is not possible to determine the allowances that are in effect at some point in time, except by traversing the entire ledger.  This standard introduced an endpoint which will return this information thus making the management of allowances feasible.
+Although calls to the `icrc2_approve` and `icrc2_transfer_from` methods are recorded in the ledger, it is not possible to determine the allowances that are in effect at some point in time, except by traversing the entire ledger.  This standard introduces an endpoint which will return this information thus making the management of allowances feasible.
 
 ICRC-191 is an extension of the ICRC-2 standard.  
 ICRC-191 specifies a way to list outstanding allowances.
@@ -14,7 +14,7 @@ ICRC-191 specifies a way to list outstanding allowances.
 
 ## 2. Metadata
 
-A ledger that implements ICRC-191 MUST must include `record {name = "ICRC-191"; url = "https://github.com/dfinity/ICRC-1/standards/ICRC-191"}` as part of the output of `icrc1_supported_standards`.
+A ledger that implements ICRC-191 MUST include `record {name = "ICRC-191"; url = "https://github.com/dfinity/ICRC-1/standards/ICRC-191"}` as part of the output of `icrc1_supported_standards`.
 
 The endpoint introduced in this standard operates in two ways.  In the public version any principal can obtain the outstanding allowances of any other principal. In the private version, the allowances returned by the endpoint must have been issued by the caller (i.e. the caller is the principal controlling the source account of an allowance.)
 Which version of the standard is implemented by a ledger is specified through metadata which can be retrieved using `icrc1_metadata`.
@@ -27,7 +27,7 @@ A ledger that implements ICRC-191 MUST return metadata `icrc191:public_allowance
 Some of the types used are shared with standards ICRC-1 and ICRC-2; we restate their definition for completeness.
 
 ```candid
-icrc191_list_allowances : (ListAllowancesArgs) -> (ListAllowancesResult) quey
+icrc191_list_allowances : (ListAllowancesArgs) -> (ListAllowancesResult) query
 
 type ListAllowancesArgs = record {
     from_account : opt Account;
@@ -57,34 +57,47 @@ The endpoint returns up to `take` allowances of the from_account.owner, starting
 
 ## 4. Semantics
 
-Outstanding allowances, as specified in the ICRC-2 standard, are represented as a map from pairs of accounts to allowances. To specify the behavior of `icrc191_list_allowances`, the set of pairs `(Account, Account)` is ordered lexicographically. Let `first_principal` be the lexicographically first principal, and `first_subaccount` be the lexicographically first subaccount (the default subaccount, i.e., the all-0 32-byte string). Let `caller_principal` be the principal of the caller.
+Outstanding allowances, as specified in the ICRC-2 standard, are represented as a map from pairs of accounts to allowances. To specify the behavior of `icrc191_list_allowances`, the set of pairs `(Account, Account)` is ordered lexicographically. Let `first_subaccount` be the lexicographically first subaccount (the default subaccount, i.e., the all-0 32-byte string). Let `caller_principal` be the principal of the caller.
 
 The `icrc191_list_allowances` method behaves as follows:
 
 * If `from_account` is not provided, it is instantiated as `Account{caller_principal, first_subaccount}`.  
 * If `from_account.subaccount` is not provided, it is instantiated with `first_subaccount`.
-* If `prev_spender` is not provided, it is instantiated with `Account{first_principal, first_subaccount}`.
 
 If the ledger implements the private version of the standard, then the endpoint returns the empty list if `from_account.owner ≠ caller_principal`.
 
-Otherwise, the endpoint returns a list of records of the form `(account_1, account_2, allowance)` in lexicographic order, starting with the allowance of `(from_account, prev_spender)` (if present), and where `account_1.owner = from_account.owner`. The list is limited to at most `take` entries, or some maximum number of entries (that is an internal constant of the ledger).
+Otherwise, the endpoint returns a list of records of the form `(account_1, account_2, allowance)` in lexicographic order, with `account_1.owner = from_account.owner`.
+ * If `prev_spender` is provided the list starts with the allowance immediately succeeding `(from_account, prev_spender)`.
+* If `prev_spender` is not provided the list starts with the first allowance from `from_subaccount`.
 
-
+The list is limited to at most `take` entries or a maximum number of entries (which is an internal constant of the ledger).
 
 ## 5. Example Using Symbolic Values
 
-Assume that allowances stored at some point by the ledger are, in lexicographic order:
+Assume that the ledger stores the following allowances, listed in lexicographic order:
 
-- A1 = ((p0,s0), (p1,s1), a1)
-- A2 = ((p0,s0), (p2,s2), a2)
-- A3 = ((p0,s1), (p3,s3), a3)
-- A4 = ((p1,s1), (p4,s4), a4)
-- A5 = ((p1,s2), (p5,s5), a5)
+- **A1** = `((p0, s0), (p1, s1), a1)`
+- **A2** = `((p0, s0), (p2, s2), a2)`
+- **A3** = `((p0, s1), (p3, s3), a3)`
+- **A4** = `((p1, s1), (p4, s4), a4)`
+- **A5** = `((p1, s2), (p5, s5), a5)`
 
 Then:
 
-- If `p0` calls the list allowances endpoint, with `from_account = (p0, s0)`, `prev_spender = None` and `take=4` the endpoint returns ``(A1, A2, A3)``, i.e. the endpoint only returns allowances of accounts belonging to `p0`.  It is limited to allowances of `p0`, but not only to those having `(p0,s0)` as source of the allowance.
+1. **Case 1: `prev_spender` is not provided**
+   - If `p0` calls the list allowances endpoint with `from_account = (p0, s0)`, `prev_spender = None`, and `take = 4`, the endpoint returns `(A1, A2, A3)`.
+     - Since `prev_spender` is not provided, the list starts with the first allowance from `from_account = (p0, s0)`.
+     - The endpoint only returns allowances for `p0`, but it is not restricted to just those originating from `(p0, s0)`.
 
-- If `p0` calls the list allowances endpoint with `from_account = (p1,s0)`, `p0 ≠ p1`, and the ledger implements the private version of the endpoint, then the endpoint returns the empty array.
+2. **Case 2: `prev_spender` is provided**
+   - If `p0` calls the list allowances endpoint with `from_account = (p0, s0)`, `prev_spender = (p1, s1)`, and `take = 3`, the endpoint returns `(A2, A3)`.
+     - Since `prev_spender = (p1, s1)` is provided, the list starts with the first allowance immediately succeeding `(p0, s0), (p1, s1)` in lexicographic order, which is `(p0, s0), (p2, s2)` (A2).
+     - The returned list contains only allowances where the `owner` of `account_1` is `p0`, which matches the `from_account.owner`.
 
-- If `p0` calls the list allowances endpoint with `from_account = (p0,s0)`, `prev_spender = (p2,s)` for some `s1 < s < s2`, and `take = 2` the endpoint returns `(A2, A3)`. Since `(p2,s)` is not in the list, the allowances returned start with the first existing allowance between a pair of accounts greater than `(from_account, prev_spender)`.
+3. **Case 3: Private version of the standard**
+   - If `p0` calls the list allowances endpoint with `from_account = (p1, s0)` (`p0 ≠ p1`), and the ledger implements the private version of the standard, the endpoint returns an empty list.
+     - Since `from_account.owner ≠ caller_principal` and the ledger implements the private version, no allowances are returned.
+
+4. **Case 4: `prev_spender` is not in the list**
+   - If `p0` calls the list allowances endpoint with `from_account = (p0, s0)`, `prev_spender = (p2, s)` for some `s1 < s < s2`, and `take = 2`, the endpoint returns `(A2, A3)`.
+     - Since `(p0, s0), (p2, s)` is not in the list, the allowances start with the first available pair greater than `(p0, s0), (p2, s)`—in this case, `(p0, s0), (p2, s2)` (A2).
