@@ -102,7 +102,7 @@ Assume that the ledger stores the following allowances, listed in lexicographic 
 - **A4** = `((p1, s1), (p4, s4), a4)`
 - **A5** = `((p1, s2), (p5, s5), a5)`
 
-Each entry in the list is of the type `from_account: (<principal>,<subaccount>), spender: (<principal,subaccount>), <allowance>)`
+Each entry in the list is of the type `(from_account: (<principal>,<subaccount>), spender: (<principal,subaccount>), <allowance>)`
 
 Then:
 
