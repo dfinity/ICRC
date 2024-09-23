@@ -2,32 +2,35 @@
 |:------:|
 |Draft|
 
-# ICRC-191: Enhanced Allowance Query Mechanism with Pagination
+# ICRC-103: Enhanced Allowance Query Mechanism with Pagination
 
 ## 1. Introduction
 
 Although calls to the `icrc2_approve` and `icrc2_transfer_from` methods are recorded in the ledger, it is not possible to determine the allowances that are in effect at some point in time, except by traversing the entire ledger.  This standard introduces an endpoint which will return this information thus making the management of allowances feasible.
 
-ICRC-191 is an extension of the ICRC-2 standard.  
-ICRC-191 specifies a way to list outstanding allowances.
+ICRC-103 is an extension of the ICRC-2 standard.  
+ICRC-103 specifies a way to list outstanding allowances.
 
 
 ## 2. Metadata
 
-A ledger that implements ICRC-191 MUST include `record {name = "ICRC-191"; url = "https://github.com/dfinity/ICRC-1/standards/ICRC-191"}` as part of the output of `icrc1_supported_standards`.
+A ledger that implements ICRC-103 MUST include `record {name = "ICRC-103"; url = "https://github.com/dfinity/ICRC-1/standards/ICRC-103"}` as part of the output of `icrc1_supported_standards`.
 
 The endpoint introduced in this standard operates in two ways.  In the public version any principal can obtain the outstanding allowances of any other principal. In the private version, the allowances returned by the endpoint must have been issued by the caller (i.e. the caller is the principal controlling the source account of an allowance.)
 Which version of the standard is implemented by a ledger is specified through metadata which can be retrieved using `icrc1_metadata`.
 
-A ledger that implements ICRC-191 MUST return metadata `icrc191:public_allowances` of type Text (optional). The possible values are "true" if the allowance data is public and "false" otherwise.
+A ledger that implements ICRC-103 MUST return metadata `icrc103:public_allowances` of type `text`. The possible values are "true" if the allowance data is public and "false" otherwise.
 
+The number of allowances returned by the ledger is limited by an implementation-specific maximum, which is specified through ledger metadata.
+
+A ledger that implements ICRC-103 MUST  return metadata `icrc103:max_returned_allowances` of type `nat`, indicating the precise maximum number of allowances the ledger will return in response to a query.
 
 ## 3. Methods
 
 Some of the types used are shared with standards ICRC-1 and ICRC-2; we restate their definition for completeness.
 
 ```candid
-icrc191_list_allowances : (ListAllowancesArgs) -> (ListAllowancesResult) query
+icrc103_list_allowances : (ListAllowancesArgs) -> (ListAllowancesResult) query
 
 type ListAllowancesArgs = record {
     from_account : opt Account;
@@ -52,14 +55,14 @@ type Allowance = record {
 }
 ```
 
-The endpoint returns up to `take` allowances of the from_account.owner, starting with the allowance between `from_account` and `to_account`.
+The endpoint returns up to allowances of the from_account.owner, starting with the allowance between `from_account` and `to_account`.
 
 
 ## 4. Semantics
 
-Outstanding allowances, as specified in the ICRC-2 standard, are represented as a map from pairs of accounts to allowances. To specify the behavior of `icrc191_list_allowances`, the set of pairs `(Account, Account)` is ordered lexicographically. Let `first_subaccount` be the lexicographically first subaccount (the default subaccount, i.e., the all-0 32-byte string). Let `caller_principal` be the principal of the caller.
+Outstanding allowances, as specified in the ICRC-2 standard, are represented as a map from pairs of accounts to allowances. To specify the behavior of `icrc103_list_allowances`, the set of pairs `(Account, Account)` is ordered lexicographically. Let `first_subaccount` be the lexicographically first subaccount (the default subaccount, i.e., the all-0 32-byte string). Let `caller_principal` be the principal of the caller.
 
-The `icrc191_list_allowances` method behaves as follows:
+The `icrc103_list_allowances` method behaves as follows:
 
 * If `from_account` is not provided, it is instantiated as `Account{caller_principal, first_subaccount}`.  
 * If `from_account.subaccount` is not provided, it is instantiated with `first_subaccount`.
@@ -70,7 +73,7 @@ Otherwise, the endpoint returns a list of records of the form `(account_1, accou
  * If `prev_spender` is provided the list starts with the allowance immediately succeeding `(from_account, prev_spender)`.
  * If `prev_spender` is not provided the list starts with the first allowance from `from_account`.
 
-The list is limited to at most `take` entries or a maximum number of entries (which is an internal constant of the ledger).
+The list is limited to at most `take` entries but not more than the maximum number of entries specified in `icrc103:max_returned_allowances`.
 
 ## 5. Example Using Symbolic Values
 
@@ -81,6 +84,8 @@ Assume that the ledger stores the following allowances, listed in lexicographic 
 - **A3** = `((p0, s1), (p3, s3), a3)`
 - **A4** = `((p1, s1), (p4, s4), a4)`
 - **A5** = `((p1, s2), (p5, s5), a5)`
+
+Each entry in the list is of the type `from_account: (<principal>,<subaccount>), spender: (<principal,subaccount>), <allowance>)`
 
 Then:
 
