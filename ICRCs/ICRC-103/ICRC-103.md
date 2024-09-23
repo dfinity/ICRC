@@ -21,9 +21,11 @@ Which version of the standard is implemented by a ledger is specified through me
 
 A ledger that implements ICRC-103 MUST return metadata `icrc103:public_allowances` of type `text`. The possible values are "true" if the allowance data is public and "false" otherwise.
 
-The number of allowances returned by the ledger is limited by an implementation-specific maximum, which is specified through ledger metadata.
+The number of allowances that the ledger can return in response to a query is limited by an implementation-specific maximum, specified through the `icrc103_max_take_value` metadata.
 
-A ledger that implements ICRC-103 MUST  return metadata `icrc103:max_returned_allowances` of type `nat`, indicating the precise maximum number of allowances the ledger will return in response to a query.
+A ledger that implements ICRC-103 MUST  return metadata `icrc103:max_take_value` of type `nat`, indicating the precise maximum number of allowances the ledger will return in response to a query.
+
+
 
 ## 3. Methods
 
@@ -38,7 +40,7 @@ type ListAllowancesArgs = record {
     take : opt nat;
 }
 
-ListAllowanceResult = vec record {
+type ListAllowancesResult = vec record {
     from_account : Account;
     to_spender : Account;
     allowance : Allowance;
@@ -55,8 +57,23 @@ type Allowance = record {
 }
 ```
 
-The endpoint returns up to allowances of the from_account.owner, starting with the allowance between `from_account` and `to_account`.
+The endpoint returns up to `take` allowances belonging to from_account.owner, starting with the allowance between `from_account` and `prev_account`.
 
+The `icrc103_collection_metadata` endpoint allows fetching all metadata entries related to this standard.
+
+
+```candid
+icrc103_collection_metadata : () -> (vec record {text; Value}) query;
+
+type Value = variant {
+  Blob : blob;
+  Text : text;
+  Nat : nat;
+  Int : int;
+  Array ; int;
+  Map : vec record { text; Value};
+}
+```
 
 ## 4. Semantics
 
@@ -67,13 +84,13 @@ The `icrc103_list_allowances` method behaves as follows:
 * If `from_account` is not provided, it is instantiated as `Account{caller_principal, first_subaccount}`.  
 * If `from_account.subaccount` is not provided, it is instantiated with `first_subaccount`.
 
-If the ledger implements the private version of the standard, then the endpoint returns the empty list if `from_account.owner ≠ caller_principal`.
+If the ledger implements the private version of the standard, the endpoint returns an empty list when `from_account.owner ≠ caller_principal`.
 
 Otherwise, the endpoint returns a list of records of the form `(account_1, account_2, allowance)` in lexicographic order, with `account_1.owner = from_account.owner`.
  * If `prev_spender` is provided the list starts with the allowance immediately succeeding `(from_account, prev_spender)`.
  * If `prev_spender` is not provided the list starts with the first allowance from `from_account`.
 
-The list is limited to at most `take` entries but not more than the maximum number of entries specified in `icrc103:max_returned_allowances`.
+The list is limited to at most `take` entries but not more than the maximum number of entries specified in `icrc103:max_take_value`.
 
 ## 5. Example Using Symbolic Values
 
