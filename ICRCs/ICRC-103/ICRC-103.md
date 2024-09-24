@@ -25,7 +25,7 @@ The number of allowances that the ledger can return in response to a query is li
 
 A ledger that implements ICRC-103 MUST return the metadata entry `icrc103:max_take_value` of type `nat`, indicating the precise maximum number of allowances the ledger will return in response to a query.
 
-Metadata entries can be retrieved using method `icrc1_metadata` defined in the ICRC-1 standard as well as `icrc103_collection_metadata` defined below.
+Metadata entries can be retrieved using method `icrc1_metadata` defined by the ICRC-1 standard.
 
 ## 3. Methods
 
@@ -56,21 +56,6 @@ type Account = record {
 
 The endpoint returns up to `take` allowances belonging to from_account.owner, starting with the allowance between `from_account` and `prev_spender`.
 
-The `icrc103_collection_metadata` endpoint allows fetching all metadata entries related to this standard.
-
-
-```candid
-icrc103_collection_metadata : () -> (vec record {text; Value}) query;
-
-type Value = variant {
-  Blob : blob;
-  Text : text;
-  Nat : nat;
-  Int : int;
-  Array : int;
-  Map : vec record { text; Value};
-}
-```
 
 ## 4. Semantics
 
