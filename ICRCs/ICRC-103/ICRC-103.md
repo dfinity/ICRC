@@ -17,15 +17,15 @@ ICRC-103 specifies a way to list outstanding allowances.
 A ledger that implements ICRC-103 MUST include `record {name = "ICRC-103"; url = "https://github.com/dfinity/ICRC-1/standards/ICRC-103"}` as part of the output of `icrc1_supported_standards`.
 
 The endpoint introduced in this standard operates in two ways.  In the public version any principal can obtain the outstanding allowances of any other principal. In the private version, the allowances returned by the endpoint must have been issued by the caller (i.e. the caller is the principal controlling the source account of an allowance.)
-Which version of the standard is implemented by a ledger is specified through metadata which can be retrieved using `icrc1_metadata`.
+Which version of the standard is implemented by a ledger is specified through the `icrc103:public_allowances` metadata.
 
-A ledger that implements ICRC-103 MUST return metadata `icrc103:public_allowances` of type `text`. The possible values are "true" if the allowance data is public and "false" otherwise.
+A ledger that implements ICRC-103 MUST return the metadata entry `icrc103:public_allowances` of type `text`. The possible values are "true" if the allowance data is public and "false" otherwise.
 
-The number of allowances that the ledger can return in response to a query is limited by an implementation-specific maximum, specified through the `icrc103_max_take_value` metadata.
+The number of allowances that the ledger can return in response to a query is limited by an implementation-specific maximum, specified through the `icrc103:max_take_value` metadata.
 
-A ledger that implements ICRC-103 MUST  return metadata `icrc103:max_take_value` of type `nat`, indicating the precise maximum number of allowances the ledger will return in response to a query.
+A ledger that implements ICRC-103 MUST return the metadata entry `icrc103:max_take_value` of type `nat`, indicating the precise maximum number of allowances the ledger will return in response to a query.
 
-
+Metadata entries can be retrieved using method `icrc1_metadata` defined in the ICRC-1 standard as well as `icrc103_collection_metadata` defined below.
 
 ## 3. Methods
 
@@ -43,7 +43,8 @@ type ListAllowancesArgs = record {
 type ListAllowancesResult = vec record {
     from_account : Account;
     to_spender : Account;
-    allowance : Allowance;
+    allowance : nat;
+    expires_at : opt nat64;
 }
 
 type Account = record {
@@ -51,13 +52,9 @@ type Account = record {
     subaccount : opt blob;
 };
 
-type Allowance = record {
-  allowance : nat;
-  expires_at : opt nat64;
-}
 ```
 
-The endpoint returns up to `take` allowances belonging to from_account.owner, starting with the allowance between `from_account` and `prev_account`.
+The endpoint returns up to `take` allowances belonging to from_account.owner, starting with the allowance between `from_account` and `prev_spender`.
 
 The `icrc103_collection_metadata` endpoint allows fetching all metadata entries related to this standard.
 
@@ -70,7 +67,7 @@ type Value = variant {
   Text : text;
   Nat : nat;
   Int : int;
-  Array ; int;
+  Array : int;
   Map : vec record { text; Value};
 }
 ```
@@ -94,7 +91,7 @@ The list is limited to at most `take` entries but not more than the maximum numb
 
 ## 5. Example Using Symbolic Values
 
-Assume that the ledger stores the following allowances, listed in lexicographic order:
+Assume that the ledger stores the following allowances, listed in lexicographic order. Below, `p0,p1,...,p5` are some arbitrary principals, `s0` is the default subaccount, `s1,s2,..,s5` are subacounts, and `a1,a2,...,a5` are allowances (the associated expiration is omitted).
 
 - **A1** = `((p0, s0), (p1, s1), a1)`
 - **A2** = `((p0, s0), (p2, s2), a2)`
@@ -102,7 +99,7 @@ Assume that the ledger stores the following allowances, listed in lexicographic 
 - **A4** = `((p1, s1), (p4, s4), a4)`
 - **A5** = `((p1, s2), (p5, s5), a5)`
 
-Each entry in the list is of the type `(from_account: (<principal>,<subaccount>), spender: (<principal,subaccount>), <allowance>)`
+Each entry in the list is of the type `(from_account: (<principal>,<subaccount>), to_spender: (<principal,subaccount>), <allowance>)`
 
 Then:
 
