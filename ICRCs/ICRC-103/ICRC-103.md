@@ -32,7 +32,7 @@ Metadata entries can be retrieved using method `icrc1_metadata` defined by the I
 Some of the types used are shared with standards ICRC-1 and ICRC-2; we restate their definition for completeness.
 
 ```candid
-icrc103_list_allowances : (ListAllowancesArgs) -> (ListAllowancesResult) query
+icrc103_get_allowances : (ListAllowancesArgs) -> (ListAllowancesResult) query
 
 type ListAllowancesArgs = record {
     from_account : opt Account;
@@ -59,9 +59,9 @@ The endpoint returns up to `take` allowances belonging to from_account.owner, st
 
 ## 4. Semantics
 
-Outstanding allowances, as specified in the ICRC-2 standard, are represented as a map from pairs of accounts to allowances. To specify the behavior of `icrc103_list_allowances`, the set of pairs `(Account, Account)` is ordered lexicographically. Let `first_subaccount` be the lexicographically first subaccount (the default subaccount, i.e., the all-0 32-byte string). Let `caller_principal` be the principal of the caller.
+Outstanding allowances, as specified in the ICRC-2 standard, are represented as a map from pairs of accounts to allowances. To specify the behavior of `icrc103_get_allowances`, the set of pairs `(Account, Account)` is ordered lexicographically. Let `first_subaccount` be the lexicographically first subaccount (the default subaccount, i.e., the all-0 32-byte string). Let `caller_principal` be the principal of the caller.
 
-The `icrc103_list_allowances` method behaves as follows:
+The `icrc103_get_allowances` method behaves as follows:
 
 * If `from_account` is not provided, it is instantiated as `Account{caller_principal, first_subaccount}`.  
 * If `from_account.subaccount` is not provided, it is instantiated with `first_subaccount`.
@@ -88,10 +88,11 @@ Each entry in the list is of the type `(from_account: (<principal>,<subaccount>)
 
 Then:
 
+
 1. **Case 1: `prev_spender` is not provided**
    - If `p0` calls the list allowances endpoint with `from_account = (p0, s0)`, `prev_spender = None`, and `take = 4`, the endpoint returns `(A1, A2, A3)`.
      - Since `prev_spender` is not provided, the list starts with the first allowance from `from_account = (p0, s0)`.
-     - The endpoint only returns allowances for `p0`, but it is not restricted to just those originating from `(p0, s0)`.
+     - The endpoint returns allowances for `p0`, including those that do not necessarily originate from `(p0, s0)`.
 
 2. **Case 2: `prev_spender` is provided**
    - If `p0` calls the list allowances endpoint with `from_account = (p0, s0)`, `prev_spender = (p1, s1)`, and `take = 3`, the endpoint returns `(A2, A3)`.
