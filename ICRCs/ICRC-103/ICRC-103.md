@@ -72,7 +72,9 @@ Otherwise, the endpoint returns a list of records of the form `(account_1, accou
  * If `prev_spender` is provided the list starts with the allowance immediately succeeding `(from_account, prev_spender)`.
  * If `prev_spender` is not provided the list starts with the first allowance from `from_account`.
 
-The list is limited to at most `take` entries but not more than the maximum number of entries specified in `icrc103:max_take_value`.
+The list includes up to `take` entries if `take` is provided, but it cannot exceed the maximum number specified by the `icrc103:max_take_value` metadata. If take is not provided, the ledger will return as many entries as possible, up to the `icrc103:max_take_value` limit.
+
+If the response contains fewer entries than the smaller of `take` and `icrc103:max_take_value`, it indicates that there are no more allowances that meet the criteria for listing. 
 
 ## 5. Example Using Symbolic Values
 
