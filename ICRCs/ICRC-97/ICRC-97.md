@@ -95,3 +95,7 @@ Display types can define additional attribute properties.
 | icrc97:stat             | Show attribute as stat e.g. 1 out of 2, expects number and additional `max_value` property with a number.                                                     |
 | icrc97:boost            | Shows attribute as boost e.g. +10, expects number and optional additional `min_value` and `max_value` properties. Numbers can be either positive or negative. |
 | icrc97:boost_percentage | Same as `icrc97:boost` but shows values with %.                                                                                                               |
+
+## Future work
+
+This standard defines a token metadata standard for ICRC-7. But also applies to future standards like ICRC-8, where needed ICRC-97 can be extended with additional asset purposes and display type values to accomodate for these standards.
