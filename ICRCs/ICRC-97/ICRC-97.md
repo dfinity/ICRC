@@ -16,8 +16,8 @@ A list of asset purposes and attribute display types are defined in ICRC-97 to t
 
 The [`icrc7_token_metadata`](https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-7/ICRC-7.md#icrc7_token_metadata)
 method returns the token metadata for `token_ids`, a list of token ids. Each tuple in
-the response vector comprises an optional `metadata` element with the metadata expressed as vector of `text` and `Value`
-pairs.
+the response vector comprises an optional `metadata` element with the metadata expressed as a vector of `text` and `Value`
+pairs. Where `Value` is recursive as defined in the ICRC-3 standard.
 
 ICRC-7 does not specify the representation of token metadata any further than that it is represented in a generic manner
 as a vector of (text, Value)-pairs. The ICRC-97 standard defines a token metadata
