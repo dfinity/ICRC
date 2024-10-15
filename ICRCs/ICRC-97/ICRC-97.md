@@ -47,7 +47,7 @@ off-chain metadata instead of on-chain metadata.
 
 ### Metadata properties
 
-Below table list all (optional) metadata properties defined in this standard. Each property is defined in both ICRC-3
+Below table lists all (optional) metadata properties defined in this standard. Each property is defined in both ICRC-3
 and JSON type to support both on-chain `Value` and off-chain JSON metadata respectively.
 
 | Metadata Property | Optional | ICRC-3 Type                             | JSON Type | Description                                             |
