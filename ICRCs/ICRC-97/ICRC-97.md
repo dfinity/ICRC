@@ -20,8 +20,8 @@ the response vector comprises an optional `metadata` element with the metadata e
 pairs.
 
 ICRC-7 does not specify the representation of token metadata any further than that it is represented in a generic manner
-as a vector of (text, Value)-pairs. The ICRC-97 standard extends the ICRC-7 standard with a token metadata
-standard.
+as a vector of (text, Value)-pairs. The ICRC-97 standard defines a token metadata
+standard for ICRC-7 and other NFT standards.
 
 ### Entrypoint
 
