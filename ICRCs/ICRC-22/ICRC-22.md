@@ -36,9 +36,8 @@ value = ... ; FIX Candid encoded value syntax
 // FIX: We should default the network to ICP's mainnet current value when omitted
 The `network` defaults to the identifier `737ba355e855bd4b61279056603e0550` for ICP mainnet. When the network identifier is left out, the prefix of a URI would thus be `icp::<contract_address>/exec/<transaction>?` for the current ICP mainnet. The interpretation of what "current mainnet" is is left to the client. It should refer to the currently active key for mainnet, which can only change in the event of an NNS recovery after a large desaster event that destroys the NNS private threshold key, and thus is considered very stable.
 
-// FIX: Should we keep it open to other methods and supported ICRCs as long as their API can be canonically expressed using a sequential list of parameters encoded as query parameters
-
-An encoding specifier in the beginning of query string defines the kind of encoding used for the parameters. ICRC-22 defines only the encoding `plain`. We envision a future ICRC that uses Candid for encoding any list of parameters and uses the `candid` constant. If omitted, the encoding defaults to the `plain` encoding.
+An encoding specifier as initial element of query string defines the kind of encoding used for the parameters. ICRC-22 defines only the encoding `plain`. We envision a future ICRC that uses Candid for encoding any list of parameters, indicated through the `candid` constant. If omitted, the encoding defaults to the `plain` encoding.
+// Do we need to distinguish between payment and generic method defined here?
 
 The grammar productions not further specified above can be looked up in the syntax specification for URIs in RFC 3986 \[BFM05\]. Note that the production `transaction` above is part of the path and `parameters` part of the query string and the according constraints of RFC 3986 apply. // FIX
 
@@ -89,20 +88,20 @@ The generic representation of call parameters is done as follows through a canon
 * a `text` parameter is represented as a string representing the text
 * a `number` parameter is encoded as the string representation of the decimal number
 * a binary `blob` parameter is hexadecimal encoded
-* a record is inlined, i.e., its fields are encoded sequentially in the query string according to the encoding rules; the beginning of the record is encoded with the query parameter `*record=fieldName`, where `fieldName` is the name of the field containing the record; the end of the record is encoded as `-record=fieldName`
-* an array is inlined so that every of its entries receives the array field's name (e.g., `fieldName=8` for a field with value `8`); the array's start is indicated with `*array=fieldName` and its termination with `-array=fieldName`
-* an enumeration ...
+* a tuple is encoded by having an opening element `*tuple`, followed by the tuple values, followed by a closing element `-tuple`
+* a record is encoding is started with the query parameter `*record=fieldName`, where `fieldName` is the name of the field containing the record; this is followed by a sequence of encodings of its fields according to the encoding rules; the termination of the record is encoded with `-record=fieldName`
+* an array is started with `*array=fieldName`, followed by an encoding of its entries the names of which are their index using 0-based indexing (e.g., `0=8` for the 0-th field with value `8`), followed by a termination `-array=fieldName`
+* an enumeration is encoded by a start element `*enum=fieldName` and a variant element encoding the variant of the enumeration; for variants that have an associated value, the value is encoded after the variant using the encoding rules
 
 Fields that are mandatory according to the Candid specification may be left out from the encoding in case that the canister needs to fill in those missing values. Note that those values MUST be provided by the canister in order to obtain a valid Candid value to use for the method invocation.
 
-All method interfaces can be handled with this method of canonical flattening of nested data types expressible in Candid. However, for complex data structures an approach of mapping the parameters to Candid and encoding the Candid value in the URI may be preferable and part of a future ICRC as outlined in the [Future Work](##Future-Work) section.
-this simple Candid-to-URI mapping may have its limits when parameters get nested in a too complex manner, contain the 
+A large class of method interfaces — every method the encoding of which can be uniquely decoded back to Candid — can be handled with this method of canonical flattening of nested data types expressible in Candid. However, for complex data structures an approach of mapping the parameters to Candid and encoding the Candid value in the URI may be preferable and part of a future ICRC as outlined in the [Future Work](##Future-Work) section.
 
-The specification of payment-related method calls as defined for ICP and ICRC-1 payments and ICRC-2 approvals are a special case of the generalized encoding introduced in this section, with the following differences:
-* the parameters are provided as a flat list, with the enclosing `TransferArgs` record
-* ICRC-1 accounts are encoded using the (size-reduced) representation of the textual representation of ICRC-1 accounts ([Dfi22]) as defined in this document
+The specification of payment-related transaction requests as defined for ICP and ICRC-1 payments and ICRC-2 approvals is a special case of the generalized encoding introduced in this section, with the following differences:
+* the parameters are provided as a flat list, with the enclosing `TransferArgs` record being made explicit; the rationale behind this is that payment-related use cases are the primary target of this specification;
+* ICRC-1 accounts are encoded using the size-reduced textual representation of ICRC-1 accounts ([Dfi22]) as defined in this document.
 
-The generalization introduced in this section is optional for an implementation of ICRC-22 to keep the minimum requirements for an implementation simple and help widespread use of ICRC-22 for payments-related use cases.
+The generalization introduced in this section is optional for an implementation of ICRC-22 to keep the minimum requirements for an implementation simple and help widespread adoption of ICRC-22 for payment-related use cases.
 
 ## Size-Reduced ICRC-1 Textual Account Representation
 
