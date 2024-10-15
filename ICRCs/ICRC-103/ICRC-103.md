@@ -32,15 +32,15 @@ Metadata entries can be retrieved using method `icrc1_metadata` defined by the I
 Some of the types used are shared with standards ICRC-1 and ICRC-2; we restate their definition for completeness.
 
 ```candid
-icrc103_get_allowances : (ListAllowancesArgs) -> (ListAllowancesResult) query
+icrc103_get_allowances : (GetAllowancesArgs) -> (GetAllowancesResult) query
 
-type ListAllowancesArgs = record {
+type GetAllowancesArgs = record {
     from_account : opt Account;
     prev_spender : opt Account;
     take : opt nat;
 }
 
-type ListAllowancesResult = vec record {
+type GetAllowancesResult = vec record {
     from_account : Account;
     to_spender : Account;
     allowance : nat;
@@ -72,13 +72,13 @@ Otherwise, the endpoint returns a list of records of the form `(account_1, accou
  * If `prev_spender` is provided the list starts with the allowance immediately succeeding `(from_account, prev_spender)`.
  * If `prev_spender` is not provided the list starts with the first allowance from `from_account`.
 
-The list includes up to `take` entries if `take` is provided, but it cannot exceed the maximum number specified by the `icrc103:max_take_value` metadata. If take is not provided, the ledger will return as many entries as possible, up to the `icrc103:max_take_value` limit.
+The list includes up to `take` entries if `take` is provided, but it cannot exceed the maximum number specified by the `icrc103:max_take_value` metadata. If `take` is not provided, the ledger will return as many entries as possible, up to the limit specified by `icrc103:max_take_value`.
 
-If the response contains fewer entries than the smaller of `take` and `icrc103:max_take_value`, it indicates that there are no more allowances that meet the criteria for listing. 
+If the response contains fewer entries than the smaller of `take` and `icrc103:max_take_value`, it indicates that there are no more allowances that meet the criteria for listing.
 
 ## 5. Example Using Symbolic Values
 
-Assume that the ledger stores the following allowances, listed in lexicographic order. Below, `p0,p1,...,p5` are some arbitrary principals, `s0` is the default subaccount, `s1,s2,..,s5` are subacounts, and `a1,a2,...,a5` are allowances (the associated expiration is omitted).
+Assume that the ledger stores the following allowances, listed in lexicographic order. Below, `p0,p1,...,p5` are some arbitrary principals, `s0` is the default subaccount, `s1,s2,..,s5` are subaccounts, and `a1,a2,...,a5` are allowances (the associated expiration is omitted).
 
 - **A1** = `((p0, s0), (p1, s1), a1)`
 - **A2** = `((p0, s0), (p2, s2), a2)`
@@ -92,19 +92,19 @@ Then:
 
 
 1. **Case 1: `prev_spender` is not provided**
-   - If `p0` calls the list allowances endpoint with `from_account = (p0, s0)`, `prev_spender = None`, and `take = 4`, the endpoint returns `(A1, A2, A3)`.
+   - If `p0` calls the get allowances endpoint with `from_account = (p0, s0)`, `prev_spender = None`, and `take = 4`, the endpoint returns `(A1, A2, A3)`.
      - Since `prev_spender` is not provided, the list starts with the first allowance from `from_account = (p0, s0)`.
-     - The endpoint returns allowances for `p0`, including those that do not necessarily originate from `(p0, s0)`.
+     - The endpoint returns allowances for `p0`, including those that may not originate from `(p0, s0)`.
 
 2. **Case 2: `prev_spender` is provided**
-   - If `p0` calls the list allowances endpoint with `from_account = (p0, s0)`, `prev_spender = (p1, s1)`, and `take = 3`, the endpoint returns `(A2, A3)`.
+   - If `p0` calls the get allowances endpoint with `from_account = (p0, s0)`, `prev_spender = (p1, s1)`, and `take = 3`, the endpoint returns `(A2, A3)`.
      - Since `prev_spender = (p1, s1)` is provided, the list starts with the first allowance immediately succeeding `(p0, s0), (p1, s1)` in lexicographic order, which is `(p0, s0), (p2, s2)` (A2).
      - The returned list contains only allowances where the `owner` of `account_1` is `p0`, which matches the `from_account.owner`.
 
 3. **Case 3: Private version of the standard**
-   - If `p0` calls the list allowances endpoint with `from_account = (p1, s0)` (`p0 ≠ p1`), and the ledger implements the private version of the standard, the endpoint returns an empty list.
+   - If `p0` calls the get allowances endpoint with `from_account = (p1, s0)` (`p0 ≠ p1`), and the ledger implements the private version of the standard, the endpoint returns an empty list.
      - Since `from_account.owner ≠ caller_principal` and the ledger implements the private version, no allowances are returned.
 
 4. **Case 4: `prev_spender` is not in the list**
-   - If `p0` calls the list allowances endpoint with `from_account = (p0, s0)`, `prev_spender = (p2, s)` for some `s1 < s < s2`, and `take = 2`, the endpoint returns `(A2, A3)`.
+   - If `p0` calls the get allowances endpoint with `from_account = (p0, s0)`, `prev_spender = (p2, s)` for some `s1 < s < s2`, and `take = 2`, the endpoint returns `(A2, A3)`.
      - Since `(p0, s0), (p2, s)` is not in the list, the allowances start with the first available pair greater than `(p0, s0), (p2, s)`—in this case, `(p0, s0), (p2, s2)` (A2).
