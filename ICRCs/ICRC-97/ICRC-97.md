@@ -10,6 +10,8 @@ the [Internet Computer](https://internetcomputer.org).
 The standard is designed to allow for multiple assets with different data types with various purposes. Where additional
 asset purposes and attribute display types can be standardized in ICRC-97 extensions.
 
+A list of asset purposes and attribute display types are defined in ICRC-97 to the minimum needed for wallets and marketplaces to display NFTs.
+
 ## Extending the ICRC-7 Standard with Token Metadata
 
 The [`icrc7_token_metadata`](https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-7/ICRC-7.md#icrc7_token_metadata)
