@@ -58,7 +58,7 @@ and JSON type to support both on-chain `Value` and off-chain JSON metadata respe
 | assets            | Yes      | variant { Array = vec variant { Map } } | object[]  | List of assets ordered by priority descending.          |
 | attributes        | Yes      | variant { Array = vec variant { Map } } | object[]  | List of attributes ordered by priority descending.      |
 
-The following table list all (optional) asset properties.
+The following table lists all (optional) asset properties.
 
 | Asset Property | Optional | ICRC-3 Type      | JSON Type       | Description                                                                    |
 |----------------|----------|------------------|-----------------|--------------------------------------------------------------------------------|
@@ -75,7 +75,7 @@ Purpose values can define additional asset properties.
 | icrc97:image   | Original size image that is shown on e.g. item details page. Additional optional `width` and `height` properties define the dimensions in number of pixels. |
 | icrc97:preview | Small image meant as preview within e.g. a list of items. Additional optional `width` and `height` properties define the dimensions in number of pixels.    |
 
-The following table list all (optional) attribute properties.
+The following table lists all (optional) attribute properties.
 
 | Attribute Property | Optional | ICRC-3 Type                | JSON Type        | Description                                 |
 |--------------------|----------|----------------------------|------------------|---------------------------------------------|
