@@ -6,7 +6,7 @@
 
 ## Introduction
 
-ICRC-22 defines a standard way of representing transaction requests for payments or approvals of token transactions on ICP as URIs. A variety of transport mechanisms can be used to communicate URIs to their recipients, e.g., they can be embedded in QR codes, hyperlinks on Web pages, emails, or chat communication to obtain robust signalling between loosely-coupled applications. Such either pre-defined or on-the-fly generated payment requests can be immediately used by the user's wallet application, where relevant parameters are provided through the URI and further parameters may be filled in by the wallet application or the user themselves. This makes such URI encoding an indispensible tool in a larger blockchain ecosystem to allow for convenient communication of payment- or approval-related information over a variety of different communication channels. Generic smart contract method calls are left to a future ICRC standard.
+ICRC-22 defines a standard way of representing transaction requests for payments or approvals of token transactions on ICP as URIs. A variety of transport mechanisms can be used to communicate URIs to their recipients, e.g., they can be embedded in QR codes, hyperlinks on Web pages, emails, or chat communication to obtain robust signalling between loosely-coupled applications. Such either pre-defined or on-the-fly generated payment requests can be immediately used by the user's wallet application, where relevant arguments are provided through the URI and further arguments may be filled in by the wallet application or the user themselves. This makes such URI encoding an indispensible tool in a larger blockchain ecosystem to allow for convenient communication of payment- or approval-related information over a variety of different communication channels. Generic smart contract method calls are left to a future ICRC standard.
 
 Relevant prior work in other blockchain ecosystems comprises the standards on payment URLs for Bitcoin \[Bit1, Bit2\] as well as Ethereum's [ERC-681 \[Nag17\]](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-681.md) for expressing payment requests and, more generally, transactions using EVM ABI encoding, for the Ethereum blockchain. The specification put forth in ICRC-22 is an adaptation of the ideas in the above listed references to establish a standard way of sharing URIs that represent payment and other requests on the Internet Computer.
 
@@ -14,7 +14,7 @@ Relevant prior work in other blockchain ecosystems comprises the standards on pa
 
 The below specification defines the syntax and (non-formal) semantics for ICRC-22 token transfer and approval requests. The specification takes the approaches of \[Bit1, Bit2, Nag17, WLGH19\] into consideration. Particularly, an authority-less URI format has been chosen following this prior art in the domain.
 
-Next, we show the structure of a request URI with the concrete parameters represented through `<>`-placeholders. Note that the URI does not contain an authority, but encodes the `network` and `contract_address` as part of the URI path, directly following the URI scheme.
+Next, we show the structure of an ICRC1 transfer request URI with the concrete arguments represented through `<>`-placeholders. Note that the URI does not contain an authority, but encodes the `network`, the `icrc22` standard specifier, and `canister_principal` as part of the URI path, directly following the URI scheme.
 ```
 icp:737ba355e855bd4b61279056603e0550:icrc22:<canister_principal>/icrc1_transfer?to=<to_account>&amount=<amount>&memo=<memo>
 ```
@@ -25,7 +25,7 @@ Next, we present the ABNF syntax for ICRC-22 URIs.
 request = protocol ":" network ":" contract_address "/" "exec" transaction [ "?" parameters ]
 protocol = "icp" ; always "icp" referring to the current version of the Internet Computer Protocol
 network = (1..10)[0..9a..fA..F] / ; specifies the network through a prefix of its public key hash
-contract_address = ICP principal FIX: canister principal ABNF ; canister address to which to make the call
+canister_principal = ICP principal FIX: canister principal ABNF ; canister address to which to make the call
 transaction = ... ; canister method to call FIX: Candid method syntax
 parameters = parameter [ "&" parameter ]
 parameter = key "=" value
@@ -55,31 +55,61 @@ The `transaction` parameter specifies the canister method to be called on the ca
 
 The `parameters` are the parameters of the method to be called. They SHOULD be given in the order in which they appear in the Candid specification of the method to be called. A subset of the parameters defind in the Candid specification of the method can be present, the remaining non-optional parameters MUST be filled in by the party executing the transaction.
 
-Next, we define the parameters required for realizing the supported transactions of the supported ledger standards and their encoding. For each parameter we indicate the standards for which they are required:
-* `from_subaccount` (ICRC-1, ICRC-2): 32-byte subaccount in Base64 representation.
-* `to` (ICRC-1, ICRC-2): The size-reduced human readable [textual representation](https://github.com/dfinity/ICRC-1/blob/main/standards/ICRC-1/TextualEncoding.md) of an ICRC-1 account as specified in this document.
-* `spender` (ICRC-2): The size-reduced human readable [textual representation](https://github.com/dfinity/ICRC-1/blob/main/standards/ICRC-1/TextualEncoding.md) of an ICRC-1 account as specified in this document.
-* `spender_subaccount` (ICRC-2): 32-byte subaccount in Base64 representation.
+### Supported Method Invocations
+
+Next, we define the parameters allowed in the various smart contract methods this standard supports. A subset of the parameters can be specified in the URI, meaning that the remaining paramters need to be filled in by the client (e.g., wallet) in case they are mandatory and can be filled in in case they are optional in the method's specification. Note also that the initiator of the transaction may be specified through the `from` or just the `from_subaccount`. If omitted, they need to be provided by the client application. We give the following example use case scenarios:
+* A payment use case where a shop provides a payment link with `to`, `amount`, and `memo` and the wallet provides the source account through the caller principal and filling in the `from_subaccount` according to user's preferences and sets the `fee` and `created_at_time`. A simple shop use case can also comprise a similar set up with the `amount` being provided by the user and being communicated to the user by the salesperson. This may be a proper setup for a market where the URI is provided as a printed QR code.
+* A token transfer use case triggered by a dapp where the dapp knows the principal and subaccount of the transferring user. In this case, all of `from`, `to`, `amount`,`fee`, and `memo` may be provided in the request and the client application only needs to fill in `created_at_time`. The client application extracts the `from_subaccount` from `from` and the caller principal of the method invocation must match the `principal` of the `from` parameter.
+
+The arguments `from` and `from_subaccount` are always mutually exclusive and both optional.
+
+ICRC-22 focuses on the transmission of the information and does not standardize any application-level flows. And discussions of such are meant as illustrating examples and are not normative.
+
+// FIX text for arguments
+
+#### ICP's transfer
+
+* `from`: The initiator of the transfer, i.e., the spender. Encoded using the [size-reduced human readable textual representation](## Size-reduced-ICRC-1-textual-account-representation) of an ICRC-1 account as specified in this document. Used when the spender is specified by the URI creator already. Must match the recipient of the URI.
+* `from_subaccount` The spender subaccount expressed as 32-byte subaccount in base64 representation. Subaccounts are 32-byte byte arrays and encoded in hexadecimal representation for ICRC-22. Leading zeroes on the left of a subaccount SHOULD be omitted in the encoding. Used when the subaccount from which the funds should be transferred is known by the creator of the URI. Must match the subaccount intended by the recipient.
+* `to`: The [size-reduced human readable textual representation](## Size-reduced-ICRC-1-textual-account-representation) of an ICRC-1 account as specified in this document. Specifies the recipient of the token transfer.
+* `amount` The transaction amount, specified as decimal integer or in scientific representation, e.g., 4.042E8 and 804200000 express the same integer. The number refers to the number of tokens in the base units of the ledger the request is targeted at.
+* `fee`: The fee expressed in base units of the addressed ledger, using scientific notation if appropriate.
+* `memo`: An integer representing the memo.
+* `created_at_time`: The creation time of the transaction expressed as integer timestamp.
+
+#### ICRC1 icrc1_transfer
+
 * `from` (ICRC-2): The size-reduced human readable [textual representation](https://github.com/dfinity/ICRC-1/blob/main/standards/ICRC-1/TextualEncoding.md) of an ICRC-1 account as specified in this document.
+* `from_subaccount` (ICP, ICRC-1, ICRC-2): 32-byte subaccount in Base64 representation.
+* `to` (ICP, ICRC-1, ICRC-2): The size-reduced human readable [textual representation](https://github.com/dfinity/ICRC-1/blob/main/standards/ICRC-1/TextualEncoding.md) of an ICRC-1 account as specified in this document.
+* `amount` (ICP, ICRC-1, ICRC-2): The transaction amount, specified as integer or in scientific representation, e.g., 4.042E8 or 804200000. The number refers to the base units of the ledger the request is targeted at.
+* `fee` (ICP, ICRC-1, ICRC-2): Fee expressed in base units of the addressed ledger, using scientific notation if appropriate.
+* `memo` A byte array expressed as hexadecimal string representing the memo.
+* `created_at_time` (ICP, ICRC-1, ICRC-2): The creation time of the transaction expressed as integer timestamp.
+
+#### ICRC2 icrc2_approve
+
+* `from` (ICRC-2): The size-reduced human readable [textual representation](https://github.com/dfinity/ICRC-1/blob/main/standards/ICRC-1/TextualEncoding.md) of an ICRC-1 account as specified in this document.
+* `from_subaccount` (ICP, ICRC-1, ICRC-2): 32-byte subaccount in Base64 representation.
+* `spender` (ICRC-2): The size-reduced human readable [textual representation](https://github.com/dfinity/ICRC-1/blob/main/standards/ICRC-1/TextualEncoding.md) of an ICRC-1 account as specified in this document.
 * `amount` (ICP, ICRC-1, ICRC-2): The transaction amount, specified as integer or in scientific representation, e.g., 4.042E8 or 804200000. The number refers to the base units of the ledger the request is targeted at.
 * `expected_allowance` (ICRC-2): The amount to be approved, , specified as integer or in scientific representation, e.g., 4.042E8 or 804200000. The number refers to the base units of the ledger the request is targeted at.
 * `expires_at` (ICRC-2): The expiration date of the approval expressed as integer timestamp.
 * `fee` (ICP, ICRC-1, ICRC-2): Fee expressed in base units of the addressed ledger, using scientific notation if appropriate.
-* `memo` (ICP, ICRC-1, ICRC-2): An integer (for ICP transactions) or byte array expressed as hexadecimal string (for ICRC-1 transactions) representing the memo.
+* `memo` A byte array expressed as hexadecimal string representing the memo.
 * `created_at_time` (ICP, ICRC-1, ICRC-2): The creation time of the transaction expressed as integer timestamp.
-* ...
-Accounts are always represented through the size-reduced textual encoding as specified in [Size-Reduced ICRC-1 Textual Account Representationbelow](## Size-reduced-ICRC-1-textual-account-representation) because of the built-in checksum over both the principal and subaccount components of the account and the human readability.
-// FIX complete the list, define the respective encoding, maybe restructure per method
 
-Subaccounts are 32-byte byte arrays and encoded in hexadecimal representation for ICRC-22. Leading zeroes on the left of a subaccount SHOULD be omitted in the encoding.
+Accounts are always represented through the size-reduced textual encoding as specified in [Size-Reduced ICRC-1 Textual Account Representationbelow](## Size-reduced-ICRC-1-textual-account-representation) because of the human readability and the built-in checksum over both the principal and subaccount components of the account.
 
 The `amount` should be provided as a nonnegative integer number. The amount represents the amount of tokens in the base unit used by the ledger, i.e., 4 ICP tokens would amount to 4 * 10^8 = 400000000 base units as managed by the ICP token ledger. It is strongly recommended to use scientific notation for the amount. Decimal representation can be combined with scientific representation, e.g., 4.042E8 ICP means a count of 404200000 base units as managed by the ICP ledger. As only integer numbers are allowed as amount, the exponent MUST be greater than or equal to the decimal places of the number in scientific representation.
 
 ## Generalization Towards Handling a Larger Class of Method Calls
 
-ICRC-22 does not handle generic calls of smart contract methods on ICP, but does allow for handling further requests that are sufficiently similar to the ones captured explicitly. This comprises requests that have parameters that can be represented as query parameters in a URI in a straightforward way and a canonical encoding exists for the parameters.
+// FIX remove
 
-The generic representation of call parameters is done as follows through a canonical encoding of the method parameters as URI query parameters:
+ICRC-22 does not handle generic calls of smart contract methods on ICP, but does allow for handling further requests that are sufficiently similar to the ones captured explicitly. This comprises requests that have arguments that can be represented as query parameters in a URI in a straightforward way and a canonical encoding exists for the argument.
+
+The generic representation of call arguments is done as follows through a canonical encoding of the method parameters as URI query parameters:
 * a `bool` parameter is represented as either `true` or `false`
 * a `text` parameter is represented as a string representing the text
 * a `number` parameter is encoded as the string representation of the decimal number
@@ -146,28 +176,22 @@ Note that `ryjl3-tyaaa-aaaaa-aaaba-cai` is the principal of the ICP ledger.
 
 ### ICRC-1 Token Transfer
 
-// FIX replace 1234abcd90 with a prefix of the SHA256 hash of the mainnet NNS public key in binary
-
-// FIX fill in subaccounts etc. with accounts in the proper format
-
-The following is a payment request for `0.04042` ckBTC on the ckBTC ledger from subaccount `ef` of the caller to the account `k2t6j2nvnp4zjm325dtz6xhaac7boj5gayfoj3xsi43lpteztq6aedfxgiyy.102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20` with memo `1b69b4ba630f34e15fd40af`. The wallet reading and executing this request must insert the `created_at_time` field based on the current time to create a valid ledger transaction. For the representation of the amount, note that 1 ckBTC equals `1E8` (100 million) base units of the ckBTC ledger.
+The following is a payment request for `0.04042` ckBTC on the ckBTC ledger of the caller to the account `k2t6j2nvnp4zjm325dtz6xhaac7boj5gayfoj3xsi43lpteztq6aedfxgiyy.102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20` with memo `1b69b4ba630f34e15fd40af`. The wallet reading and executing this request must insert the `created_at_time` field based on the current time to create a valid ledger transaction. For the representation of the amount, note that 1 ckBTC equals `1E8` (100 million) base units of the ckBTC ledger.
 ```
-icp:737ba355e855bd4b61279056603e0550:mxzaz-hqaaa-aaaar-qaada-cai/exec/icrc1_transfer?from_subaccount=ef&to=k2t6j2nvnp4zjm325dtz6xhaac7boj5gayfoj3xsi43lpteztq6aedfxgiyy.102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20&amount=4.042E6&memo=1b69b4ba630f34e15fd40af
+icp:737ba355e855bd4b61279056603e0550:icrc22:mxzaz-hqaaa-aaaar-qaada-cai/icrc1_transfer?to=k2t6j2nvnp4zjm325dtz6xhaac7boj5gayfoj3xsi43lpteztq6ae-dfxgiyy.102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20&amount=4.042E6&memo=1b69b4ba630f34e15fd40af
 ```
 
 ### ICRC-2 Approval
 
-An ICRC-2 approval can be made on any ICRC-2-compliant ledger, e.g., the ICP ledger or any ICRC-1-compliant token ledger like the ckBTC legder. The following example shows an ICRC-2 approval of `0.04042` ckBTC to account `h2oto-yhzgh-fdd7o-ucdym-dnwul-ihnjb-67dlq-ed3x2-mxzf2-des4t-xqe`. The `fee` and `created_at_time` parameters need to be provided by the wallet.
+An ICRC-2 approval can be made on any ICRC-2-compliant ledger, e.g., the ICP ledger or any ICRC-1-compliant token ledger like the ckBTC legder. The following example shows an ICRC-2 approval of `0.04042` ckBTC to account `h2oto-yhzgh-fdd7o-ucdym-dnwul-ihnjb-67dlq-ed3x2-mxzf2-des4t-xqe`. The `fee` and `created_at_time` arguments need to be provided by the wallet.
 
 ```
-icp:737ba355e855bd4b61279056603e0550:mxzaz-hqaaa-aaaar-qaada-cai/exec/icrc2_approve?from_subaccount=3&spender=h2otoyhzghfdd7oucdymdnwulihnjb67dlqed3x2mxzf2des4txqe&amount=4.042E6&expected_allowance=0&...
+icp:737ba355e855bd4b61279056603e0550:icrc22:mxzaz-hqaaa-aaaar-qaada-cai/exec/icrc2_approve?spender=h2otoyhzghfdd7oucdymdnwulihnjb67dlqed3x2mxzf2des4txqe&amount=4.042E6&memo=1b69b4ba630f34e15fd40ab
 ```
 
 ## Future Work
 
-The current specification is focussed on expressing payment-related requests, concretely payments and approvals related to ICP, ICRC-1, and ICRC-2 standards. The idea can be generalized, like in ERC-681 \[Nag17\] to expressing any smart contract invocation. ERC-681 is handling this generalization with embedded EVM ABI encoded parameters in the URI.
-
-For the Internet Computer, embedding Candid-encoded parameters are the natural way to accomplish this. The remaining issue is that mandatory parameters such as timestamps may need to be filled in by the client, but must be encoded already in the Candid structure to result in valid Candid. This can be handled by encoding a default value, e.g., 0 for a number type, in such cases and providing additional metadata that such element must be replaced by the client. Due to those complexities that still need to be worked out, we do not handle this extension in ICRC-22, but defer it to future work when to be done when use cases demand such functionality.
+The current specification is focussed on expressing token transfer and approval requests for the ICP, ICRC-1, and ICRC-2 token standards. The idea can be generalized, similar to ERC-681 \[Nag17\], to express any canister smart contract method invocation. ERC-681 is handling this generalization with embedded EVM ABI encoded arguments in the URI. For the Internet Computer, embedding Candid- or otherwise encoded arguments into the request is the natural way to accomplish this. The remaining issue is that mandatory parameters such as timestamps may need to be filled in by the client, but must be encoded already in the Candid structure to result in valid Candid. This can be handled by encoding a default value, e.g., 0 for a number type, in such cases and providing additional metadata that such element must be replaced by the client. Due to those complexities that still need to be worked out, we do not handle this extension in ICRC-22, but defer it to future work when to be done when use cases demand such functionality.
 
 ## References
 
