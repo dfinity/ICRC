@@ -6,17 +6,17 @@
 
 ## Introduction
 
-ICRC-22 defines a standard way of representing transaction requests, e.g., for payments or approvals of token transactions, on ICP as URIs. A variety of transport mechanisms can be used to communicate URIs to their recipients, e.g., they can be embedded in QR codes, hyperlinks on Web pages, emails, or chat communication, to obtain robust signalling between loosely-coupled applications. Such pre-defined or on-the-fly generated payment requests can be immediately used by the user's wallet application, where relevant parameters are provided through the URI and further parameters may be filled in by the wallet application or the user themselves. This makes such URI encoding an indispensible tool in a larger blockchain ecosystem to allow for convenient communication of payment-related information over many different communication channels. ICRC-22 clearly focusses on payment-related transactions, but supports a wider range of transactions to be expressed as URIs.
+ICRC-22 defines a standard way of representing transaction requests for payments or approvals of token transactions on ICP as URIs. A variety of transport mechanisms can be used to communicate URIs to their recipients, e.g., they can be embedded in QR codes, hyperlinks on Web pages, emails, or chat communication to obtain robust signalling between loosely-coupled applications. Such either pre-defined or on-the-fly generated payment requests can be immediately used by the user's wallet application, where relevant parameters are provided through the URI and further parameters may be filled in by the wallet application or the user themselves. This makes such URI encoding an indispensible tool in a larger blockchain ecosystem to allow for convenient communication of payment- or approval-related information over a variety of different communication channels. Generic smart contract method calls are left to a future ICRC standard.
 
 Relevant prior work in other blockchain ecosystems comprises the standards on payment URLs for Bitcoin \[Bit1, Bit2\] as well as Ethereum's [ERC-681 \[Nag17\]](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-681.md) for expressing payment requests and, more generally, transactions using EVM ABI encoding, for the Ethereum blockchain. The specification put forth in ICRC-22 is an adaptation of the ideas in the above listed references to establish a standard way of sharing URIs that represent payment and other requests on the Internet Computer.
 
-## Specification for Payments
+## Specification
 
-The below specification defines the syntax and (non-formal) semantics for an ICRC-22 payment request and extension to further requests. The specification takes the approaches of \[Bit1, Bit2, Nag17, WLGH19\] into consideration. Particularly, an authority-less URI format has been chosen following this prior art in the domain.
+The below specification defines the syntax and (non-formal) semantics for ICRC-22 token transfer and approval requests. The specification takes the approaches of \[Bit1, Bit2, Nag17, WLGH19\] into consideration. Particularly, an authority-less URI format has been chosen following this prior art in the domain.
 
 Next, we show the structure of a request URI with the concrete parameters represented through `<>`-placeholders. Note that the URI does not contain an authority, but encodes the `network` and `contract_address` as part of the URI path, directly following the URI scheme.
 ```
-icp:737ba355e855bd4b61279056603e0550:<canister_principal>/exec/icrc1_transfer?enc=plain&from_subaccount=<from_subaccount>&to=<to_account>&amount=<amount>&memo=<memo>
+icp:737ba355e855bd4b61279056603e0550:icrc22:<canister_principal>/icrc1_transfer?to=<to_account>&amount=<amount>&memo=<memo>
 ```
 
 // FIX syntax details
@@ -33,15 +33,11 @@ key = ... ; FIX: Candid parameter name syntax
 value = ... ; FIX Candid encoded value syntax
 ```
 
-// FIX: We should default the network to ICP's mainnet current value when omitted
-The `network` defaults to the identifier `737ba355e855bd4b61279056603e0550` for ICP mainnet. When the network identifier is left out, the prefix of a URI would thus be `icp::<contract_address>/exec/<transaction>?` for the current ICP mainnet. The interpretation of what "current mainnet" is is left to the client. It should refer to the currently active key for mainnet, which can only change in the event of an NNS recovery after a large desaster event that destroys the NNS private threshold key, and thus is considered very stable.
-
-An encoding specifier as initial element of query string defines the kind of encoding used for the parameters. ICRC-22 defines only the encoding `plain`. We envision a future ICRC that uses Candid for encoding any list of parameters, indicated through the `candid` constant. If omitted, the encoding defaults to the `plain` encoding.
-// Do we need to distinguish between payment and generic method defined here?
-
 The grammar productions not further specified above can be looked up in the syntax specification for URIs in RFC 3986 \[BFM05\]. Note that the production `transaction` above is part of the path and `parameters` part of the query string and the according constraints of RFC 3986 apply. // FIX
 
-The `network_identifier` uniquely identifies the ICP network to make the transaction on. Following the ideas of the Chain Agnostic Standards Alliance \[Cha24\] of having a standardized way of referring to any blockchain network, ICP uses the following mechanism for referring to ICP mainnet or any other ICP-based network that may be available in the future, such as testnets or private networks based on the ICP protocol stack ("UTOPIA" private networks).
+The `network` defaults to the identifier `737ba355e855bd4b61279056603e0550` for ICP mainnet following the approach defined by CAIP for specifying blockchain networks. When the network identifier is left out, the network defaults to the current ICP mainnet. In this default case, the prefix of a URI would thus be `icp::icrc22:<contract_address>?`. The interpretation of what "current mainnet" is is left to the client. Semantically, it should refer to the currently active public key for mainnet,. This key can only change in the event of an NNS recovery after a large desaster event that destroys the NNS private threshold key, and thus the key is considered very stable and unlikely to ever change.
+
+The `network` uniquely identifies the ICP network to make the transaction on. Following the ideas of the Chain Agnostic Standards Alliance \[Cha24\] of having a standardized way of referring to any blockchain network, ICP uses the following mechanism for referring to ICP mainnet or any other ICP-based network that may be available in the future, such as testnets or private networks based on the ICP protocol stack ("UTOPIA" private networks).
 The network is identified by a prefix of the the Base16 (HEX) encoding of the SHA256 hash of the binary representation of the DER-encoded public key of the network. In case of a *well-known public network*, an 8-character prefix of the key hash can be used as network identifier, for private networks, a 32-character prefix is used to represent the network. Currently, only ICP mainnet qualifies as a well-known public network, in the future public testnets might be eligible also to be well-known public networks. For ICP mainnet, the public key of the network is the NNS public key:
 ```
 308182301d060d2b0601040182dc7c0503010201060c2b0601040182dc7c05030201036100814c0e6ec71fab583b08bd81373c255c3c371b2e84863c98a4f1e08b74235d14fb5d9c0cd546d9685f913a0c0b2cc5341583bf4b4392e467db96d65b9bb4cb717112f8472e0d5a4d14505ffd7484b01291091c5f87b98883463f98091a0baaae
