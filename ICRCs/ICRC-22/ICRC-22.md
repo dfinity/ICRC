@@ -32,14 +32,12 @@ The `protocol` is always the string `icp` and refers to the namespace for the In
 
 The `network` uniquely identifies the ICP network to make the transaction on. Following the approach of the Chain Agnostic Standards Alliance \[Cha24\] of having a standardized way of referring to any blockchain network, ICP uses the following mechanism for referring to ICP mainnet or any other ICP-based network that may be available in the future, such as testnets or private networks based on the ICP protocol stack ("UTOPIA" private networks):
 The network is identified by a prefix of the the base16 (i.e., hexadecimal) encoding of the SHA256 hash of the binary representation of the current DER-encoded public key of the network.
-// In case of a *well-known public network*, an 8-character prefix of the key hash can be used as network identifier, for private networks, a 32-character prefix is used to represent the network. Currently, only ICP mainnet qualifies as a well-known public network, in the future public testnets might be eligible also to be well-known public networks.
 For ICP mainnet, the public key of the network is the NNS public key:
 ```
 308182301d060d2b0601040182dc7c0503010201060c2b0601040182dc7c05030201036100814c0e6ec71fab583b08bd81373c255c3c371b2e84863c98a4f1e08b74235d14fb5d9c0cd546d9685f913a0c0b2cc5341583bf4b4392e467db96d65b9bb4cb717112f8472e0d5a4d14505ffd7484b01291091c5f87b98883463f98091a0baaae
 ```
 Its 32-character prefix of the HEX-encoded SHA256 hash is `737ba355e855bd4b61279056603e0550`.
 In case of a private ICP deployment, the 32-character prefix of the SHA256 hash of the network's DER-encoded public key is used as network identifier.
-// The approach of expressing network identifiers through the 32-character prefix of the SHA256 hash of their public key is based on the approach proposed by the CAIP initiative, the shorter prefix for well-known networks or the default is a simplification for the most used network(s).
 
 The `network` argument defaults to the identifier `737ba355e855bd4b61279056603e0550` for ICP mainnet if left out. In this default case, the prefix of an ICRC-22 URI thus is `icp::icrc22:<contract_address>/`. The interpretation of what "current mainnet" is is left to the client. Semantically, it refers to the currently active public key for mainnet. This public key can only change in the event of an NNS recovery after a large desaster event that destroys the NNS private threshold key, and thus the key is considered very stable and very unlikely to change.
 
@@ -63,7 +61,7 @@ ICRC-22 focuses on the transmission of the information and does not standardize 
 
 // FIX text for arguments
 
-#### ICP's transfer
+#### ICP transfer
 
 * `from`: The initiator of the transfer, i.e., the spender. Encoded using the [size-reduced human readable textual representation](## Size-reduced-ICRC-1-textual-account-representation) of an ICRC-1 account as specified in this document. Used when the spender is specified by the URI creator already. Must match the initiator of the transfer and the inteded subaccount to transfer the funds from.
 * `from_subaccount` The spender subaccount expressed as 32-byte subaccount in base64 representation. Subaccounts are 32-byte byte arrays and encoded in hexadecimal representation for use in ICRC-22. Leading zeroes on the left of a subaccount SHOULD be omitted in the encoding. Used when the subaccount from which the funds should be transferred is known by the creator of the URI. Must match the subaccount intended by the initiator of the transfer.
@@ -105,26 +103,42 @@ Implementors of ICRC-22 should take note of the different encoding of the `memo`
 
 ## Size-Reduced ICRC-1 Textual Account Representation
 
-The Chain Agnostic Standards Alliance \[Cha24\] has specified account identifiers to be of a maximum length of 128 characters \[Gom22\]. There seems to be no strong reason behind this, but it had been considered sufficient for the foreseeable future by the CAIP working group and is thus a limitation for representing accounts. This limitation cannot be changed at the current time.
+// FIX move into separate ICRC and reference this one from here
 
-ICRC-1 account identifiers on ICP may exceed this limitation of 128 bytes by a few bytes when using the human-readable representation of ICRC-1 accounts, i.e., the textual encoding of ICRC-1 accounts \[Dfi22\]. For this reason, we define a size-reduced textual ICRC-1 account representation as part of this standard in order to fit the CAIP limits of 128 characters.
+// FIX maybe present this in a more formal way
+
+The Chain Agnostic Standards Alliance \[Cha24\] has specified account identifiers to be of a maximum length of 128 characters \[Gom22\]. There seems to be no strong reason behind this, but it had been considered sufficient for the foreseeable future by the CAIP working group and is thus a hard limitation for representing accounts in a CAIP-compliant manner. This limitation cannot be changed at the current time.
+
+ICRC-1 account identifiers on ICP may exceed this limitation of 128 bytes by a few bytes when using the human-readable representation of ICRC-1 accounts, i.e., the textual encoding of ICRC-1 accounts \[Dfi22\]. For this reason, we define a *size-reduced textual ICRC-1 account representation* based on \[Dfi22\] as part of this standard in order to fit the CAIP limits of 128 characters.
+
+### Computing the Size-Reduced Textual Account Representation
 
 The size-reduced representation is easily computed by removing all the dashes ("-") between the character groups of the representation of the principal and checksum, except for the rightmost dash (the one preceding the CRC32 checksum) for non-default accounts (i.e., accounts with a non-zero subaccount). For default accounts (i.e., accounts with the all-zero subaccount), all dashes are removed. It is easy to reconstruct the standard textual encoding from a size-reduced textual encoding by adding dash separators, starting from the left of the representation, for every 5-character group.
 
 It is guaranteed that any ICRC-1 account in size-reduced representation fits into the 128-character limit. The Internet Computer Interface Specification \[Dfi\] specifies the maximum lenght of a textual representation of a principal to be 63 bytes, which includes 10 dashes. The additional CRC32 checksum in Base32 encoding takes another 7 characters, its preceding dash separator one. This makes the maximum length of the size-reduced representation 126 characters: 63 for the maximum-length principal in textual encoding - 10 for separators + 1 for the checksum "-"-separator + 7 for the CRC32 checksum + 1 for the subaccount "."-separator + 64 for the subaccount in hexadecimal representation.
 
+### Computing the Textual Account Representation
+
+The transformation from a size-reduced textual account representation back to a regular ICRC-1 textual account representation is done by adding dashes (`-`-characters) after every group of 5 characters in the part left of the `.` character, starting from the left side until a final group of at most 5 characters before the `.` or before the `-` preceding the checksum of the textual account representation is reached.
+
+### Example
+
 The following is an example of an almost maximum-length textual representation that exceeds the size limits imposed by CAIP with its length of 135 characters.
 ```
 k2t6j-2nvnp-4zjm3-25dtz-6xhaa-c7boj-5gayf-oj3xs-i43lp-teztq-6ae-dfxgiyy.102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20
 ```
-The following is the above example in size-reduced form and fits within the 128-character limit with its length of 125 characters. Note that the final dash in the first part (the part left of the `.`) is retained as it separates the principal from the checksum of the account representation.
+The following is the above example in size-reduced form and fits within the 128-character limit with its length of 125 characters. Note that the final dash in the first part (the part left of the `.`) is retained as it separates the principal from the checksum of the account representation and makes the inverse mapping simpler.
 ```
 k2t6j2nvnp4zjm325dtz6xhaac7boj5gayfoj3xsi43lpteztq6ae-dfxgiyy.102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20
 ```
-This size-reduced representation can easily be transformed back to the original textual representation as defined in \[Dfi22\] by adding dashes every group of 5 characters from the left. Note that the rightmost character group left of the checksum can have less than 5 characters.
+This size-reduced representation can easily be transformed back to the original textual representation as defined in \[Dfi22\] by adding dashes every group of 5 characters from the left in the part left of the `.` until either an existing `-` or the `.`-separator is reached (i.e., less than or equal to 5 characters are remaining). Note that the rightmost character group left of the checksum or `.` can have less than 5 characters in the general case.
 ```
 k2t6j-2nvnp-4zjm3-25dtz-6xhaa-c7boj-5gayf-oj3xs-i43lp-teztq-6ae-dfxgiyy.102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20
 ```
+
+### Notes
+
+The approach of computing the size-reduced representation has been specified to build upon a textual account representation as starting point. It is easy to derive an algorithm to compute the size-reduced account representation from its basic constituents, a principal byte array and a subaccount byte array, if implementors so prefer.
 
 ## Data Compression
 
@@ -137,10 +151,6 @@ When compression of URIs for transfer in QR codes is used, it MUST be performed 
 The following examples show the application of ICRC-22 for ICP transfer, ICRC-1 transfer, and ICRC-2 approval use cases.
 
 ### ICP Token Transfer
-
-```
-icp:<network>:ryjl3-tyaaa-aaaaa-aaaba-cai/exec/transfer?from_subaccount=<subaccount>&to=<icp_account>&amount=4.042E8&memo=<memo>
-```
 
 The following shows an example of a transfer request of `4.042` ICP using on the ICP token ledger to `61342bfbd397f0c36c5da1f9661b802db60a20e973012c99903fc8637b5bf32b` with `memo` being the natural number `9812345670123456`, where `to` (the recipient account id), `amount`, and `memo` are specified, while the `from_subaccount`, `fee`, and `created_at_time` are provided by the client application (e.g., a wallet).
 ```
