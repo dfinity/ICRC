@@ -69,39 +69,41 @@ ICRC-22 focuses on the transmission of the information and does not standardize 
 
 #### ICP's transfer
 
-* `from`: The initiator of the transfer, i.e., the spender. Encoded using the [size-reduced human readable textual representation](## Size-reduced-ICRC-1-textual-account-representation) of an ICRC-1 account as specified in this document. Used when the spender is specified by the URI creator already. Must match the recipient of the URI.
-* `from_subaccount` The spender subaccount expressed as 32-byte subaccount in base64 representation. Subaccounts are 32-byte byte arrays and encoded in hexadecimal representation for ICRC-22. Leading zeroes on the left of a subaccount SHOULD be omitted in the encoding. Used when the subaccount from which the funds should be transferred is known by the creator of the URI. Must match the subaccount intended by the recipient.
-* `to`: The [size-reduced human readable textual representation](## Size-reduced-ICRC-1-textual-account-representation) of an ICRC-1 account as specified in this document. Specifies the recipient of the token transfer.
-* `amount` The transaction amount, specified as decimal integer or in scientific representation, e.g., 4.042E8 and 804200000 express the same integer. The number refers to the number of tokens in the base units of the ledger the request is targeted at.
-* `fee`: The fee expressed in base units of the addressed ledger, using scientific notation if appropriate.
-* `memo`: An integer representing the memo.
+* `from`: The initiator of the transfer, i.e., the spender. Encoded using the [size-reduced human readable textual representation](## Size-reduced-ICRC-1-textual-account-representation) of an ICRC-1 account as specified in this document. Used when the spender is specified by the URI creator already. Must match the initiator of the transfer and the inteded subaccount to transfer the funds from.
+* `from_subaccount` The spender subaccount expressed as 32-byte subaccount in base64 representation. Subaccounts are 32-byte byte arrays and encoded in hexadecimal representation for use in ICRC-22. Leading zeroes on the left of a subaccount SHOULD be omitted in the encoding. Used when the subaccount from which the funds should be transferred is known by the creator of the URI. Must match the subaccount intended by the initiator of the transfer.
+* `to`: The recipient of the token transfer. Encoded as an ICP account identifier.
+* `amount` The amount of tokens to be transferred. The number refers to the number of tokens in the base units of the ledger the request is targeted at. Specified as decimal integer or in scientific representation, e.g., 4.042E8 and 804200000 express the same integer.
+* `fee`: The fee for the transfer. The number refers to the number of tokens in the base units of the ledger the request is targeted at. Specified as decimal integer or in scientific representation.
+* `memo`: A decimal non-negative integer representing the memo.
 * `created_at_time`: The creation time of the transaction expressed as integer timestamp.
 
 #### ICRC1 icrc1_transfer
 
-* `from` (ICRC-2): The size-reduced human readable [textual representation](https://github.com/dfinity/ICRC-1/blob/main/standards/ICRC-1/TextualEncoding.md) of an ICRC-1 account as specified in this document.
-* `from_subaccount` (ICP, ICRC-1, ICRC-2): 32-byte subaccount in Base64 representation.
-* `to` (ICP, ICRC-1, ICRC-2): The size-reduced human readable [textual representation](https://github.com/dfinity/ICRC-1/blob/main/standards/ICRC-1/TextualEncoding.md) of an ICRC-1 account as specified in this document.
-* `amount` (ICP, ICRC-1, ICRC-2): The transaction amount, specified as integer or in scientific representation, e.g., 4.042E8 or 804200000. The number refers to the base units of the ledger the request is targeted at.
-* `fee` (ICP, ICRC-1, ICRC-2): Fee expressed in base units of the addressed ledger, using scientific notation if appropriate.
+* `from` The initiator of the transfer, i.e., the spender. Encoded using the [size-reduced human readable textual representation](## Size-reduced-ICRC-1-textual-account-representation) of an ICRC-1 account as specified in this document. Used when the spender is specified by the URI creator already. Must match the initiator of the transfer and the inteded subaccount to transfer the funds from.
+* `from_subaccount` The spender subaccount expressed as 32-byte subaccount in base64 representation. Subaccounts are 32-byte byte arrays and encoded in hexadecimal representation for use in ICRC-22. Leading zeroes on the left of a subaccount SHOULD be omitted in the encoding. Used when the subaccount from which the funds should be transferred is known by the creator of the URI. Must match the subaccount intended by the initiator of the transfer.
+* `to` The recipient of the token transfer. Encoded using the [size-reduced human readable textual representation](## Size-reduced-ICRC-1-textual-account-representation) of an ICRC-1 account as specified in this document.
+* `amount` The amount of tokens to be transferred. The number refers to the number of tokens in the base units of the ledger the request is targeted at. Specified as decimal integer or in scientific representation, e.g., 4.042E8 and 804200000 express the same integer.
+* `fee` The fee for the transfer. The number refers to the number of tokens in the base units of the ledger the request is targeted at. Specified as decimal integer or in scientific representation.
 * `memo` A byte array expressed as hexadecimal string representing the memo.
-* `created_at_time` (ICP, ICRC-1, ICRC-2): The creation time of the transaction expressed as integer timestamp.
+* `created_at_time` The creation time of the transaction expressed as integer timestamp.
 
 #### ICRC2 icrc2_approve
 
-* `from` (ICRC-2): The size-reduced human readable [textual representation](https://github.com/dfinity/ICRC-1/blob/main/standards/ICRC-1/TextualEncoding.md) of an ICRC-1 account as specified in this document.
-* `from_subaccount` (ICP, ICRC-1, ICRC-2): 32-byte subaccount in Base64 representation.
-* `spender` (ICRC-2): The size-reduced human readable [textual representation](https://github.com/dfinity/ICRC-1/blob/main/standards/ICRC-1/TextualEncoding.md) of an ICRC-1 account as specified in this document.
-* `amount` (ICP, ICRC-1, ICRC-2): The transaction amount, specified as integer or in scientific representation, e.g., 4.042E8 or 804200000. The number refers to the base units of the ledger the request is targeted at.
+* `from` The initiator of the approval. Encoded using the [size-reduced human readable textual representation](## Size-reduced-ICRC-1-textual-account-representation) of an ICRC-1 account as specified in this document. Used when the spender is specified by the URI creator already. Must match the initiator of the transfer and the inteded subaccount to transfer the funds from.
+* `from_subaccount` The source subaccount expressed as 32-byte subaccount in base64 representation. Subaccounts are 32-byte byte arrays and encoded in hexadecimal representation for use in ICRC-22. Leading zeroes on the left of a subaccount SHOULD be omitted in the encoding. Used when the subaccount from which the funds should be transferred is known by the creator of the URI. Must match the subaccount intended by the initiator of the transfer.
+* `spender` (ICRC-2): The spender of the approved funds. Encoded using the [size-reduced human readable textual representation](## Size-reduced-ICRC-1-textual-account-representation) of an ICRC-1 account as specified in this document.
+* `amount` The amount of tokens to be transferred. The number refers to the number of tokens in the base units of the ledger the request is targeted at. Specified as decimal integer or in scientific representation, e.g., 4.042E8 and 804200000 express the same integer.
 * `expected_allowance` (ICRC-2): The amount to be approved, , specified as integer or in scientific representation, e.g., 4.042E8 or 804200000. The number refers to the base units of the ledger the request is targeted at.
 * `expires_at` (ICRC-2): The expiration date of the approval expressed as integer timestamp.
-* `fee` (ICP, ICRC-1, ICRC-2): Fee expressed in base units of the addressed ledger, using scientific notation if appropriate.
+* `fee` The fee for the transfer. The number refers to the number of tokens in the base units of the ledger the request is targeted at. Specified as decimal integer or in scientific representation.
 * `memo` A byte array expressed as hexadecimal string representing the memo.
-* `created_at_time` (ICP, ICRC-1, ICRC-2): The creation time of the transaction expressed as integer timestamp.
+* `created_at_time` The creation time of the transaction expressed as integer timestamp.
 
 Accounts are always represented through the size-reduced textual encoding as specified in [Size-Reduced ICRC-1 Textual Account Representationbelow](## Size-reduced-ICRC-1-textual-account-representation) because of the human readability and the built-in checksum over both the principal and subaccount components of the account.
 
 The `amount` should be provided as a nonnegative integer number. The amount represents the amount of tokens in the base unit used by the ledger, i.e., 4 ICP tokens would amount to 4 * 10^8 = 400000000 base units as managed by the ICP token ledger. It is strongly recommended to use scientific notation for the amount. Decimal representation can be combined with scientific representation, e.g., 4.042E8 ICP means a count of 404200000 base units as managed by the ICP ledger. As only integer numbers are allowed as amount, the exponent MUST be greater than or equal to the decimal places of the number in scientific representation.
+
+The arguments `expires_at`, `fee`, and `created_at_time` will in most use cases likely be set by the client application and not be contained in the URI.
 
 ## Generalization Towards Handling a Larger Class of Method Calls
 
@@ -154,9 +156,9 @@ k2t6j-2nvnp-4zjm3-25dtz-6xhaa-c7boj-5gayf-oj3xs-i43lp-teztq-6ae-dfxgiyy.10203040
 
 ## Data Compression
 
-Depending on the transport mechanism used, data compression of the URI resulting from the encoding MAY be used to reduce the size of the message to be sent over the transport. This is particularly important for QR codes used as transport mechanism as they have limited bandwidth and larger QR codes are harder to scan.
+Depending on the transport mechanism intended to be used, data compression of the URI resulting from the encoding MAY be used to reduce the size of the message to be sent over the transport. This is particularly important for QR codes used as transport mechanism as they have limited bandwidth and larger QR codes are harder to scan.
 
-Compression of URIs for transfer in QR codes, if used, MUST be performed using the gzip algorithm. This algorithm is reasonably simple and native implementations are available in many languages and have a small code size, thus it is easy to implement this feature in both tools and canister smart contracts without too much bloat. Future standards may add additional compression algorithms with better compression ratios such as zstd or Brotli.
+Compression of URIs for transfer in QR codes, if used, MUST be performed using the gzip algorithm. This algorithm is reasonably simple and native implementations are available in many languages and have a small code size, thus it is easy to implement this feature in both tools and canister smart contracts without too much bloat. Future standards may add additional compression algorithms with better compression ratios such as zstd or Brotli, with the drawbacks of much larger code size and not as widespread open source implementations being available.
 
 ## Examples
 
