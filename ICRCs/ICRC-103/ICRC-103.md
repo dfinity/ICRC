@@ -32,7 +32,7 @@ Metadata entries can be retrieved using method `icrc1_metadata` defined by the I
 Some of the types used are shared with standards ICRC-1 and ICRC-2; we restate their definition for completeness.
 
 ```candid
-icrc103_get_allowances : (GetAllowancesArgs) -> (GetAllowancesResult) query
+icrc103_get_allowances : (GetAllowancesArgs) -> (variant{Ok: Allowances, Err: GetAllowancesError}) query
 
 type GetAllowancesArgs = record {
     from_account : opt Account;
@@ -40,7 +40,13 @@ type GetAllowancesArgs = record {
     take : opt nat;
 }
 
-type GetAllowancesResult = vec record {
+type GetAllowancesError = variant{
+    AccessDenied : text;
+    GenericError : record { error_code : nat; message : text };
+}
+
+
+type Allowances = vec record {
     from_account : Account;
     to_spender : Account;
     allowance : nat;
@@ -66,7 +72,7 @@ The `icrc103_get_allowances` method behaves as follows:
 * If `from_account` is not provided, it is instantiated as `Account{caller_principal, first_subaccount}`.  
 * If `from_account.subaccount` is not provided, it is instantiated with `first_subaccount`.
 
-If the ledger implements the private version of the standard, the endpoint returns an empty list when `from_account.owner ≠ caller_principal`.
+If the ledger implements the private version of the standard, the endpoint returns an `AccessDenied` if `from_account.owner ≠ caller_principal`.
 
 Otherwise, the endpoint returns a list of records of the form `(account_1, account_2, allowance)` in lexicographic order, with `account_1.owner = from_account.owner`.
  * If `prev_spender` is provided the list starts with the allowance immediately succeeding `(from_account, prev_spender)`.
