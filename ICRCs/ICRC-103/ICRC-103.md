@@ -6,7 +6,10 @@
 
 ## 1. Introduction
 
-Although calls to the `icrc2_approve` and `icrc2_transfer_from` methods are recorded in the ledger, it is not possible to determine the allowances that are in effect at some point in time, except by traversing the entire ledger.  This standard introduces an endpoint which will return this information thus making the management of allowances feasible.
+The `icrc2_allowance` method can be used to get the allowance between specific pairs of accounts on the ledger. However, retrieving all allowances associated with a principal is challenging because it requires knowledge of the various subaccounts and spender information linked to that principal. Additionally, while calls to the `icrc2_approve` and `icrc2_transfer_from` methods are recorded in the ledger, determining which allowances are currently in effect would require traversing the entire ledger. This standard addresses these challenges by introducing an endpoint that allows querying all outstanding allowances related to a specific account, thus facilitating comprehensive and efficient allowance management.
+
+
+
 
 ICRC-103 is an extension of the ICRC-2 standard.  
 ICRC-103 specifies a way to list outstanding allowances.
