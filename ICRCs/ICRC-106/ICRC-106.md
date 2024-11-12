@@ -28,7 +28,8 @@ Additionally, the ledger MUST provide the following metadata entries accessible 
 - `icrc106:index_principal` (text): The textual representation of the principal of the associated index canister.
 - `icrc106:index_canister_interface` (text): A URL pointing to the Candid interface definition of the index canister.
 
-These metadata entries allow clients to discover and interact with the index canister associated with a ledger.
+These metadata entries allow clients to discover and interact with the index canister associated with a ledger and can be retrieved using method `icrc1_metadata` defined by the ICRC-1 standard.
+
 
 Compliant ledgers MAY also implement the following optional endpoint for programmatically retrieving the index principal:
 
