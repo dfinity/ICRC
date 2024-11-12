@@ -23,10 +23,9 @@ A ledger implementing ICRC-106 MUST include the following entry in the output of
 record { name = "ICRC-106"; url = "https://github.com/dfinity/ICRC-1/standards/ICRC-106" }
 ```
 
-Additionally, the ledger MUST provide the following metadata entries accessible via the `icrc1_metadata` method:
+Additionally, the ledger MUST provide the following metadata entry retrievable via the `icrc1_metadata` method:
 
 - `icrc106:index_principal` (text): The textual representation of the principal of the associated index canister.
-- `icrc106:index_canister_interface` (text): A URL pointing to the Candid interface definition of the index canister.
 
 These metadata entries allow clients to discover and interact with the index canister associated with a ledger and can be retrieved using method `icrc1_metadata` defined by the ICRC-1 standard.
 
@@ -43,6 +42,10 @@ The index canister associated with the ledger is expected to implement the follo
 
 ```candid
 type Tokens = nat;
+
+type BlockIndex = nat;
+
+type SubAccount = blob;
 
 type Account = record {
     owner: principal;
@@ -75,10 +78,21 @@ type GetTransactionsResult = variant {
     Err: record { message: text; };
 };
 
+type ListSubaccountsArgs = record {
+    owner: principal;
+    start: opt SubAccount;
+};
+
+type Status = record {
+    num_blocks_synced : BlockIndex;
+};
+
 service : {
     get_account_transactions: (GetAccountTransactionsArgs) -> (GetTransactionsResult) query;
     icrc1_balance_of: (Account) -> (Tokens) query;
     ledger_id: () -> (principal) query;
+    list_subaccounts : (ListSubaccountsArgs) -> (vec SubAccount) query;
+    status : () -> (Status) query;
 }
 ```
 
