@@ -96,13 +96,63 @@ service : {
 }
 ```
 
-This interface defines the minimal set of methods that index canisters must support for integration.  The behavior of the methods that are offered is as follows. 
+
+# Methods Provided by the Index Canister
+
+The index canister provides methods to facilitate querying of transaction history and metadata associated with accounts. Below is a description of the relevant methods specified in this standard, including their purpose, input, output, and typical use case.
+
+---
+
+## get_account_transactions
+- **Purpose**: Retrieves transactions associated with a specific account, starting from a specified block index and returning up to a maximum number of results. Transactions are returned in **reverse chronological order** (newest to oldest).
+- **Input**:
+  - `account`: The account (principal and optional subaccount) for which transactions are to be fetched.
+  - `start`: *(Optional)* The block index of the most recent transaction the client has already seen. If provided, only transactions with block indices **less than** this value will be returned.
+  - `max_results`: The maximum number of transactions to return.
+- **Output**:
+  - **`Ok`**: Returns a record containing:
+    - `balance`: The current token balance of the account.
+    - `transactions`: A vector of `TransactionWithId`, each containing:
+      - `id`: The block index of the transaction.
+      - `transaction`: Details of the transaction (burn, transfer, approval, and timestamp).
+    - `oldest_tx_id`: *(Optional)* The block index of the oldest transaction for the account, or `None` if no transactions exist.
+  - **`Err`**: Returns an error message explaining why the request could not be completed (e.g., invalid input).
+- **Typical Use Case**: This method is often used by wallets to display transaction history and update account balances. It also supports paginated transaction retrieval for efficient history browsing.
+
+---
+
+## ledger_id
+- **Purpose**: Retrieves the principal of the ledger canister that the index is linked to.
+- **Input**: None.
+- **Output**: The `principal` of the ledger canister.
+- **Typical Use Case**: This method is primarily used for validating the relationship between the index and the ledger, ensuring they are correctly linked, and facilitating integrations requiring the ledger’s identity.
+
+---
+
+## list_subaccounts
+- **Purpose**: Lists all subaccounts associated with a specified principal.
+- **Input**:
+  - `owner`: The principal for which to list subaccounts.
+  - `start`: *(Optional)* Specifies the subaccount to start listing from. Only subaccounts lexicographically greater than `start` will be included.
+- **Output**: A vector of `SubAccount`, each representing a subaccount under the specified principal.
+- **Typical Use Case**: Useful for wallets or tools that need to enumerate all subaccounts associated with a user, providing insight into the structure and organization of user funds.
+
+---
+
+## status
+- **Purpose**: Retrieves the synchronization and operational status of the index canister.
+- **Input**: None.
+- **Output**: A `Status` record containing:
+  - `num_blocks_synced`: The total number of blocks that have been successfully synchronized by the index canister.
+- **Typical Use Case**: Used for monitoring the health and synchronization status of the index, this method is helpful for determining whether the index has fully caught up with the ledger and is operational.
+
+
+
 
 ## 4. Implementation Considerations
 
 Implementers should ensure that:
 - The `icrc106:index_principal` metadata entry accurately reflects the principal of the associated index canister.
-- The `icrc106:index_canister_interface` metadata entry points to a location where the Candid interface definition of the index canister is accessible.
 - Any changes to the index canister interface should maintain backward compatibility.
 
 By adhering to ICRC-106, ledger canisters provide a standardized mechanism for clients to discover and interact with their associated index canisters, improving integration and user experience within the Internet Computer ecosystem.
