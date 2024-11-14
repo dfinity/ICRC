@@ -12,7 +12,7 @@ Wallet applications and token management tools often need to retrieve both token
 1. Indicating the presence of an index canister for ICRC-1 tokens through ledger metadata.
 2. Defining a minimal interface for the index canister to facilitate querying transaction history in a consistent manner.
 
-This draft standard aims to improve interoperability, simplify wallet integrations, and enable token-related applications to reliably access transaction histories.  It will act as a placeholder and documentation source until a more comprehensive standard for index canisters will be developed.
+This draft standard aims to improve interoperability, simplify wallet integrations, and enable token-related applications to reliably access transaction histories.  It acts as a placeholder and documentation source until a more comprehensive standard for index canisters will be developed.
 
 
 ## 2. Metadata
@@ -116,8 +116,18 @@ The index canister provides methods to facilitate querying of transaction histor
       - `id`: The block index of the transaction.
       - `transaction`: Details of the transaction (burn, transfer, approval, and timestamp).
     - `oldest_tx_id`: *(Optional)* The block index of the oldest transaction for the account, or `None` if no transactions exist.
-  - **`Err`**: Returns an error message explaining why the request could not be completed (e.g., invalid input).
 - **Typical Use Case**: This method is often used by wallets to display transaction history and update account balances. It also supports paginated transaction retrieval for efficient history browsing.
+
+---
+
+## list_subaccounts
+- **Purpose**: Lists all subaccounts associated with a specified principal.
+- **Input**:
+  - `owner`: The principal for which to list subaccounts.
+  - `start`: *(Optional)* Specifies the subaccount to start listing from. Only subaccounts lexicographically greater than `start` will be included. If start is omitted, the method will return all subaccounts from the beginning of the list, ordered lexicographically.
+- **Output**: A vector of `SubAccount`, each representing a subaccount under the specified principal. The list will be empty if the principal has not used subaccounts, or if there are no subaccounts lexicographically higher than `start`.
+- **Typical Use Case**: Useful for wallets or tools that need to enumerate all subaccounts associated with a user, providing insight into the structure and organization of user funds.
+
 
 ---
 
@@ -127,15 +137,6 @@ The index canister provides methods to facilitate querying of transaction histor
 - **Output**: The `principal` of the ledger canister.
 - **Typical Use Case**: This method is primarily used for validating the relationship between the index and the ledger, ensuring they are correctly linked, and facilitating integrations requiring the ledger’s identity.
 
----
-
-## list_subaccounts
-- **Purpose**: Lists all subaccounts associated with a specified principal.
-- **Input**:
-  - `owner`: The principal for which to list subaccounts.
-  - `start`: *(Optional)* Specifies the subaccount to start listing from. Only subaccounts lexicographically greater than `start` will be included.
-- **Output**: A vector of `SubAccount`, each representing a subaccount under the specified principal.
-- **Typical Use Case**: Useful for wallets or tools that need to enumerate all subaccounts associated with a user, providing insight into the structure and organization of user funds.
 
 ---
 
