@@ -20,7 +20,7 @@ This draft standard aims to improve interoperability, simplify wallet integratio
 A ledger implementing ICRC-106 MUST include the following entry in the output of the `icrc1_supported_standards` method:
 
 ```candid
-record { name = "ICRC-106"; url = "https://github.com/dfinity/ICRC-1/standards/ICRC-106" }
+record { name = "ICRC-106"; url = "https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-106" }
 ```
 
 Additionally, the ledger MUST provide the following metadata entry retrievable via the `icrc1_metadata` method:
