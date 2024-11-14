@@ -12,7 +12,7 @@ Wallet applications and token management tools often need to retrieve both token
 1. Indicating the presence of an index canister for ICRC-1 tokens through ledger metadata.
 2. Defining a minimal interface for the index canister to facilitate querying transaction history in a consistent manner.
 
-This standard aims to improve interoperability, simplify wallet integrations, and enable token-related applications to reliably access transaction histories.
+This draft standard aims to improve interoperability, simplify wallet integrations, and enable token-related applications to reliably access transaction histories.  It will act as a placeholder and documentation source until a more comprehensive standard for index canisters will be developed.
 
 
 ## 2. Metadata
@@ -30,7 +30,7 @@ Additionally, the ledger MUST provide the following metadata entry retrievable v
 These metadata entries allow clients to discover and interact with the index canister associated with a ledger and can be retrieved using method `icrc1_metadata` defined by the ICRC-1 standard.
 
 
-Compliant ledgers MAY also implement the following optional endpoint for programmatically retrieving the index principal:
+Compliant ledgers MUST also implement the following endpoint for programmatically retrieving the index principal:
 
 ```candid
 icrc106_get_index_principal: () -> (principal) query;
@@ -96,7 +96,7 @@ service : {
 }
 ```
 
-This interface defines the minimal set of methods that index canisters must support for integration.
+This interface defines the minimal set of methods that index canisters must support for integration.  The behavior of the methods that are offered is as follows. 
 
 ## 4. Implementation Considerations
 
