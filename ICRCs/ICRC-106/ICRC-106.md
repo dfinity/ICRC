@@ -188,12 +188,16 @@ The index canister provides methods to facilitate querying of transaction histor
 - **Typical Use Case**: Used for monitoring the health and synchronization status of the index, this method is helpful for determining whether the index has fully caught up with the ledger and is operational.
 
 
-## Undocumented Methods
-The index canister described in this standard implements several methods beyond those explicitly documented here. While `get_account_transactions`, `list_subaccounts`, `ledger_id`, and `status` are the primary focus of this standard due to their direct relevance to wallet services, the following methods are also part of the index canister interface:
+## Optional Methods
 
-* `get_blocks`: Allows fetching raw block data for a specified range of indices.
-* `get_fee_collectors_ranges`: Provides detailed information about fee collection, including the accounts and block ranges associated with collected fees.
-* `icrc1_balance_of`: Enables querying the token balance of specific accounts.
+While the methods defined in this standard are sufficient for compliance with ICRC-106, certain implementations of the index canister may include additional methods to extend functionality. These methods are not required by ICRC-106 but may be present for advanced use cases:
+
+- **`get_blocks`**: Fetches raw block data for a specified range of indices. This is useful for applications requiring detailed historical data.
+- **`get_fee_collectors_ranges`**: Provides detailed information about fee collection, including accounts and associated block ranges.
+- **`icrc1_balance_of`**: Queries the token balance of specific accounts. This method is commonly used for token management in wallets and tools.
+
+These methods, while potentially helpful, are outside the scope of ICRC-106 and are not guaranteed to be present in all index canisters. Developers should refer to the documentation of the specific implementation they are working with for details on these optional methods.
+
 
 
 
