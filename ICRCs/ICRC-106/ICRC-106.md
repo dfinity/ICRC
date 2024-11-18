@@ -36,9 +36,17 @@ Compliant ledgers MUST also implement the following endpoint for programmaticall
 icrc106_get_index_principal: () -> (principal) query;
 ```
 
+The metadata entry `icrc106:index_principal` and the `icrc106_get_index_principal` method MUST provide consistent information. Specifically:
+
+- The `icrc106:index_principal` metadata entry MUST represent the textual form of the principal returned by the `icrc106_get_index_principal` method.  
+- The `icrc106_get_index_principal` method MUST return the principal corresponding to the index canister associated with the ledger, as specified in the `icrc106:index_principal` metadata entry.
+
+This requirement ensures that both mechanisms reliably point to the same index canister. Implementations
+
+
 ## 3. Index Canister Interface
 
-The index canister associated with the ledger is expected to implement the following minimal Candid interface:
+The index canister associated with the ledger SHOULD implement the following minimal Candid interface:
 
 ```candid
 type Tokens = nat;
@@ -49,31 +57,63 @@ type SubAccount = blob;
 
 type Account = record {
     owner: principal;
-    subaccount: opt blob;
+    subaccount: opt SubAccount;
 };
 
 type GetAccountTransactionsArgs = record {
     account: Account;
-    start: opt nat; // The block index of the last transaction seen by the client.
+    start: opt BlockIndex; // The block index of the last transaction seen by the client.
     max_results: nat; // Maximum number of transactions to fetch.
 };
 
+type Burn = record {
+    from : Account;
+    memo : opt vec nat8;
+    created_at_time : opt nat64;
+    amount : nat;
+    spender : opt Account;
+};
+
+type Transfer = record {
+    to : Account;
+    fee : opt nat;
+    from : Account;
+    memo : opt vec nat8;
+    created_at_time : opt nat64;
+    amount : nat;
+    spender : opt Account;
+};
+
+type Approve = record {
+    fee : opt nat;
+    from : Account;
+    memo : opt vec nat8;
+    created_at_time : opt nat64;
+    amount : nat;
+    expected_allowance : opt nat;
+    expires_at : opt nat64;
+    spender : Account;
+};
+
 type Transaction = record {
-    burn: opt record { from: Account; amount: nat; };
-    transfer: opt record { from: Account; to: Account; amount: nat; };
-    approve: opt record { from: Account; spender: Account; amount: nat; };
-    timestamp: nat64; // Timestamp of the transaction.
+    burn : opt Burn;
+    kind : text;
+    mint : opt Mint;
+    approve : opt Approve;
+    timestamp : nat64;
+    transfer : opt Transfer;
 };
 
 type TransactionWithId = record {
-    id: nat; // Block index of the transaction.
-    transaction: Transaction;
+    id : BlockIndex;
+    transaction : Transaction;
 };
 
 type GetTransactionsResult = variant {
     Ok: record {
         balance: Tokens; // Current balance of the account.
         transactions: vec TransactionWithId; // List of transactions.
+        oldest_tx_id : opt BlockIndex; // The txid of the oldest transaction the account has.
     };
     Err: record { message: text; };
 };
@@ -89,12 +129,12 @@ type Status = record {
 
 service : {
     get_account_transactions: (GetAccountTransactionsArgs) -> (GetTransactionsResult) query;
-    icrc1_balance_of: (Account) -> (Tokens) query;
     ledger_id: () -> (principal) query;
     list_subaccounts : (ListSubaccountsArgs) -> (vec SubAccount) query;
     status : () -> (Status) query;
 }
 ```
+
 
 
 # Methods Provided by the Index Canister
@@ -147,6 +187,13 @@ The index canister provides methods to facilitate querying of transaction histor
   - `num_blocks_synced`: The total number of blocks that have been successfully synchronized by the index canister.
 - **Typical Use Case**: Used for monitoring the health and synchronization status of the index, this method is helpful for determining whether the index has fully caught up with the ledger and is operational.
 
+
+## Undocumented Methods
+The index canister described in this standard implements several methods beyond those explicitly documented here. While `get_account_transactions`, `list_subaccounts`, `ledger_id`, and `status` are the primary focus of this standard due to their direct relevance to wallet services, the following methods are also part of the index canister interface:
+
+* `get_blocks`: Allows fetching raw block data for a specified range of indices.
+* `get_fee_collectors_ranges`: Provides detailed information about fee collection, including the accounts and block ranges associated with collected fees.
+* `icrc1_balance_of`: Enables querying the token balance of specific accounts.
 
 
 
