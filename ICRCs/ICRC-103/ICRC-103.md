@@ -17,7 +17,7 @@ ICRC-103 specifies a way to list outstanding allowances.
 
 ## 2. Metadata
 
-A ledger that implements ICRC-103 MUST include `record {name = "ICRC-103"; url = "https://github.com/dfinity/ICRC-1/standards/ICRC-103"}` as part of the output of `icrc1_supported_standards`.
+A ledger that implements ICRC-103 MUST include `record {name = "ICRC-103"; url = ""https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-106""}` as part of the output of `icrc1_supported_standards`.
 
 The endpoint introduced in this standard operates in two ways.  In the public version any principal can obtain the outstanding allowances of any other principal. In the private version, the allowances returned by the endpoint must have been issued by the caller (i.e. the caller is the principal controlling the source account of an allowance.)
 Which version of the standard is implemented by a ledger is specified through the `icrc103:public_allowances` metadata.
