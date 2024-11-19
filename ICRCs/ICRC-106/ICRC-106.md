@@ -41,7 +41,7 @@ The metadata entry `icrc106:index_principal` and the `icrc106_get_index_principa
 - The `icrc106:index_principal` metadata entry MUST represent the textual form of the principal returned by the `icrc106_get_index_principal` method.  
 - The `icrc106_get_index_principal` method MUST return the principal corresponding to the index canister associated with the ledger, as specified in the `icrc106:index_principal` metadata entry.
 
-This requirement ensures that both mechanisms reliably point to the same index canister. Implementations
+This requirement ensures that both mechanisms reliably point to the same index canister. 
 
 
 ## 3. Index Canister Interface
