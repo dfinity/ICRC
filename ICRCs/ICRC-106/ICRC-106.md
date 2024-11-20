@@ -53,7 +53,7 @@ type Tokens = nat;
 
 type BlockIndex = nat;
 
-type SubAccount = blob;
+type Subaccount = blob;
 
 type Account = record {
     owner: principal;
