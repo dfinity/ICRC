@@ -128,7 +128,7 @@ type Status = record {
 };
 
 service : {
-    get_account_transactions: (GetAccountTransactionsArgs) -> (GetTransactionsResult) query;
+    get_account_transactions: (GetAccountTransactionsArgs) -> (GetAccountTransactionsResult) query;
     ledger_id: () -> (principal) query;
     list_subaccounts : (ListSubaccountsArgs) -> (vec SubAccount) query;
     status : () -> (Status) query;
