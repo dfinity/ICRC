@@ -196,7 +196,7 @@ While the methods defined in this standard are sufficient for compliance with IC
 - **`get_fee_collectors_ranges`**: Provides detailed information about fee collection, including accounts and associated block ranges.
 - **`icrc1_balance_of`**: Queries the token balance of specific accounts. This method is commonly used for token management in wallets and tools.
 
-These methods, while potentially helpful, are outside the scope of ICRC-106 and are not guaranteed to be present in all index canisters. Developers should refer to the documentation of the specific implementation they are working with for details on these optional methods.
+These methods, while potentially helpful, are outside the scope of this standard and are thus not guaranteed to be present in all ICRC-106-compliant index canisters.
 
 
 
