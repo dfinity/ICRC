@@ -8,9 +8,9 @@
 
 Wallet applications and token management tools often need to retrieve both token metadata and transaction history for a given principal. However, identifying an associated index canister for ICRC-1 tokens is currently unstandardized, leading to inconsistencies in wallet integrations.
 
-**ICRC-106** introduces a standard approach for:
-1. Indicating the presence of an index canister for ICRC-1 tokens through ledger metadata.
-2. Defining a minimal interface for the index canister to facilitate querying transaction history in a consistent manner.
+Standard **ICRC-106** :
+1. Introduces a standard approach for indicating the presence of an index canister for ICRC-1 tokens through ledger metadata.
+2. Defines a minimal interface for the associated index canister to facilitate querying transaction history in a consistent manner.
 
 This draft standard aims to improve interoperability, simplify wallet integrations, and enable token-related applications to reliably access transaction histories.  It acts as a placeholder and documentation source until a more comprehensive standard for index canisters will be developed.
 
@@ -97,7 +97,7 @@ type Approve = record {
     memo : opt blob;
     created_at_time : opt nat64;
     amount : Tokens;
-    expected_allowance : opt Tokens;
+    expected_allowance : opt nat;
     expires_at : opt nat64;
     spender : Account;
 };
