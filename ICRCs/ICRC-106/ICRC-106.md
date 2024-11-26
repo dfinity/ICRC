@@ -76,7 +76,7 @@ type Burn = record {
 
 type Transfer = record {
     to : Account;
-    fee : opt nat;
+    fee : opt Tokens;
     from : Account;
     memo : opt vec nat8;
     created_at_time : opt nat64;
