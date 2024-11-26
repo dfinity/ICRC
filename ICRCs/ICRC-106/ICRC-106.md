@@ -41,7 +41,7 @@ The metadata entry `icrc106:index_principal` and the `icrc106_get_index_principa
 - The `icrc106:index_principal` metadata entry MUST represent the textual form of the principal returned by the `icrc106_get_index_principal` method.  
 - The `icrc106_get_index_principal` method MUST return the principal corresponding to the index canister associated with the ledger, as specified in the `icrc106:index_principal` metadata entry.
 
-This requirement ensures that both mechanisms reliably point to the same index canister. 
+This requirement ensures that both mechanisms reliably point to the same index canister.
 
 
 ## 3. Index Canister Interface
@@ -53,7 +53,7 @@ type Tokens = nat;
 
 type BlockIndex = nat;
 
-type Subaccount = blob;
+type SubAccount = blob;
 
 type Account = record {
     owner: principal;
@@ -68,17 +68,24 @@ type GetAccountTransactionsArgs = record {
 
 type Burn = record {
     from : Account;
-    memo : opt vec nat8;
+    memo : opt blob;
     created_at_time : opt nat64;
-    amount : nat;
+    amount : Tokens;
     spender : opt Account;
+};
+
+type Mint = record {
+  to : Account;
+  memo : opt blob;
+  created_at_time : opt nat64;
+  amount : Tokens;
 };
 
 type Transfer = record {
     to : Account;
     fee : opt Tokens;
     from : Account;
-    memo : opt vec nat8;
+    memo : opt blob;
     created_at_time : opt nat64;
     amount : Tokens;
     spender : opt Account;
@@ -87,9 +94,9 @@ type Transfer = record {
 type Approve = record {
     fee : opt Tokens;
     from : Account;
-    memo : opt vec nat8;
+    memo : opt blob;
     created_at_time : opt nat64;
-    amount : nat;
+    amount : Tokens;
     expected_allowance : opt Tokens;
     expires_at : opt nat64;
     spender : Account;
@@ -109,13 +116,20 @@ type TransactionWithId = record {
     transaction : Transaction;
 };
 
-type GetTransactionsResult = variant {
-    Ok: record {
-        balance: Tokens; // Current balance of the account.
-        transactions: vec TransactionWithId; // List of transactions.
-        oldest_tx_id : opt BlockIndex; // The txid of the oldest transaction the account has.
-    };
-    Err: record { message: text; };
+type GetTransactions = record {
+  balance : Tokens;
+  transactions : vec TransactionWithId;
+  // The txid of the oldest transaction the account has
+  oldest_tx_id : opt BlockIndex;
+};
+
+type GetTransactionsErr = record {
+  message : text;
+};
+
+type GetAccountTransactionsResult = variant {
+  Ok : GetTransactions;
+  Err : GetTransactionsErr;
 };
 
 type ListSubaccountsArgs = record {
@@ -166,7 +180,7 @@ The index canister provides methods to facilitate querying of transaction histor
   - `owner`: The principal for which to list subaccounts.
   - `start`: *(Optional)* Specifies the subaccount to start listing from. Only subaccounts lexicographically greater than `start` will be included. If start is omitted, the method will return all subaccounts from the beginning of the list, ordered lexicographically.
 - **Output**: A vector of `SubAccount`, each representing a subaccount under the specified principal. The list will be empty if the principal has not used subaccounts, or if there are no subaccounts lexicographically higher than `start`.
-- **Typical Use Case**: Useful for wallets or tools that need to enumerate all subaccounts associated with a user, providing insight into the structure and organization of user funds.
+- **Typical Use Case**: Useful for wallets or tools that need to enumerate *all* subaccounts associated with a user. To get all subaccounts, start with no start parameter and repeatedly call the method, updating start with the last subaccount from each response, until the returned list is empty.
 
 
 ---
@@ -196,7 +210,7 @@ While the methods defined in this standard are sufficient for compliance with IC
 - **`get_fee_collectors_ranges`**: Provides detailed information about fee collection, including accounts and associated block ranges.
 - **`icrc1_balance_of`**: Queries the token balance of specific accounts. This method is commonly used for token management in wallets and tools.
 
-These methods, while potentially helpful, are outside the scope of this standard and are thus not guaranteed to be present in all ICRC-106-compliant index canisters.
+These methods, while potentially helpful, are outside the scope of ICRC-106 and are not guaranteed to be present in all index canisters. Developers should refer to the documentation of the specific implementation they are working with for details on these optional methods.
 
 
 
