@@ -80,7 +80,7 @@ type Transfer = record {
     from : Account;
     memo : opt vec nat8;
     created_at_time : opt nat64;
-    amount : nat;
+    amount : Tokens;
     spender : opt Account;
 };
 
