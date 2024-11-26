@@ -85,7 +85,7 @@ type Transfer = record {
 };
 
 type Approve = record {
-    fee : opt nat;
+    fee : opt Tokens;
     from : Account;
     memo : opt vec nat8;
     created_at_time : opt nat64;
