@@ -90,7 +90,7 @@ type Approve = record {
     memo : opt vec nat8;
     created_at_time : opt nat64;
     amount : nat;
-    expected_allowance : opt nat;
+    expected_allowance : opt Tokens;
     expires_at : opt nat64;
     spender : Account;
 };
