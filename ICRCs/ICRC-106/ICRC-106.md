@@ -6,13 +6,13 @@
 
 ## 1. Introduction
 
-Wallet applications and token management tools often need to retrieve both token metadata and transaction history for a given principal. However, identifying an associated index canister for ICRC-1 tokens is currently unstandardized, leading to inconsistencies in wallet integrations.
+Wallet applications and token management tools often need to retrieve both token metadata and transaction history for a given principal. Index canisters provide such data, but identifying an associated index canister for ICRC-1 tokens is currently not standardized, leading to inconsistencies in wallet integrations.
 
 Standard **ICRC-106** :
 1. Introduces a standard approach for indicating the presence of an index canister for ICRC-1 tokens through ledger metadata.
 2. Defines a minimal interface for the associated index canister to facilitate querying transaction history in a consistent manner.
 
-This draft standard aims to improve interoperability, simplify wallet integrations, and enable token-related applications to reliably access transaction histories.  It acts as a placeholder and documentation source until a more comprehensive standard for index canisters will be developed.
+This draft standard aims to improve interoperability, simplify wallet integrations, and enable token-related applications to reliably access transaction histories.  It acts as a placeholder and documentation source for the API of the index canister, until a comprehensive standard for index canisters will be developed.
 
 
 ## 2. Metadata
@@ -33,7 +33,24 @@ These metadata entries allow clients to discover and interact with the index can
 Compliant ledgers MUST also implement the following endpoint for programmatically retrieving the index principal:
 
 ```candid
-icrc106_get_index_principal: () -> (principal) query;
+
+icrc106_get_index_principal: () -> GetIndexPrincipalsResult query;
+
+type GetIndexPrincipalResult = variant {
+    Ok : principal;
+    Err : GetIndexPrincipalError;
+};
+
+type GetIndexPrincipalError = variant {
+    IndexPrincipalNotSet;
+
+    // Any error not covered by the above variants.
+    GenericError: record {
+       error_code: nat;
+       description: text;
+   };
+};
+
 ```
 
 The metadata entry `icrc106:index_principal` and the `icrc106_get_index_principal` method MUST provide consistent information. Specifically:
