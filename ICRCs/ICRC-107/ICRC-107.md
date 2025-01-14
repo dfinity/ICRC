@@ -94,7 +94,7 @@ These endpoints allow ledger administrators (or canister controllers) to enable 
 
 ---
 
-## 4. Implementation Considerations (Block-Based Specification)
+## 4. Fee Information in Blocks 
 
 This section defines how **ICRC-107** determines whether a fee is collected or burned **exclusively** from information **contained in the blocks themselves**. No reliance on external metadata (e.g., `icrc107_fee_collector`) is assumed.
 
