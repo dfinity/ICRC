@@ -43,13 +43,13 @@ Additionally, the ledger **MUST** provide (at minimum) these metadata entries, r
 1. **`icrc107_fee_collector` (text)**  
    The textual representation of the principal (or account) designated as the fee collector.
 
-2. **`icrc107_fee_collection_transfers` (bool)**  
-   Indicates whether fees are collected on **transfer** transactions (`true`) or not (`false`).
+2. **`icrc107_fee_collection_transfers` (text)**  
+   Indicates whether fees are collected on **transfer** transactions ("true") or not ("false").
 
-3. **`icrc107_fee_collection_approvals` (bool)**  
-   Indicates whether fees are collected on **approve** transactions (`true`) or not (`false`).
+3. **`icrc107_fee_collection_approvals` (text)**  
+   Indicates whether fees are collected on **approve** transactions ("true") or not ("false").
 
-If a ledger has not set a fee collector, it may return an empty string or omit the metadata key for `icrc107_fee_collector`. Similarly, if fees are never collected for transfers or approvals, the corresponding booleans should be `false` or omitted.
+If a ledger has not set a fee collector, it may return an empty string or omit the metadata key for `icrc107_fee_collector`. Similarly, if fees are not collected for transfers or approvals, the values for the corresponding metadata should be "false" or omitted.
 
 ---
 
