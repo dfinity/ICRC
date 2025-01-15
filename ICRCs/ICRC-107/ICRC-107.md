@@ -83,11 +83,11 @@ A ledger **implementing ICRC-107** **SHOULD** expose the following methods to pr
   If this method is never called, fees are assumed to be burned by default.
 
 - **`icrc107_turn_on_fee_collector_transfers()`**  
-  Sets `icrc107_fee_collection_transfers` to `true`.  
+  Sets `icrc107_fee_collection_transfers` to "true".  
   If a valid fee collector has been set, returns `Ok(fee_collector)`. Otherwise, returns `Err` describing why it cannot be enabled.
 
 - **`icrc107_turn_on_fee_collector_approvals()`**  
-  Sets `icrc107_fee_collection_approvals` to `true`.  
+  Sets `icrc107_fee_collection_approvals` to "true".  
   If a valid fee collector has been set, returns `Ok(fee_collector)`. Otherwise, returns `Err`.
 
 These endpoints allow ledger administrators (or canister controllers) to enable fee collection for different transaction types once the fee collector account is specified.
