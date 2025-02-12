@@ -14,31 +14,28 @@ Many ICRC-based ledgers (such as **ckBTC**) already implement partial fee collec
 - A **backward-compatible standard** for **recording and interpreting fee-collection fields** in ICRC-3 blocks corresponding to ICRC-1 and ICRC-2 transactions.
 - Clear rules on how fee collection settings evolve over time and how subsequent blocks rely on prior updates.
 
-This design ensures that **all** fee-related information is stored entirely **on-chain** in the block history, without reliance on external metadata or specialized block types. It provides a fully self-contained, transparent standard for fee collection that simplifies integration with wallets, explorers, and other tools.
+This design ensures that **all** fee-related information is stored entirely **on-chain** in the block history, without reliance on external metadata or specialized block types.
+It provides a fully self-contained, transparent standard for fee collection that simplifies integration with wallets, explorers, and other tools.
 
 ---
 
-## 2. Overview
+## 2. Fee Collection
 
-For each block, the fee amount and the account paying the fee are determined according to rules specific to the block type.
-The fee collection settings then determine if the fee is **collected** (removed from the payer account and added to a fee collector account)
-or **burned** (removed from the payer account and from the total supply):
+### 2.1 Overview
 
+For each block added to the ledgers, some party pays fees.  The fee amount and the account paying the fee are determined according to rules specific to the block type.
+Fee collection settings determine how fees are handled for specific block types. These settings include a fee collector account (`fee_col`) and
+a list of operations (`col_ops`) for which fees are collected.  If `fee_col` is not set, then fees for all operations are burned.
+If no fee collector is set or the operation is not in `col_ops`, the fee is burned.
+Changes to fee collection settings are recorded directly in blocks, ensuring an **on-chain history** of modifications.
 
----
-
-## 4. Fee Collection Settings
-
-Fee collection settings determine the procedures for handling transaction fees within the ledger. These settings specify whether a fee is collected by an account or burned. When a transaction incurs a fee, the active fee collection settings at the time the block is created dictate how the fee is handled:
-
-- If a **fee collector account** (`fee_col`) is set, the fee is transferred to that account.
-- If no **fee collector account** is set, the fee is burned (removed from circulation).
-- The **operations list** (`col_ops`) defines which transaction types are subject to fee collection.
-- Changes to fee collection settings are recorded directly in blocks, ensuring an **on-chain history** of modifications.
+For each block corresponding to some operation, if that operation is not subject to fee collection or a fee collector is not set then the fee is burned (i.e. removed from
+the account that pays the fee and from the total supply).
+Otherwise, the fee is transferred to the fee collector account.
 
 The following subsections describe the fields in blocks that manage fee collection settings and how they are used in transactions.
 
-### 4.1 Fields in Blocks
+## 2.2 Fee Collection Settings
 
 A block **MAY** include the following fields to define or update fee collection settings:
 
@@ -52,9 +49,9 @@ A block **MAY** include the following fields to define or update fee collection 
 
 ---
 
-## 5. Determining Fee Collection for ICRC-1 and ICRC-2 Blocks
+## 3. Determining Fee Collection for ICRC-1 and ICRC-2 Blocks
 
-### 5.1 How to Calculate the Fee for ICRC-1 and ICRC-2 blocks
+### 3.1 How to Calculate the Fee for ICRC-1 and ICRC-2 blocks
 
 The format of blocks follows the ICRC-3 standard. For a complete specification of block structure and fields, refer to [ICRC-3 Standard](https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-3.md).
 
@@ -72,7 +69,7 @@ To determine the **final fee amount** for a given block:
 The paying account is the source account for both transfers and approve transactions.
 
 
-### 5.2 How `col_ops` Determines Fee Collection
+### 3.2 How `col_ops` Determines Fee Collection
 
 The `col_ops` field defines which block types incur a fee that is collected (instead of burned). For ICRC-1 and ICRC-2 blocks, the mapping from a `col_ops` entry to actual block types is:
 
@@ -97,23 +94,27 @@ If no `fee_col` is set, the fee is burned by default.
 
 ---
 
-## 6. Minimal API for Fee Collection Settings
+## 4. Minimal API for Fee Collection Settings
 
-### 6.1 `set_fee_collection`
+
+### 4.1 `set_fee_collection`
+
+This method sets or updates the fee collection settings. It can only be called by the controller of the canister.
 
 ```
 set_fee_collection: (opt Map<Value>, opt Vec<Text>) -> ();
 ```
 
-### 6.2 `get_fee_collection`
+### 4.2 `get_fee_collection`
 
+This method returns the current `fee_col`, `col_ops`, and the block index of the last update (`prev_fee_col_info`).
 ```
-get_fee_collection: () -> (opt Map<Value>, Vec<Text>) query;
+get_fee_collection: () -> (opt Map<Value>, Vec<Text>, Nat) query;
 ```
 
 ---
 
-## 7. Summary
+## 5. Summary
 
 - **On-Chain Configuration**: Fee collection settings (`fee_col`, `col_ops`) are updated via blocks, with no external metadata needed.
 - **Fee Collection & Burning**: If `fee_col` is set, the fee is credited to the collector; otherwise, it is burned.
