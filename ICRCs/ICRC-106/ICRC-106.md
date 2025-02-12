@@ -56,7 +56,7 @@ type GetIndexPrincipalError = variant {
 The metadata entry `icrc106:index_principal` and the `icrc106_get_index_principal` method MUST provide consistent information. Specifically:
 
 - The `icrc106:index_principal` metadata entry MUST represent the textual form of the principal returned by the `icrc106_get_index_principal` method.  
-- The `icrc106_get_index_principal` method MUST return the principal corresponding to the index canister associated with the ledger, as specified in the `icrc106:index_principal` metadata entry.
+- The `icrc106_get_index_principal` method MUST return the principal corresponding to the index canister associated with the ledger.
 
 This requirement ensures that both mechanisms reliably point to the same index canister.
 
@@ -216,18 +216,7 @@ The index canister provides methods to facilitate querying of transaction histor
 - **Input**: None.
 - **Output**: A `Status` record containing:
   - `num_blocks_synced`: The total number of blocks that have been successfully synchronized by the index canister.
-- **Typical Use Case**: Used for monitoring the health and synchronization status of the index, this method is helpful for determining whether the index has fully caught up with the ledger and is operational.
-
-
-## Optional Methods
-
-While the methods defined in this standard are sufficient for compliance with ICRC-106, certain implementations of the index canister may include additional methods to extend functionality. These methods are not required by ICRC-106 but may be present for advanced use cases:
-
-- **`get_blocks`**: Fetches raw block data for a specified range of indices. This is useful for applications requiring detailed historical data.
-- **`get_fee_collectors_ranges`**: Provides detailed information about fee collection, including accounts and associated block ranges.
-- **`icrc1_balance_of`**: Queries the token balance of specific accounts. This method is commonly used for token management in wallets and tools.
-
-These methods, while potentially helpful, are outside the scope of ICRC-106 and are not guaranteed to be present in all index canisters. Developers should refer to the documentation of the specific implementation they are working with for details on these optional methods.
+- **Typical Use Case**: Used for monitoring the health and synchronization status of the index, this method is helpful for determining whether the index is operational, i.e. syncing blocks from the ledger.
 
 
 
