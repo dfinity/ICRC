@@ -2,22 +2,21 @@
 
 ## 1. Introduction & Motivation
 
-Fee collection in ICRC-based ledgers (e.g., ckBTC) is inconsistently implemented. While transfer transactions often incur fees, approve transactions typically do not. Currently, there is no standardized way to:
+Fee collection in ICRC-based ledgers (e.g., ckBTC) is inconsistently implemented. While transfer transactions often incur fees, approve transactions typically do not. However, there is no standardized way to:
 
 - Define fee collection rules—who receives fees, which operations are charged, and whether fees are burned.
 - Record fee collection settings directly on-chain in ledger blocks.
 - Provide consistent semantics for wallets, explorers, and other integrations to interpret fee structures.
 
-ICRC-107 extends [ICRC-3](https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-3.md), adding semantics for fee collection while ensuring full compatibility with the existing block format. 
+ICRC-107 extends **ICRC-3**, adding semantics for fee collection while ensuring full compatibility with the existing block format. This proposal eliminates reliance on off-chain metadata, simplifies integration with wallets and explorers, and ensures full transparency in fee handling.
 
 ### ICRC-107 Proposal
 
-
 ICRC-107 introduces a standardized mechanism for on-chain fee collection, ensuring clarity and interoperability across different ICRC-based ledgers. It defines:
 
-- A fee collection configuration specifying the collector account (`fee_col`) and the operations (`col_ops`) subject to fees.
+- A fee collection configuration specifying the collector account (`fee_col`) subject to fees.
 - A backward-compatible extension to ICRC-3 blocks, allowing fee collection settings to be recorded and modified within ledger history.
-- Clear rules governing fee distribution: If `fee_col` is set, fees are transferred to the collector for the operations specified via `col_ops`; otherwise, they are burned.
+- Clear rules governing fee distribution: If `fee_col` is set, fees are transferred to the collector; otherwise, they are burned.
 
 By embedding fee collection settings entirely on-chain, ICRC-107 eliminates reliance on off-chain metadata, simplifies integration with wallets and explorers, and ensures full transparency in fee handling.
 
@@ -38,18 +37,39 @@ Changes to fee collection settings are recorded on-chain, ensuring a transparent
 
 ### 2.2 Fee Collection Settings
 
+**Backwards Compatibility:**
+To ensure compatibility with existing ICRC-3 implementations, `fee_col` **MUST** continue to be recorded using the existing array format:
+
+```
+fee_col;
+variant {
+  Array = vec {
+    variant { Blob = principal_blob };
+    variant { Blob = subaccount_blob };
+  }
+}
+```
+
+- The **first Blob** represents the **principal** of the fee collector.
+- The **second Blob** represents the **subaccount**, or a zeroed-out Blob if no subaccount is used.
+
+This ensures that existing tools and explorers relying on the current `fee_col` format remain functional.
+
 A block **MAY** include the following fields to define or update fee collection settings:
 
-- **`fee_col`** (optional, `Map<Value>`)  
-  - `principal`: `Blob` — The principal of the fee collector.  
-  - `subaccount`: `Blob` (optional) — The subaccount identifier, if applicable.  
+- **`fee_col`** (optional, `Map<Value>`)
 
-- **`col_ops`** (optional, `Vec<Text>`)  
-  - A list of operation types for which fees **should** be collected.  
-  - If omitted, defaults to `"transfer"` (fees are collected only for transfers).  
+  - `principal`: `Blob` — The principal of the fee collector.
+  - `subaccount`: `Blob` (optional) — The subaccount identifier, if applicable.
 
-- **`prev_fee_col_info`** (optional, `Nat`)  
-  - The block index at which `fee_col` or `col_ops` was last updated.  
+- **`col_ops`** (optional, `Vec<Text>`)
+
+  - A list of operation types for which fees **should** be collected.
+  - If omitted, defaults to `"transfer"` (fees are collected only for transfers).
+
+- **`prev_fee_col_info`** (optional, `Nat`)
+
+  - The block index at which `fee_col` or `col_ops` was last updated.
   - Enables quick lookup of previous fee collection settings.
 
 **Note:** The block format follows the [ICRC-3 standard](https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-3.md).
@@ -98,21 +118,37 @@ If no `fee_col` is set, all fees are burned by default.
 
 ## 4. Minimal API for Fee Collection Settings
 
-### 4.1 `set_fee_collection`
+### 4.1 `icrc107_set_fee_collection`
 
-Updates fee collection settings. Only callable by the ledger controller.
-
-```
-set_fee_collection: (opt Map<Value>, opt Vec<Text>) -> ();
-```
-
-### 4.2 `get_fee_collection`
-
-Returns the current fee collection settings and the block index of the last update.
+This method allows the ledger controller to update the fee collection settings. It modifies the fee_col account, which determines where collected fees are sent, and updates the col_ops list, which specifies the transaction types for which fees should be collected. The updated settings are recorded in the next block added to the ledger.
 
 ```
-get_fee_collection: () -> (opt Map<Value>, Vec<Text>, Nat) query;
+icrc107_set_fee_collection: (SetFeeCollectionRequest) -> ();
 ```
+
+with
+
+```
+type Account = record {
+    owner: principal;
+    subaccount: opt blob;
+};
+
+type SetFeeCollectionRequest = record {
+     fee_col: Account;
+     fee_ops: Vec<Text>
+}
+```
+
+
+### 4.2 `icrc107_get_fee_collection`
+
+This method retrieves the currently active fee collection settings, including the fee_col account (if set), the list of transaction types (col_ops) for which fees are collected, and the block index of the last recorded update. This allows external systems, such as wallets and explorers, to determine how fee collection is configured.
+```
+icrc107_get_fee_collection: () -> (opt Account, Vec<Text>, Nat) query;
+```
+
+**Note:** The block returned reflects the last block where a change in fee collection information was recorded. However, this block may not contain the most recent settings (as returned in the first part of the response) if no block was created between setting fee collection information and retrieving it. The latest fee collection settings will be recorded in the first block that will be added to the ledger.
 
 ---
 
@@ -120,27 +156,33 @@ get_fee_collection: () -> (opt Map<Value>, Vec<Text>, Nat) query;
 
 Any new standard that introduces additional block types **MUST** specify how those block types interact with the fee collection mechanism defined in **ICRC-107**. Specifically:
 
-1. **Fee Payer Determination**  
-   - Define how the fee amount is determined and who is responsible for paying the fee.
-
-2. **Fee Applicability**  
+1. **Fee Applicability**  
    - Clarify which new block types, if any, are subject to fee collection.
 
+2. **Fee Payer Determination**  
+   - Define how the fee amount is determined and who is responsible for paying the fee.
+
 3. **Fee Collection Rules**  
-   - Define entries for `fee_col` corresponding to the new block types.
+   - Define new entry types for `fee_col` corresponding to the new block types.
+   - Specify how `fee_col` should be applied to determine whether fees for the new block types are collected or burned.
 
----
-
-
-
-
-
-## 6. Summary
-
-- **On-Chain Configuration**: Fee collection settings (`fee_col`, `col_ops`) are recorded and modified within ledger blocks.
-- **Fee Collection & Burning**: If `fee_col` is set and a block type  appears in `fee_ops` then fees for that block type are collected by `fee_col`. Otherwise, the fee is burned.
-- **Governance**: Only the **ledger controller** can update fee collection settings.
-- **Backward-Compatible**: Works seamlessly with ICRC-1, ICRC-2, and ICRC-3 block definitions.
+By ensuring that any future standards explicitly define their interaction with fee collection, ICRC-107 remains a robust and extensible framework.
 
 
 ---
+## 6. Reporting Compliance with ICRC-Supported Standards
+
+Ledgers implementing ICRC-107 **MUST** indicate their compliance through the `icrc1_supported_standards` and `icrc10_supported_standards` methods, as defined in ICRC-1 and ICRC-10 by including the following record in the output of these methods:
+
+```
+record {
+    name = "ICRC-107";
+    url = "https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-107.md"
+}
+```
+
+---
+
+## 7. Summary
+
+ICRC-107 provides a self-contained, transparent, and interoperable framework for managing transaction fees across ICRC-based ledgers.
