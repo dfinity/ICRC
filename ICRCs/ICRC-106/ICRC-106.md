@@ -17,7 +17,7 @@ This draft standard aims to improve interoperability, simplify wallet integratio
 
 ## 2. Metadata
 
-A ledger implementing ICRC-106 MUST include the following entry in the output of the `icrc1_supported_standards` method:
+A ledger implementing ICRC-106 MUST include the following entry in the output of the `icrc1_supported_standards` and `icrc10_supported_standards` methods (if ICRC-10 standard is supported):
 
 ```candid
 record { name = "ICRC-106"; url = "https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-106" }
