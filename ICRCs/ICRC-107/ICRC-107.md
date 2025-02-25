@@ -2,7 +2,7 @@
 
 ## 1. Introduction & Motivation
 
-Fee collection in ICRC-based ledgers (e.g., ckBTC) is inconsistently implemented. While transfer transactions often incur fees, approve transactions typically do not. However, there is no standardized way to:
+Fee collection in ICRC-based ledgers (e.g., ckBTC) is inconsistently implemented. While transfer transactions often incur fees that is collected or burned, approve transactions typically do not. However, there is no standardized way to:
 
 - Define fee collection rules—who receives fees, which operations are charged, and whether fees are burned.
 - Record fee collection settings directly on-chain in ledger blocks.
@@ -86,10 +86,8 @@ Blocks follow the ICRC-3 standard. To determine the **final fee amount** for a b
    - If present, `tx.fee` is the fee for this block.
 
 2. **Else, check the top-level `fee` field**  
-   - If `tx.fee` is **not set**, and a top-level field `fee` exists in the block, then that is the fee.
+   - If `tx.fee` is **not set**, then a top-level field `fee` exists in the block, and that is the fee.
 
-3. **Else, fallback to `0`**  
-   - If **neither** `tx.fee` nor `fee` is present, the default fee is `0`.
 
 The paying account is the source account for both transfer and approve transactions.
 
@@ -136,16 +134,16 @@ type Account = record {
 
 type SetFeeCollectionRequest = record {
      fee_col: Account;
-     fee_ops: Vec<Text>
+     col_ops: Vec<Text>
 }
 ```
 
 
 ### 4.2 `icrc107_get_fee_collection`
 
-This method retrieves the currently active fee collection settings, including the fee_col account (if set), the list of transaction types (col_ops) for which fees are collected, and the block index of the last recorded update. This allows external systems, such as wallets and explorers, to determine how fee collection is configured.
+This method retrieves the currently active fee collection settings, including the `fee_col` account (if set), the list of transaction types (`col_ops`) for which fees are collected, and the block index of the last recorded update. This allows external systems, such as wallets and explorers, to determine how fee collection is configured.
 ```
-icrc107_get_fee_collection: () -> (opt Account, Vec<Text>, Nat) query;
+icrc107_get_fee_collection: () -> (opt Account, Vec<Text>, opt Nat) query;
 ```
 
 **Note:** The block returned reflects the last block where a change in fee collection information was recorded. However, this block may not contain the most recent settings (as returned in the first part of the response) if no block was created between setting fee collection information and retrieving it. The latest fee collection settings will be recorded in the first block that will be added to the ledger.
@@ -164,7 +162,7 @@ Any new standard that introduces additional block types **MUST** specify how tho
 
 3. **Fee Collection Rules**  
    - Define new entry types for `fee_col` corresponding to the new block types.
-   - Specify how `fee_col` should be applied to determine whether fees for the new block types are collected or burned.
+   - Specify how `col_ops` should be applied to determine whether fees for the new block types are collected or burned.
 
 By ensuring that any future standards explicitly define their interaction with fee collection, ICRC-107 remains a robust and extensible framework.
 
