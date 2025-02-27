@@ -2,7 +2,7 @@
 
 ## 1. Introduction & Motivation
 
-Fee collection in ICRC-based ledgers (e.g., ckBTC) is inconsistently implemented. While transfer transactions often incur fees that is collected or burned, approve transactions typically do not. However, there is no standardized way to:
+The absence of a unified approach has resulted in inconsistencies in fee collection across ICRC-based ledgers (e.g., ckBTC). In the ckBTC ledger, the fee collector collects fees for transfer operations, while fees for approve operations are burned, demonstrating the need for a unified standard. However, there is no standardized way to:
 
 - Define fee collection rules—who receives fees, which operations are charged, and whether fees are burned.
 - Record fee collection settings directly on-chain in ledger blocks.
@@ -16,7 +16,7 @@ ICRC-107 introduces a standardized mechanism for on-chain fee collection, ensuri
 
 - A fee collection configuration specifying the collector account (`fee_col`) subject to fees.
 - A backward-compatible extension to ICRC-3 blocks, allowing fee collection settings to be recorded and modified within ledger history.
-- Clear rules governing fee distribution: If `fee_col` is set, fees are transferred to the collector; otherwise, they are burned.
+- Clear rules governing fee distribution: If `fee_col` is set, fees are transferred from the paying account to the collector; otherwise, they are burned, —meaning they are debited from the paying account and removed from the total supply.
 
 By embedding fee collection settings entirely on-chain, ICRC-107 eliminates reliance on off-chain metadata, simplifies integration with wallets and explorers, and ensures full transparency in fee handling.
 
@@ -26,19 +26,21 @@ By embedding fee collection settings entirely on-chain, ICRC-107 eliminates reli
 
 ### 2.1 Overview
 
-For each block added to the ledger, some party must pay a fee. The amount and payer of the fee depend on the specific transaction type.
+For each block added to the ledger, some party may have to pay a fee. The amount and payer of the fee depend on the specific operation type.
 
 Fee collection settings determine how fees are processed. These settings include:
 
-- A fee collector account (`fee_col`). If `fee_col` is not set, all fees are burned.
-- A list of operations (`col_ops`) for which fees are collected. If an operation is not in `col_ops`, the fee is burned.
 
-Changes to fee collection settings are recorded on-chain, ensuring a transparent history of modifications.
+- A fee collector account (`fee_col`). If `fee_col` is not set, all fees are burned.  Burning occurs by removing the fee from the paying account and reducing the total token supply by that amount.
+- A list of operations (`fee_ops`) for which fees are collected. If an operation is not in `fee_ops`, the fee is burned.
+- A flag `fee_burn` explicitly determines that all fees are burned. If set to "true", fees are always burned, regardless of `fee_col`.   
+
+Changes to fee collection settings are recorded on-chain and take effect immediately in the block where they appear.
 
 ### 2.2 Fee Collection Settings
 
 **Backwards Compatibility:**
-To ensure compatibility with existing ICRC-3 implementations, `fee_col` **MUST** continue to be recorded using the existing array format:
+To ensure compatibility with existing ICRC-3 implementations, `fee_col` **MUST** be recorded using the existing array format:
 
 ```
 fee_col;
@@ -50,7 +52,7 @@ variant {
 }
 ```
 
-- The **first Blob** represents the **principal** of the fee collector.
+- The **first Blob** represents the **principal** of the fee collector; if this is the anonymous principal (0x04) then fees for all operations are burned.
 - The **second Blob** represents the **subaccount**, or a zeroed-out Blob if no subaccount is used.
 
 This ensures that existing tools and explorers relying on the current `fee_col` format remain functional.
@@ -58,19 +60,20 @@ This ensures that existing tools and explorers relying on the current `fee_col` 
 A block **MAY** include the following fields to define or update fee collection settings:
 
 - **`fee_col`** (optional, `Map<Value>`)
-
   - `principal`: `Blob` — The principal of the fee collector.
   - `subaccount`: `Blob` (optional) — The subaccount identifier, if applicable.
 
-- **`col_ops`** (optional, `Vec<Text>`)
+- **`fee_burn`** (optional, `Text`)
+  - If `"true"`, fees are burned (removed from supply), irrespective of `fee_col` settings.
+  - If `"false"`, fees are transferred to `fee_col`.
+  - Defaults to `"true"` if `fee_col` is unset.
+
+- **`fee_ops`** (optional, `Vec<Text>`)
 
   - A list of operation types for which fees **should** be collected.
-  - If omitted, defaults to `"transfer"` (fees are collected only for transfers).
+  - If omitted, defaults to `["1xfer","2xfer"]` (fees are collected only for transfers).
 
-- **`prev_fee_col_info`** (optional, `Nat`)
-
-  - The block index at which `fee_col` or `col_ops` was last updated.
-  - Enables quick lookup of previous fee collection settings.
+Blocks where `fee_ops` is specified, or `fee_burn` is set to "false" MUST also specify `fee_col`.  
 
 **Note:** The block format follows the [ICRC-3 standard](https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-3.md).
 
@@ -91,26 +94,36 @@ Blocks follow the ICRC-3 standard. To determine the **final fee amount** for a b
 
 The paying account is the source account for both transfer and approve transactions.
 
-### 3.2 How `col_ops` Determines Fee Collection
+### 3.2 How to Determine the Fee Collector for a Block
 
-The `col_ops` field defines which block types incur fees that are collected instead of burned. For ICRC-1 and ICRC-2 blocks, `col_ops` entries map to block types as follows:
+Find the most recent block where fee collection settings are present.  
+* If no such block exists, the fees in the current block are burned.
+* If the most recent block with fee settings has `fee_burn` = "true", then fees in the current block are burned.
+* Otherwise, the active fee collector is the account specified by `fee_col`, and fees are collected for the operations listed in `fee_ops` (see the next section).
 
-| **col_ops Entry** | **Block Types Affected** |
+
+### 3.3 How `fee_ops` Determines Fee Collection for a Block
+
+The `fee_ops` field defines which block types incur fees that are collected instead of burned. For ICRC-1 and ICRC-2 blocks, `fee_ops` entries map to block types as follows:
+
+| **fee_ops Entry** | **Block Types Affected** |
 |-------------------|--------------------------|
-| **"transfer"**    | Blocks with `btype = "1xfer"` or `btype = "2xfer"`. If `btype` is not set, use `tx.op = "xfer"` or `"2xfer"`. |
-| **"approve"**     | Blocks with `btype = "2approve"`. If `btype` is not set, use `tx.op = "approve"`. |
+| "1xfer"    | Blocks with `btype = "1xfer"` and blocks where `btype` is not set and `tx.op = "xfer"` and there is no `tx.spender` field |
+| "2xfer"    | Blocks with `btype = "2xfer"` and blocks where `btype` is not set and `tx.op = "xfer"` and the field `tx.spender` is set. |
+| "2approve"     | Blocks with `btype = "2approve"` and blocks where `btype` is not set and `tx.op = "approve"`. |
 
 #### Key Rules:
 
 1. **Determine Block Type**  
    - If `btype` is present, it takes precedence.
-   - Otherwise, use `tx.op`.
+   - Otherwise, use `tx.op` to determine the block type.
 
-2. **Check if `col_ops` applies to the block type**  
-   - If the block type corresponds to an entry in `col_ops`, the fee is collected by `fee_col`.
+2. **Check if `fee_ops` applies to the block type**  
+   - If the block type corresponds to an entry in `fee_ops`, the fee is collected by `fee_col`.
    - Otherwise, the fee is burned.
 
-If no `fee_col` is set, all fees are burned by default.
+If `fee_col` is set but `fee_ops` is not, `fee_ops` defaults to `["1xfer, 2xfer"]`, i.e. fees are only collected for transfer operations.
+
 
 ---
 
@@ -118,7 +131,7 @@ If no `fee_col` is set, all fees are burned by default.
 
 ### 4.1 `icrc107_set_fee_collection`
 
-This method allows the ledger controller to update the fee collection settings. It modifies the fee_col account, which determines where collected fees are sent, and updates the col_ops list, which specifies the transaction types for which fees should be collected. The updated settings are recorded in the next block added to the ledger.
+This method allows a ledger controller to update the fee collection settings. It modifies the `fee_col` account, which determines where collected fees are sent, and updates the `fee_ops` list, which specifies the transaction types for which fees should be collected. The updated settings are recorded in the next block added to the ledger.
 
 ```
 icrc107_set_fee_collection: (SetFeeCollectionRequest) -> ();
@@ -133,20 +146,26 @@ type Account = record {
 };
 
 type SetFeeCollectionRequest = record {
-     fee_col: Account;
-     col_ops: Vec<Text>
+     fee_col: opt Account;
+     fee_ops: Vec<Text>
 }
 ```
+
+If `fee_col` is not provided then fee collection reverts to fee burning.
 
 
 ### 4.2 `icrc107_get_fee_collection`
 
-This method retrieves the currently active fee collection settings, including the `fee_col` account (if set), the list of transaction types (`col_ops`) for which fees are collected, and the block index of the last recorded update. This allows external systems, such as wallets and explorers, to determine how fee collection is configured.
+This method retrieves the currently active fee collection settings. Unless they are changed they would apply to the next block added to the ledger.
+
 ```
-icrc107_get_fee_collection: () -> (opt Account, Vec<Text>, opt Nat) query;
+icrc107_get_fee_collection: () -> (opt Account, Vec<Text>) query;
 ```
 
-**Note:** The block returned reflects the last block where a change in fee collection information was recorded. However, this block may not contain the most recent settings (as returned in the first part of the response) if no block was created between setting fee collection information and retrieving it. The latest fee collection settings will be recorded in the first block that will be added to the ledger.
+`icrc107_get_fee_collection` returns two values:
+
+* `opt Account` (`fee_col`) – The active fee collector account. If `null`, fees are burned (`fee_burn` = "true").
+* `Vec<Text>` (`fee_ops`) – The list of operation types for which fees are collected. If `fee_col` is set but `fee_ops` is empty, no fees are collected and all fees are burned.
 
 ---
 
@@ -162,7 +181,7 @@ Any new standard that introduces additional block types **MUST** specify how tho
 
 3. **Fee Collection Rules**  
    - Define new entry types for `fee_col` corresponding to the new block types.
-   - Specify how `col_ops` should be applied to determine whether fees for the new block types are collected or burned.
+   - Specify how `fee_ops` should be applied to determine whether fees for the new block types are collected or burned.
 
 By ensuring that any future standards explicitly define their interaction with fee collection, ICRC-107 remains a robust and extensible framework.
 
