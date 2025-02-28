@@ -16,7 +16,7 @@ ICRC-107 introduces a standardized mechanism for on-chain fee collection, ensuri
 
 - A fee collection configuration specifying the collector account (`fee_col`) subject to fees.
 - A backward-compatible extension to ICRC-3 blocks, allowing fee collection settings to be recorded and modified within ledger history.
-- Clear rules governing fee distribution: If `fee_col` is set, fees are transferred from the paying account to the collector; otherwise, they are burned, —meaning they are debited from the paying account and removed from the total supply.
+- Clear rules governing fee distribution: If `fee_col` is set, fees are transferred from the paying account to the collector; otherwise, they are burned — meaning they are debited from the paying account and removed from the total supply.
 
 By embedding fee collection settings entirely on-chain, ICRC-107 eliminates reliance on off-chain metadata, simplifies integration with wallets and explorers, and ensures full transparency in fee handling.
 
@@ -72,6 +72,7 @@ A block **MAY** include the following fields to define or update fee collection 
 
   - A list of operation types for which fees **should** be collected.
   - If omitted, defaults to `["1xfer","2xfer"]` (fees are collected only for transfers).
+- If `fee_ops` is explicitly set to an empty list (`[]`), no fees are collected, and all fees are burned.
 
 Blocks where `fee_ops` is specified, or `fee_burn` is set to "false" MUST also specify `fee_col`.  
 
@@ -152,6 +153,7 @@ type SetFeeCollectionRequest = record {
 ```
 
 If `fee_col` is not provided then fee collection reverts to fee burning.
+The fee collections settings will be recorded in the first block that is created after calling this endpoint.  
 
 
 ### 4.2 `icrc107_get_fee_collection`
@@ -165,7 +167,9 @@ icrc107_get_fee_collection: () -> (opt Account, Vec<Text>) query;
 `icrc107_get_fee_collection` returns two values:
 
 * `opt Account` (`fee_col`) – The active fee collector account. If `null`, fees are burned (`fee_burn` = "true").
-* `Vec<Text>` (`fee_ops`) – The list of operation types for which fees are collected. If `fee_col` is set but `fee_ops` is empty, no fees are collected and all fees are burned.
+* `Vec<Text>` (`fee_ops`) – The list of operation types for which fees are collected. If `fee_col` is set but `fee_ops` is an empty list (`[]`), no fees are collected and all fees are burned.
+
+
 
 ---
 
@@ -197,9 +201,3 @@ record {
     url = "https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-107.md"
 }
 ```
-
----
-
-## 7. Summary
-
-ICRC-107 provides a self-contained, transparent, and interoperable framework for managing transaction fees across ICRC-based ledgers.
