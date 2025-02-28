@@ -2,7 +2,8 @@
 
 ## 1. Introduction & Motivation
 
-The absence of a unified approach has resulted in inconsistencies in fee collection across ICRC-based ledgers (e.g., ckBTC). In the ckBTC ledger, the fee collector collects fees for transfer operations, while fees for approve operations are burned, demonstrating the need for a unified standard. However, there is no standardized way to:
+The lack of a unified approach has led to inconsistencies in fee collection across ICRC-based ledgers (e.g., ckBTC). For instance, in the ckBTC ledger, fees for transfer operations are collected by a designated fee collector, whereas fees for approve operations are burned—even when some fee collection details are present in approve blocks. However, there is no standardized way to:
+
 
 - Define fee collection rules—who receives fees, which operations are charged, and whether fees are burned.
 - Record fee collection settings directly on-chain in ledger blocks.
