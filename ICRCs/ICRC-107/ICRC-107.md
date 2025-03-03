@@ -29,12 +29,10 @@ By embedding fee collection settings entirely on-chain, ICRC-107 eliminates reli
 
 For each block added to the ledger, some party may have to pay a fee. The amount and payer of the fee depend on the specific operation type.
 
-Fee collection settings determine how fees are processed. These settings include:
+Fee collection settings determine how fees are processed. These settings consist of:
 
-
-- A fee collector account (`fee_col`). If `fee_col` is not set, all fees are burned.  Burning occurs by removing the fee from the paying account and reducing the total token supply by that amount.
+- A fee collector account (`fee_col`). If `fee_col` has never been set block, all fees are burned. Burning occurs by removing the fee from the paying account and reducing the total token supply by that amount.
 - A list of operations (`fee_ops`) for which fees are collected. If an operation is not in `fee_ops`, the fee is burned.
-- A flag `fee_burn` explicitly determines that all fees are burned. If set to "true", fees are always burned, regardless of `fee_col`.   
 
 Changes to fee collection settings are recorded on-chain and take effect immediately in the block where they appear.
 
@@ -64,18 +62,12 @@ A block **MAY** include the following fields to define or update fee collection 
   - `principal`: `Blob` — The principal of the fee collector.
   - `subaccount`: `Blob` (optional) — The subaccount identifier, if applicable.
 
-- **`fee_burn`** (optional, `Text`)
-  - If `"true"`, fees are burned (removed from supply), irrespective of `fee_col` settings.
-  - If `"false"`, fees are transferred to `fee_col`.
-  - Defaults to `"true"` if `fee_col` is unset.
 
 - **`fee_ops`** (optional, `Vec<Text>`)
-
   - A list of operation types for which fees **should** be collected.
   - If omitted, defaults to `["1xfer","2xfer"]` (fees are collected only for transfers).
-- If `fee_ops` is explicitly set to an empty list (`[]`), no fees are collected, and all fees are burned.
+  - If `fee_ops` is explicitly set to an empty list (`[]`), no fees are collected, and all fees are burned.
 
-Blocks where `fee_ops` is specified, or `fee_burn` is set to "false" MUST also specify `fee_col`.  
 
 **Note:** The block format follows the [ICRC-3 standard](https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-3.md).
 
@@ -83,7 +75,7 @@ Blocks where `fee_ops` is specified, or `fee_burn` is set to "false" MUST also s
 
 ## 3. Handling Fee Collection for ICRC-1 and ICRC-2 Blocks
 
-### 3.1 How to Calculate the Fee for ICRC-1 and ICRC-2 Blocks
+### 3.1 Determining the Fee for ICRC-1 and ICRC-2 Blocks
 
 Blocks follow the ICRC-3 standard. To determine the **final fee amount** for a block:
 
@@ -94,25 +86,41 @@ Blocks follow the ICRC-3 standard. To determine the **final fee amount** for a b
    - If `tx.fee` is **not set**, then a top-level field `fee` exists in the block, and that is the fee.
 
 
-The paying account is the source account for both transfer and approve transactions.
-
-### 3.2 How to Determine the Fee Collector for a Block
-
-Find the most recent block where fee collection settings are present.  
-* If no such block exists, the fees in the current block are burned.
-* If the most recent block with fee settings has `fee_burn` = "true", then fees in the current block are burned.
-* Otherwise, the active fee collector is the account specified by `fee_col`, and fees are collected for the operations listed in `fee_ops` (see the next section).
+The fee payer is always the source account in both transfer and approve transactions.
 
 
-### 3.3 How `fee_ops` Determines Fee Collection for a Block
+## **3.2 Determining the Active Fee Settings for a Block**
 
-The `fee_ops` field defines which block types incur fees that are collected instead of burned. For ICRC-1 and ICRC-2 blocks, `fee_ops` entries map to block types as follows:
+To determine the **active fee settings** (who receives the fee and whether it is collected or burned), follow this algorithm:
 
-| **fee_ops Entry** | **Block Types Affected** |
-|-------------------|--------------------------|
-| "1xfer"    | Blocks with `btype = "1xfer"` and blocks where `btype` is not set and `tx.op = "xfer"` and there is no `tx.spender` field |
-| "2xfer"    | Blocks with `btype = "2xfer"` and blocks where `btype` is not set and `tx.op = "xfer"` and the field `tx.spender` is set. |
-| "2approve"     | Blocks with `btype = "2approve"` and blocks where `btype` is not set and `tx.op = "approve"`. |
+1. **Find the most recent block (including the current block) that defines `fee_col`**  
+   - If `fee_col = []`, all fees in the block are **burned**, and `fee_ops` is ignored.  
+   - Otherwise, use this value as the **active fee collector** (`active_fee_col`).  
+   - If no `fee_col` is found in any prior block, all fees **are burned by default**.
+
+2. **Determine `fee_ops` from the same block where `fee_col` was set**  
+   - If `fee_ops` is set in that block, use it as the **active fee_ops**.  
+   - If `fee_ops` is **not set** in that block, **default to `["1xfer", "2xfer"]`**, meaning only transfer operations collect fees.  
+
+3. **Determine whether the fee should be collected or burned**  
+   - Identify the **block type**:  
+     - If `btype` is present, use it.  
+     - Otherwise, infer from `tx.op`.  
+   - If the **block type is in `fee_ops`**, fees are **collected** by `active_fee_col`.  
+   - Otherwise, fees are **burned**.  
+
+
+
+   ## **3.3 Mapping `fee_ops` to Block Types**
+
+   The `fee_ops` field specifies which block types **have their fees collected** instead of burned. For ICRC-1 and ICRC-2 blocks, `fee_ops` maps to block types as follows:
+
+   | **fee_ops Entry** | **Block Types Affected** |
+   |-------------------|--------------------------|
+   | `"1xfer"`  | Blocks with `btype = "1xfer"` or where `btype` is not set, `tx.op = "xfer"`, and `tx.spender` is **not** set. |
+   | `"2xfer"`  | Blocks with `btype = "2xfer"` or where `btype` is not set, `tx.op = "xfer"`, and `tx.spender` **is** set. |
+   | `"2approve"` | Blocks with `btype = "2approve"` or where `btype` is not set and `tx.op = "approve"`. |
+
 
 #### Key Rules:
 
@@ -124,7 +132,6 @@ The `fee_ops` field defines which block types incur fees that are collected inst
    - If the block type corresponds to an entry in `fee_ops`, the fee is collected by `fee_col`.
    - Otherwise, the fee is burned.
 
-If `fee_col` is set but `fee_ops` is not, `fee_ops` defaults to `["1xfer, 2xfer"]`, i.e. fees are only collected for transfer operations.
 
 
 ---
@@ -167,10 +174,9 @@ icrc107_get_fee_collection: () -> (opt Account, Vec<Text>) query;
 
 `icrc107_get_fee_collection` returns two values:
 
-* `opt Account` (`fee_col`) – The active fee collector account. If `null`, fees are burned (`fee_burn` = "true").
-* `Vec<Text>` (`fee_ops`) – The list of operation types for which fees are collected. If `fee_col` is set but `fee_ops` is an empty list (`[]`), no fees are collected and all fees are burned.
+* `opt Account` (`fee_col`) – The active fee collector account. If `null`, fees are burned (this corresponds to `fee_col=[]` on-chain).
 
-
+* `Vec<Text>` (`fee_ops`) – The list of operation types for which fees are collected. If `fee_ops=[]` no fees are collected. This is equivalent to `fee_col=[]`, meaning all fees are burned. 
 
 ---
 
