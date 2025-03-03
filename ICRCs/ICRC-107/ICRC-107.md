@@ -51,10 +51,12 @@ variant {
 }
 ```
 
-- The **first Blob** represents the **principal** of the fee collector; if this is the anonymous principal (0x04) then fees for all operations are burned.
+- The **first Blob** represents the **principal** of the fee collector.
 - The **second Blob** represents the **subaccount**, or a zeroed-out Blob if no subaccount is used.
-
-This ensures that existing tools and explorers relying on the current `fee_col` format remain functional.
+- Burning fees (`fee_col = []`):
+  * Fees are burned if `fee_col` is not set in any prior vlock.
+  * To explicitly indicate burning, set `fee_col` to `variant {Array = vec {} }`, meaning the array is empty. 
+  * This ensures that existing tools and explorers relying on the current `fee_col` format remain functional.
 
 A block **MAY** include the following fields to define or update fee collection settings:
 
@@ -89,7 +91,7 @@ Blocks follow the ICRC-3 standard. To determine the **final fee amount** for a b
 The fee payer is always the source account in both transfer and approve transactions.
 
 
-## **3.2 Determining the Active Fee Settings for a Block**
+### **3.2 Determining the Active Fee Settings for a Block**
 
 To determine the **active fee settings** (who receives the fee and whether it is collected or burned), follow this algorithm:
 
@@ -110,8 +112,7 @@ To determine the **active fee settings** (who receives the fee and whether it is
    - Otherwise, fees are **burned**.  
 
 
-
-   ## **3.3 Mapping `fee_ops` to Block Types**
+### **3.3 Mapping `fee_ops` to Block Types**
 
    The `fee_ops` field specifies which block types **have their fees collected** instead of burned. For ICRC-1 and ICRC-2 blocks, `fee_ops` maps to block types as follows:
 
