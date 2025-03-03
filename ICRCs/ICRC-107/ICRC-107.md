@@ -31,7 +31,7 @@ For each block added to the ledger, some party may have to pay a fee. The amount
 
 Fee collection settings determine how fees are processed. These settings consist of:
 
-- A fee collector account (`fee_col`). If `fee_col` has never been set block, all fees are burned. Burning occurs by removing the fee from the paying account and reducing the total token supply by that amount.
+- A fee collector account (`fee_col`). If `fee_col` has never been set in any block, fees are burned by default. Burning occurs by removing the fee from the paying account and reducing the total token supply by that amount.
 - A list of operations (`fee_ops`) for which fees are collected. If an operation is not in `fee_ops`, the fee is burned.
 
 Changes to fee collection settings are recorded on-chain and take effect immediately in the block where they appear.
@@ -174,9 +174,13 @@ icrc107_get_fee_collection: () -> (opt Account, Vec<Text>) query;
 
 `icrc107_get_fee_collection` returns two values:
 
-* `opt Account` (`fee_col`) – The active fee collector account. If `null`, fees are burned (this corresponds to `fee_col=[]` on-chain).
+* `opt Account` (`fee_col`) – The active fee collector account.
+    - If `null`, fees are burned (this corresponds to `fee_col=[]` on-chain).
+    - Otherwise, fees are collected by the returned `Account`
 
-* `Vec<Text>` (`fee_ops`) – The list of operation types for which fees are collected. If `fee_ops=[]` no fees are collected. This is equivalent to `fee_col=[]`, meaning all fees are burned. 
+* `Vec<Text>` (`fee_ops`) – The list of operation types for which fees are collected.
+    - If `fee_ops=[]`, no fees are collected, and all fees are burned. This is equivalent to `fee_col=[]`, meaning that all transactions incur a fee that is removed from the supply.
+    - The API **does not apply a default** — it always returns the explicitly set value. The defaulting behavior (`["1xfer", "2xfer"]`) applies only at the block processing level when `fee_ops` is missing from a block.
 
 ---
 
