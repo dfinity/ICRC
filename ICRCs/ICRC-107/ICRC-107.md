@@ -5,7 +5,7 @@
 The lack of a unified approach has led to inconsistencies in fee collection across ICRC-based ledgers (e.g., ckBTC). For instance, in the ckBTC ledger, fees for transfer operations are collected by a designated fee collector, whereas fees for approve operations are burned—even when some fee collection details are present in approve blocks. However, there is no standardized way to:
 
 
-- Define fee collection rules—who receives fees, which operations are charged, and whether fees are burned.
+- Define fee collection rules — who receives fees, which operations are charged, and whether fees are burned.
 - Record fee collection settings directly on-chain in ledger blocks.
 - Provide consistent semantics for wallets, explorers, and other integrations to interpret fee structures.
 
@@ -15,12 +15,13 @@ ICRC-107 extends **ICRC-3**, adding semantics for fee collection while ensuring 
 
 ICRC-107 introduces a standardized mechanism for on-chain fee collection, ensuring clarity and interoperability across different ICRC-based ledgers. It defines:
 
-- A fee collection configuration specifying the collector account (`fee_col`) subject to fees.
-- A backward-compatible extension to ICRC-3 blocks, allowing fee collection settings to be recorded and modified within ledger history.
-- Clear rules governing fee distribution: If `fee_col` is set, fees are transferred from the paying account to the collector; otherwise, they are burned — meaning they are debited from the paying account and removed from the total supply.
+- A fee collection configuration specifying the collector account (icrc107_fee_col), which applies to all subsequent blocks.
+
+- A new block type for setting `icrc107_fee_col` to designate the fee collector.
+
+- A backward-compatible mechanism where, if `icrc107_fee_col` has never been set, legacy fee_col logic applies.
 
 By embedding fee collection settings entirely on-chain, ICRC-107 eliminates reliance on off-chain metadata, simplifies integration with wallets and explorers, and ensures full transparency in fee handling.
-
 ---
 
 ## 2. Fee Collection
@@ -55,7 +56,7 @@ variant {
 - The **second Blob** represents the **subaccount**, or a zeroed-out Blob if no subaccount is used.
 - Burning fees (`fee_col = []`):
   * Fees are burned if `fee_col` is not set in any prior vlock.
-  * To explicitly indicate burning, set `fee_col` to `variant {Array = vec {} }`, meaning the array is empty. 
+  * To explicitly indicate burning, set `fee_col` to `variant {Array = vec {} }`, meaning the array is empty.
   * This ensures that existing tools and explorers relying on the current `fee_col` format remain functional.
 
 A block **MAY** include the following fields to define or update fee collection settings:
