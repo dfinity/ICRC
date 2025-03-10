@@ -9,9 +9,9 @@ By embedding fee collection settings on-chain, ICRC-107 provides the following b
 
 - Interoperability: Wallets and explorers can rely on consistent fee handling across ICRC-based ledgers.
 
-- Simplified Integration: Eliminates the need for off-chain metadata to determine fee collection behavior
+- Simplified Integration: Eliminates the need for off-chain metadata to determine fee collection behavior.
 
-ICRC-107 applies to all ICRC-based ensuring consistent fee collection behavior across transfers and approvals. This standard is backward-compatible with existing ICRC-based ledgers, allowing them to transition gradually to the new fee collection mechanism, while documenting legacy fee collection logic.
+ICRC-107 applies to all ICRC-based ledgers ensuring consistent fee collection behavior across transfers and approvals. This standard is backward-compatible with existing ICRC-based ledgers, allowing them to transition gradually to the new fee collection mechanism, while documenting legacy fee collection logic.
 
 ### ICRC-107 Proposal
 
@@ -41,9 +41,7 @@ The fee collection configuration controls how the ledger processes fees. This co
 
 Once `icrc107_fee_col` is set, it overrides any legacy fee collection logic may be in place (See Section 5).
 
-This standard uses the Account representation defined in ICRC-3, as an array of blobs.  
-The empty account is represented as an empty array (`[]`) in the `icrc107_fee_col` field. The empty account (`[]`) is a reserved value that explicitly indicates fee burning, ensuring unambiguous interpretation across implementations.
-When `icrc107_fee_col` is set to the empty account, all subsequent fees are burned. This ensures a clear and unambiguous mechanism for fee burning.
+The empty account is represented as an empty array (`[]`) in the `icrc107_fee_col` field and it is a reserved value that explicitly indicates fee burning, ensuring unambiguous interpretation across implementations.
 
 ### 2.2 ICRC-107 Block Schema
 
@@ -168,7 +166,7 @@ variant { Vec = vec {
 
 ### 4.2 Supported Block Types
 
-Ledgers implementing ICRC-107 **MUST** report the new block type in response  to `icrc3_supported_block_types`.  The output of the call must include 
+Ledgers implementing ICRC-107 **MUST** report the new block type in response  to `icrc3_supported_block_types`.  The output of the call must include
 
 ```
 variant { Vec = vec {
@@ -178,7 +176,7 @@ variant { Vec = vec {
 
 ## 5. Legacy Fee Collection Mechanisms
 
-The Dfinity maintained ICRC ledgers include a fee colelction mechanism which, for completeness is described below.
+The Dfinity maintained ICRC ledgers include a fee collection mechanism which, for completeness is described below.
 
 ### 5.1 Legacy Behavior (`fee_col`)
 
@@ -186,8 +184,7 @@ The Dfinity maintained ICRC ledgers include a fee colelction mechanism which, fo
 - Other fees (e.g., `2approve`) are burned.
 - If `icrc107_fee_col` is not set, the ledger follows this legacy behavior, using `fee_col` only for transfers.
 
-
-New implementations SHOULD avoid using fee_col and instead use icrc107_fee_col for all fee collection settings. Legacy behavior is provided for backward compatibility only and MAY be deprecated in future versions of this standard.
+New implementations SHOULD avoid using fee_col and instead use `icrc107_fee_col` for all fee collection settings. Legacy behavior is provided for backward compatibility only and MAY be deprecated in future versions of this standard.
 
 ### 5.2 Handling Fee Collection for ICRC-1 and ICRC-2 Blocks
 
@@ -202,6 +199,6 @@ To determine who collects the fee in a block:
    - If the block is of type `2approve` then the fee is burned or no `fee_col`
    - If the block is a transfer block, i.e. of type `1xfer` or `2xfer`:
       - If `fee_col` is specified in the block the fee is collected by `fee_col`.
-      - If `fee_col_block` is specified in the block the fee is collected by the account specified in the `fee_col` field of the block with index `fee_col_block`.
+      - If `fee_col_block` is specified use the `fee_col` from the referenced block index.
 
 ---
