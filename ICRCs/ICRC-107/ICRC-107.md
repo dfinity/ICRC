@@ -39,9 +39,9 @@ The fee collection configuration controls how the ledger processes fees. This co
 - By default, the ledger burns all block fees until the first `icrc107_fee_col` setting is applied. If `icrc107_fee_col` has never been set, the ledger follows legacy `fee_col` logic (see Section 5).
 - A **fee collector configuration block** records these settings on-chain, ensuring transparent fee collection.
 
-Once `icrc107_fee_col` is set, it overrides any legacy fee collection logic may be in place (See Section 5).
+Once `icrc107_fee_col` is set, it overrides any legacy fee collection logic that may be in place (See Section 5).
 
-Fee burning is explicitly recorded on-chain by setting `icrc107_fee_col = variant { Array = vec {} }`. This ensures unambiguous representation accross implementations.
+Fee burning is explicitly recorded on-chain by setting `icrc107_fee_col = variant { Array = vec {} }`. This ensures unambiguous representation across implementations.
 
 
 ### 2.2 ICRC-107 Block Schema
