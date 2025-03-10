@@ -41,7 +41,8 @@ The fee collection configuration controls how the ledger processes fees. This co
 
 Once `icrc107_fee_col` is set, it overrides any legacy fee collection logic may be in place (See Section 5).
 
-The empty account is represented as an empty array (`[]`) in the `icrc107_fee_col` field and it is a reserved value that explicitly indicates fee burning, ensuring unambiguous interpretation across implementations.
+Fee burning is explicitly recorded on-chain by setting `icrc_107_fee_col = variant { Array = vec {} }`. This ensures unambiguous representation accross implementations.
+
 
 ### 2.2 ICRC-107 Block Schema
 
@@ -51,6 +52,7 @@ In addition to the ICRC-3 specific requirements, a fee collector configuration b
 
 - **MUST** contain a field `btype` with value `"107feecol"`.
 - **MUST** contain a field `icrc107_fee_col` of type `Array`, specifying the owner and, optionally, a subaccount, following the ICRC-3 standard.
+- To explicitly burn fees, `icrc107_fee_col` **MUST** be set to `variant { Array = vec {}}`.
 
 #### Example Block
 
@@ -75,7 +77,7 @@ variant { Map = vec {
 }};
 ```
 
-A block that unsets the fee collector, i.e. from this point onward all fees are burned:
+A block that explicitly sets fee burning by removing the fee collector (i.e., all fees are burned from this point onward):
 
 ```
 variant { Map = vec {
@@ -140,9 +142,10 @@ icrc107_get_fee_collection: () -> (opt Account) query;
 
 This method should return the currently active fee collection settings:
 
-  - If the response is `null`, fees are burned
-  - If the response is a valid `Account`, fees are collected by that account.
+  - If the response is `null`, fees are burned. This corresponds to `icrc107_fee_col = variant { Array = vec {}}` on-chain.
+  - If the response is a valid `Account`, fees are collected by that account. This corresponds to `icrc_107_fee_col` being set to the ICRC-3 representation of the account on-chain.
 
+This method strictly returns the last explicitly set value of `icrc107_fee_col`. It does not infer defaults, and if no fee collector was ever set, it returns null.
 
 ---
 
@@ -174,14 +177,13 @@ variant { Vec = vec {
 }};
 ```
 
-## 5. Legacy Fee Collection Mechanisms
+## 5. Note on Legacy Fee Collection Mechanisms
 
 The Dfinity maintained ICRC ledgers include a fee collection mechanism which, for completeness is described below.
 
 ### 5.1 Legacy Behavior (`fee_col`)
 
-- If `fee_col` is set in a block, the designated account collects **only transfer fees** (`1xfer` and `2xfer`) from that block onward.
-- Other fees (e.g., `2approve`) are burned.
+- If `fee_col` is set in a block, the designated account collects only transfer fees (`1xfer`, `2xfer`). Fees for all other operations (e.g., `2approve`) were always burned in legacy behavior
 - If `icrc107_fee_col` is not set, the ledger follows this legacy behavior, using `fee_col` only for transfers.
 
 New implementations SHOULD avoid using fee_col and instead use `icrc107_fee_col` for all fee collection settings. Legacy behavior is provided for backward compatibility only and MAY be deprecated in future versions of this standard.
