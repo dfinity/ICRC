@@ -41,7 +41,7 @@ The fee collection configuration controls how the ledger processes fees. This co
 
 Once `icrc107_fee_col` is set, it overrides any legacy fee collection logic may be in place (See Section 5).
 
-Fee burning is explicitly recorded on-chain by setting `icrc_107_fee_col = variant { Array = vec {} }`. This ensures unambiguous representation accross implementations.
+Fee burning is explicitly recorded on-chain by setting `icrc107_fee_col = variant { Array = vec {} }`. This ensures unambiguous representation accross implementations.
 
 
 ### 2.2 ICRC-107 Block Schema
@@ -143,9 +143,9 @@ icrc107_get_fee_collection: () -> (opt Account) query;
 This method should return the currently active fee collection settings:
 
   - If the response is `null`, fees are burned. This corresponds to `icrc107_fee_col = variant { Array = vec {}}` on-chain.
-  - If the response is a valid `Account`, fees are collected by that account. This corresponds to `icrc_107_fee_col` being set to the ICRC-3 representation of the account on-chain.
+  - If the response is a valid `Account`, fees are collected by that account. This corresponds to `icrc107_fee_col` being set to the ICRC-3 representation of the account on-chain.
 
-This method strictly returns the last explicitly set value of `icrc107_fee_col`. It does not infer defaults, and if no fee collector was ever set, it returns null.
+This method strictly returns the last explicitly set value of `icrc107_fee_col`. It does not infer defaults, and if no fee collector was ever set, it returns `opt Account = null`.
 
 ---
 
@@ -183,7 +183,7 @@ The Dfinity maintained ICRC ledgers include a fee collection mechanism which, fo
 
 ### 5.1 Legacy Behavior (`fee_col`)
 
-- If `fee_col` is set in a block, the designated account collects only transfer fees (`1xfer`, `2xfer`). Fees for all other operations (e.g., `2approve`) were always burned in legacy behavior
+- If `fee_col` is set in a block, the designated account collects only transfer fees (`1xfer`, `2xfer`). Fees for all other operations (e.g., `2approve`) were always burned in legacy behavior as implemented in Dfinity-maintained ICRC-3 ledgers.
 - If `icrc107_fee_col` is not set, the ledger follows this legacy behavior, using `fee_col` only for transfers.
 
 New implementations SHOULD avoid using fee_col and instead use `icrc107_fee_col` for all fee collection settings. Legacy behavior is provided for backward compatibility only and MAY be deprecated in future versions of this standard.
