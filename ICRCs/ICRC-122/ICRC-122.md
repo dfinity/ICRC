@@ -1,10 +1,10 @@
 # ICRC-122: Token Burning & Minting
 
-ICRC-122 introduces new block types for recording token minting and burning events in ICRC-compliant ledgers. These blocks provide a standardized way to document authorized supply modifications, ensuring transparent tracking of token issuance and removal. The `122burn` block records token reductions, while the `122mint` block tracks token increases. By integrating these blocks into the ledger history, implementations enhance auditability and enforceability of token supply constraints.
+ICRC-122 introduces new block types for recording token minting and burning events in ICRC-compliant ledgers. These blocks provide a standardized way to document authorized supply modifications, ensuring transparent tracking of token issuance and removal. The `122burn` block records token reductions, while the `122mint` block tracks token increases.
 
 
 ## Common Elements
-This standard follows the conventions set by ICRC-3, inheriting key structural components. Accounts are recorded as an `Array` of two `Value` variants, where the first element is a `variant { Blob = <owner principal> }`, representing the account owner, and the second element is a `variant { Blob = <subaccount> }`, representing the subaccount. If no subaccount is specified, this field MUST be an empty `Blob`. Additionally, each block includes `phash`, a `Blob` representing the hash of the parent block, and `ts`, a `Nat` representing the timestamp of the block. These elements ensure consistency with the ICRC-3 ledger structure and facilitate seamless integration.
+This standard follows the conventions set by ICRC-3, inheriting key structural components. Accounts are recorded as an `Array` of two `Value` variants, where the first element is a `variant { Blob = <owner principal> }`, representing the account owner, and the second element is a `variant { Blob = <subaccount> }`, representing the subaccount. If no subaccount is specified, this field MUST be an empty `Blob`. Additionally, each block includes `phash`, a `Blob` representing the hash of the parent block, and `ts`, a `Nat` representing the timestamp of the block. 
 
 
 ## Block Types & Schema
