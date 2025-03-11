@@ -1,25 +1,20 @@
 # ICRC-122: Token Burning & Minting
 
-## Account Representation
-ICRC-1 Accounts are recorded in blocks as an `Array` of two `Value` variants:
-- The first element is a `variant { Blob = <owner principal> }`, representing the account owner.
-- The second element is a `variant { Blob = <subaccount> }`, representing the subaccount. If no subaccount is specified, this field MUST be an empty `Blob`.
+ICRC-122 introduces new block types for recording token minting and burning events in ICRC-compliant ledgers. These blocks provide a standardized way to document authorized supply modifications, ensuring transparent tracking of token issuance and removal. The `122burn` block records token reductions, while the `122mint` block tracks token increases. By integrating these blocks into the ledger history, implementations enhance auditability and enforceability of token supply constraints.
 
 
-## Block Types
+## Common Elements
+This standard follows the conventions set by ICRC-3, inheriting key structural components. Accounts are recorded as an `Array` of two `Value` variants, where the first element is a `variant { Blob = <owner principal> }`, representing the account owner, and the second element is a `variant { Blob = <subaccount> }`, representing the subaccount. If no subaccount is specified, this field MUST be an empty `Blob`. Additionally, each block includes `phash`, a `Blob` representing the hash of the parent block, and `ts`, a `Nat` representing the timestamp of the block. These elements ensure consistency with the ICRC-3 ledger structure and facilitate seamless integration.
+
+
+## Block Types & Schema
+
+This standard introduces two new block types:
+
 - **Burn Tokens**: `122burn`
 - **Mint Tokens**: `122mint`
 
-
-Each block adheres to the generic block schema defined in ICRC-3, which includes common fields such as:
-- `phash`: A `Blob` representing the hash of the parent block.
-- `ts`: A `Nat` representing the timestamp of the block.
-
-The following sections detail the specific fields required for the `122burn` and `122mint` block types.
-
-
-## Block Schema
-
+The specific fields required for the `122burn` and `122mint` block types are as follows:
 
 
 ### 122burn Block
@@ -31,7 +26,7 @@ Each `122burn` block MUST include the following fields:
 | `from`         | `Array(vec { variant { Blob = <owner principal> }, variant { Blob = <subaccount> } })` | The account from which tokens are burned. |
 | `amount`       | `Nat`                 | The amount of tokens burned. |
 | `authorizer`   | `Blob`                | The principal who authorized the burn. |
-| `metadata`     | `Map(Text, Blob)`     | Optional metadata for additional details. |
+| `metadata`     | `Map(Text, Value)`     | Optional metadata for additional details. |
 
 ### 122mint Block
 Each `122mint` block MUST include the following fields:
@@ -42,7 +37,7 @@ Each `122mint` block MUST include the following fields:
 | `to`           | `Array(vec { variant { Blob = <owner principal> }, variant { Blob = <subaccount> } })` | The account receiving the minted tokens. |
 | `amount`       | `Nat`                 | The amount of tokens minted. |
 | `authorizer`   | `Blob`                | The principal who authorized the mint. |
-| `metadata`     | `Map(Text, Blob)`     | Optional metadata for additional details. |
+| `metadata`     | `Map(Text, Value)`     | Optional metadata for additional details. |
 
 ### Interesting Aspects
 - Accounts are represented using an **array of two blobs**: the first blob is the owner principal, and the second blob is the subaccount.
@@ -70,7 +65,7 @@ variant { Map = vec {
         variant { Blob = blob "\00\00\00\00\02\00\01\0d\01\01" };
         variant { Blob = blob "\06\ec\cd\3a\97\fb\a8\5f\bc\8d\a3\3e\5d\ba\bc\2f\38\69\60\5d\c7\a1\c9\53\1f\70\a3\66\c5\a7\e4\21" };
     }} };
-    record { "amount"; variant { Nat = 1_000_000 : nat } };
+    record { "amt"; variant { Nat = 1_000_000 : nat } };
     record { "authorizer"; variant { Blob = blob "\94\85\a4\06\ba\33\de\19\f8\ad\b1\ee\3d\07\9e\63\1d\7f\59\43\57\bc\dd\98\56\63\83\96\02" };};
     record {
                   "phash";
