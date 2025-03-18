@@ -186,7 +186,7 @@ The Dfinity maintained ICRC ledgers include a fee collection mechanism which, fo
 - If `fee_col` is set in a block, the designated account collects only transfer fees (`1xfer`, `2xfer`). Fees for all other operations (e.g., `2approve`) were always burned in legacy behavior as implemented in Dfinity-maintained ICRC-3 ledgers.
 - If `icrc107_fee_col` is not set, the ledger follows this legacy behavior, using `fee_col` only for transfers.
 
-New implementations SHOULD avoid using fee_col and instead use `icrc107_fee_col` for all fee collection settings. Legacy behavior is provided for backward compatibility only and MAY be deprecated in future versions of this standard.
+New implementations SHOULD avoid using `fee_col` and instead use `icrc107_fee_col` for all fee collection settings. Legacy behavior is provided for backward compatibility only and MAY be deprecated in future versions of this standard.
 
 ### 5.2 Handling Fee Collection for ICRC-1 and ICRC-2 Blocks
 
