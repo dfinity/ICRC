@@ -35,7 +35,7 @@ The fee collection configuration controls how the ledger processes fees. This co
 
 - If `icrc107_fee_col` is set to a ledger account, that account collects all subsequent fees.
 - If `icrc107_fee_col` is set to the empty account (see below), the ledger burns all subsequent fees.
-- The most recent `icrc107_fee_col` setting applies to each block.
+- An `icrc107_fee_col` block configures the fee collection for all subsequent blocks, until superseded by another `icrc107_fee_col` block. 
 - Until `icrc107_fee_col` is set fees are burned, unless legacy `fee_col` logic applies (see Section 5).
 - A **fee collector configuration block** records these settings on-chain, ensuring transparent fee collection.
 
