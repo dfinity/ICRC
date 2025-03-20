@@ -19,7 +19,7 @@ ICRC-107 establishes an on-chain fee collection mechanism that ensures clarity a
 
 - A fee collection configuration that specifies the collector account (`icrc107_fee_col`), applying to all subsequent blocks.
 - A new block type for setting `icrc107_fee_col` to designate the fee collector.
-- A backward-compatible mechanism where, if `icrc107_fee_col` has never been set, legacy `fee_col` logic applies.
+- A backward-compatible mechanism where, until `icrc107_fee_col` is set, legacy `fee_col` logic applies.
 
 By embedding fee collection settings entirely on-chain, ICRC-107 ensures transparency and simplifies integration with external tools.
 
@@ -102,7 +102,7 @@ variant { Map = vec {
 
 ### 3.1 `icrc107_set_fee_collection`
 
-This method allows a ledger controller to update the fee collection settings. It modifies the `icrc107_fee_col` account, which determines where collected fees are sent. The updated settings are recorded in the next block added to the ledger.
+This method allows a ledger controller to update the fee collection settings. It modifies the `icrc107_fee_col` account, which determines where collected fees are sent. The updated settings are recorded in a new block (of type `107feecol`) added to the ledger.
 
 ```
 icrc107_set_fee_collection: (SetFeeCollectionRequest) -> ();
@@ -128,7 +128,7 @@ This method MUST only be callable by the ledger controller or authorized princip
 The `icrc107_set_fee_collection` method MUST return an error in the following cases:
 
 - The caller is not authorized to modify fee collection settings.
-- The provided `Account` is invalid (e.g., malformed principal or subaccount)."
+- The provided `Account` is invalid (e.g., the minting account on ledgers,  anonymous principal, malformed principal or subaccount)."
 
 
 ### 3.2 `icrc107_get_fee_collection`
