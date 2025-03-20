@@ -36,7 +36,7 @@ The fee collection configuration controls how the ledger processes fees. This co
 - If `icrc107_fee_col` is set to a ledger account, that account collects all subsequent fees.
 - If `icrc107_fee_col` is set to the empty account (see below), the ledger burns all subsequent fees.
 - The most recent `icrc107_fee_col` setting applies to each block.
-- By default, the ledger burns all block fees until the first `icrc107_fee_col` setting is applied. If `icrc107_fee_col` has never been set, the ledger follows legacy `fee_col` logic (see Section 5).
+- Until `icrc107_fee_col` is set fees are burned, unless legacy `fee_col` logic applies (see Section 5).
 - A **fee collector configuration block** records these settings on-chain, ensuring transparent fee collection.
 
 Once `icrc107_fee_col` is set, it overrides any legacy fee collection logic that may be in place (See Section 5).
@@ -183,8 +183,11 @@ The Dfinity maintained ICRC ledgers include a fee collection mechanism which, fo
 
 ### 5.1 Legacy Behavior (`fee_col`)
 
+
+- Until `icrc107_fee_col` is set, the ledger follows this legacy behavior, using `fee_col` only for transfers.
+- If `fee_col`is not set, all fees are burned.
 - If `fee_col` is set in a block, the designated account collects only transfer fees (`1xfer`, `2xfer`). Fees for all other operations (e.g., `2approve`) were always burned in legacy behavior as implemented in Dfinity-maintained ICRC-3 ledgers.
-- If `icrc107_fee_col` is not set, the ledger follows this legacy behavior, using `fee_col` only for transfers.
+
 
 New implementations SHOULD avoid using `fee_col` and instead use `icrc107_fee_col` for all fee collection settings. Legacy behavior is provided for backward compatibility only and MAY be deprecated in future versions of this standard.
 
@@ -198,7 +201,7 @@ To determine who collects the fee in a block:
 
 2. If no `icrc107_fee_col` setting exists (legacy behavior):
 
-   - If the block is of type `2approve` then the fee is burned or no `fee_col`
+   - If the block is of type `2approve` then the fee is burned
    - If the block is a transfer block, i.e. of type `1xfer` or `2xfer`:
       - If `fee_col` is specified in the block the fee is collected by `fee_col`.
       - If `fee_col_block` is specified use the `fee_col` from the referenced block index.
