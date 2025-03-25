@@ -17,17 +17,18 @@ ICRC-97 specifies a metadata property pointing to one or more URIs serving the m
 |-------------------|----------------------------------------|
 | `icrc97:metadata` | `variant { Array = variant { Text } }` |
 
-## JSON Metadata properties
+## JSON Metadata Properties
 
 The following properties are defined for token metadata under the ICRC-97 standard. These fields are designed to be user-facing and provide essential information about the NFT.
 
-| Property       | Required | Description                                                                                                                                                         |
-|----------------|----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `name`         | Yes      | The name of the NFT e.g. "CoolToken #1"                                                                                                                             |
-| `description`  | Yes      | A detailed description of the NFT or token. It can describe its history, rarity, use case, or special properties.                                                   |
-| `image`        | Yes      | URI pointing to the primary image representing the NFT. Supported formats include PNG, JPEG, and SVG.                                                               |
-| `external_url` | No       | URI pointing to an external URL defining the asset — e.g. the game's main site.                                                                                     |
-| `attributes`   | No       | Array of attributes defining the characteristics of the asset.<ul><li>`trait_type`: The type of attribute.</li><li>`value`: The value for that attribute.</li></ul> |
+| Property        | Required | Description                                                                                                                                                                                                                                                                                                                                        |
+|-----------------|----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `name`          | Yes      | The name of the NFT e.g. "CoolToken #1"                                                                                                                                                                                                                                                                                                            |
+| `description`   | Yes      | A detailed description of the NFT or token. It can describe its history, rarity, use case, or special properties.                                                                                                                                                                                                                                  |
+| `image`         | Yes      | URI pointing to the primary image representing the NFT. Supported formats include **PNG**, **JPEG**, and **SVG**.                                                                                                                                                                                                                                  |
+| `animation_url` | No       | URI pointing to interactive NFT. This property supports the following file extensions and functionalities:<ul><li>**GLB**: Formats for 3D models.</li><li>**WEBM**, **MP4**: Video formats.</li><li>**WAV**, **OGG**, **MPEG**: Audio Formats.</li><li>**HTML**: For creating interactive NFTs using JavaScript canvas, WebGL, and more.</li></ul> |
+| `external_url`  | No       | URI pointing to an external URL defining the asset — e.g. the game's main site.                                                                                                                                                                                                                                                                    |
+| `attributes`    | No       | Array of attributes defining the characteristics of the asset.<ul><li>`trait_type`: The type of attribute.</li><li>`value`: The value for that attribute.</li></ul>                                                                                                                                                                                |
 
 The attribute fields supports an optional `display_type` to enhance the visual representation of certain traits.
 
@@ -40,6 +41,8 @@ The attribute fields supports an optional `display_type` to enhance the visual r
 | Default (no type)  | If `display_type` is not specified, the attribute is displayed as a text-based trait.    | `"Background": "Blue"`     |
 
 Adding an optional `max_value` sets a ceiling for a numerical trait's possible values. If you set a `max_value`, make sure not to pass in a higher value.
+
+While additional metadata properties and other file types (beyond those specified in this standard) are technically allowed, there is a risk that some platforms or services may not support them fully. This could lead to incompatibilities or issues with rendering/displaying the metadata across different systems.
 
 ## URI Storage Recommendations
 
