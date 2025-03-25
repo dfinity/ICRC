@@ -1,101 +1,93 @@
 | ICRC |                   Title                    |                                      Author                                      |                Discussions                | Status |      Type       | Category |  Created   |
 |:----:|:------------------------------------------:|:--------------------------------------------------------------------------------:|:-----------------------------------------:|:------:|:---------------:|:--------:|:----------:|
-|  97  | Non-Fungible Token (NFT) Metadata Standard | Thomas (@sea-snake), Austin Fatheree (@skilesare), Dieter Sommer (@dietersommer) | https://github.com/dfinity/ICRC/issues/97 | Draft  | Standards Track |          | 2024-08-13 |
+|  97  | Non-Fungible Token (NFT) Metadata Standard | Thomas (@sea-snake), Austin Fatheree (@skilesare), Dieter Sommer (@dietersommer) | https://github.com/dfinity/ICRC/issues/97 | Draft  | Standards Track |  Tokens  | 2024-08-13 |
 
 # ICRC-97: Non-Fungible Token (NFT) Metadata Standard
 
-ICRC-97 is a metadata standard for the implementation of Non-Fungible Tokens (NFTs) on
-the [Internet Computer](https://internetcomputer.org).
+ICRC-97 defines a **user-facing metadata** standard for Non-Fungible Tokens (NFTs) on the Internet Computer. This standard aligns with ERC-721 and Metaplex JSON metadata formats to enhance interoperability across ecosystems.
 
-The standard is designed to allow for multiple assets with different data types with various purposes. Where additional
-asset purposes and attribute display types can be standardized in ICRC-97 extensions.
-
-A list of asset purposes and attribute display types are defined in ICRC-97 to the minimum needed for wallets and marketplaces to display NFTs.
-
-## Extending the ICRC-7 Standard with Token Metadata
+## ICRC-7 Token Metadata
 
 The [`icrc7_token_metadata`](https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-7/ICRC-7.md#icrc7_token_metadata)
-method returns the token metadata for `token_ids`, a list of token ids. Each tuple in
-the response vector comprises an optional `metadata` element with the metadata expressed as a vector of `text` and `Value`
-pairs. Where `Value` is recursive as defined in the ICRC-3 standard.
+method returns the token metadata for `token_ids`, represented as a list of (text, Value) pairs. Here, Value is recursive as defined in the ICRC-3 standard.
 
-ICRC-7 does not specify the representation of token metadata any further than that it is represented in a generic manner
-as a vector of (text, Value)-pairs. The ICRC-97 standard defines a token metadata
-standard for ICRC-7 and other NFT standards.
+ICRC-97 specifies a metadata property pointing to one or more URIs serving the metadata JSON.
 
-### Entrypoint
+| Property          | ICRC-3 Type                            |
+|-------------------|----------------------------------------|
+| `icrc97:metadata` | `variant { Array = variant { Text } }` |
 
-The following metadata property MUST be defined in the root of the token metadata if we want to return on-chain
-metadata.
+## JSON Metadata properties
 
-| Root Metadata Property | ICRC-3 Type     | Description                            |
-|------------------------|-----------------|----------------------------------------|
-| icrc97:metadata        | variant { Map } | Contains on-chain metadata properties. |
+The following properties are defined for token metadata under the ICRC-97 standard. These fields are designed to be user-facing and provide essential information about the NFT.
 
-Alternatively the following metadata property MUST be defined in the root of the token metadata if we want to return
-external
-off-chain metadata instead of on-chain metadata.
+| Property       | Required | Description                                                                                                                                                         |
+|----------------|----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `name`         | Yes      | The name of the NFT e.g. "CoolToken #1"                                                                                                                             |
+| `description`  | Yes      | A detailed description of the NFT or token. It can describe its history, rarity, use case, or special properties.                                                   |
+| `image`        | Yes      | URI pointing to the primary image representing the NFT. Supported formats include PNG, JPEG, and SVG.                                                               |
+| `external_url` | No       | URI pointing to an external URL defining the asset — e.g. the game's main site.                                                                                     |
+| `attributes`   | No       | Array of attributes defining the characteristics of the asset.<ul><li>`trait_type`: The type of attribute.</li><li>`value`: The value for that attribute.</li></ul> |
 
-| Root Metadata Property   | ICRC-3 Type     | Description                                       |
-|--------------------------|-----------------|---------------------------------------------------|
-| icrc97:external_metadata | variant { Map } | Contains below external JSON metadata properties. |
+The attribute fields supports an optional `display_type` to enhance the visual representation of certain traits.
 
-| External Metadata Property | Optional | ICRC-3 Type      | Description                                                                    |
-|----------------------------|----------|------------------|--------------------------------------------------------------------------------|
-| url                        | No       | variant { Text } | URL that returns the metadata in JSON format (protocol is not limited to HTTP) |
-| sha256_hash                | Yes      | variant { Blob } | SHA-256 hash of HTTP response body bytes returned from above url.              |
+| Display Type       | Description                                                                              | Example                    |
+|--------------------|------------------------------------------------------------------------------------------|----------------------------|
+| `number`           | Displays the attribute as a numeric value.                                               | `"Level": 5`               |
+| `boost_percentage` | Displays the attribute as a percentage-based boost (common for gaming NFTs).             | `"Health Boost": +85%`     |
+| `boost_number`     | Displays the attribute as a numeric boost (e.g., additional points in a game).           | `"Strength Boost": +10`    |
+| `date`             | Displays the value as a human-readable date interpreted from a Unix timestamp (seconds). | `"Birthday": "2021-08-01"` |
+| Default (no type)  | If `display_type` is not specified, the attribute is displayed as a text-based trait.    | `"Background": "Blue"`     |
 
-### Metadata properties
+Adding an optional `max_value` sets a ceiling for a numerical trait's possible values. If you set a `max_value`, make sure not to pass in a higher value.
 
-Below table lists all (optional) metadata properties defined in this standard. Each property is defined in both ICRC-3
-and JSON type to support both on-chain `Value` and off-chain JSON metadata, respectively.
+## URI Storage Recommendations
 
-| Metadata Property | Optional | ICRC-3 Type                             | JSON Type | Description                                             |
-|-------------------|----------|-----------------------------------------|-----------|---------------------------------------------------------|
-| external_url      | Yes      | variant { Text }                        | string    | URL that allows the user to view the item on your site. |
-| name              | Yes      | variant { Text }                        | string    | Plain text.                                             |
-| description       | Yes      | variant { Text }                        | string    | Markdown.                                               |
-| assets            | Yes      | variant { Array = vec variant { Map } } | object[]  | List of assets ordered by priority descending.          |
-| attributes        | Yes      | variant { Array = vec variant { Map } } | object[]  | List of attributes ordered by priority descending.      |
+To reduce risks associated with off-chain storage, developers can adopt one of the following decentralized approaches. Multiple URIs can be provided for resilience (clients can attempt the next one if the first fails).
 
-The following table lists all (optional) asset properties.
+### 1. Basic Canister Approach:
 
-| Asset Property | Optional | ICRC-3 Type      | JSON Type       | Description                                                                    |
-|----------------|----------|------------------|-----------------|--------------------------------------------------------------------------------|
-| url            | No       | variant { Text } | string          | URL that returns the asset e.g. a PNG image (protocol is not limited to HTTP). |
-| mime           | No       | variant { Text } | string          | Mime type as defined in RFC 6838.                                              |
-| sha256_hash    | Yes      | variant { Blob } | string (base64) | SHA-256 hash of HTTP response body bytes returned from above url.              |
-| purpose        | Yes      | variant { Text } | string          | Indicate purpose of asset.                                                     |
+Embed JSON metadata directly within a URL using a DATA URI for fully on-chain storage.
 
-Below list of purpose values are part of the ICRC-97 standard, this list could be extended by other standards.
-Purpose values can define additional asset properties.
+```candid
+vec {
+    record {
+         "icrc97:metadata"; 
+         variant { Array = vec {
+             variant { Text = "data:text/json;charset=utf-8;base64,ew0KICAgImtleSIgOiAidmFsdWUiDQp9" };
+         }; };
+    }
+}
+```
 
-| Purpose Value  | Description                                                                                                                                                 |
-|----------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| icrc97:image   | Original size image that is shown on e.g. item details page. Additional optional `width` and `height` properties define the dimensions in number of pixels. |
-| icrc97:preview | Small image meant as preview within e.g. a list of items. Additional optional `width` and `height` properties define the dimensions in number of pixels.    |
+### 2. Multi-Canister Approach (Advanced)
 
-The following table lists all (optional) attribute properties.
+Store JSON metadata on the same canister or another certified canister, served via HTTPS. The ICRC-91 standard improves decentralization by removing the `ic0.app`/`icp0.io` dependency.
 
-| Attribute Property | Optional | ICRC-3 Type                | JSON Type        | Description                                 |
-|--------------------|----------|----------------------------|------------------|---------------------------------------------|
-| value              | No       | variant { Text; Nat; Int } | string \| number | Value of the trait.                         |
-| trait_type         | No       | variant { Text }           | string           | Name of the trait.                          |
-| display_type       | Yes      | variant { Text }           | string           | Indicate how attribute should be displayed. |
+```candid
+vec {
+    record {
+         "icrc97:metadata"; 
+         variant { Array = vec {
+             variant { Text = "ic-http://2225w-rqaaa-aaaai-qtqca-cai/metadata/3456" };
+             variant { Text = "https://2225w-rqaaa-aaaai-qtqca-cai.icp0.io/metadata/3456" };
+         }; };
+    }
+}
+```
 
-Below list of display types are part of the ICRC-97 standard, this list could be extended by other standards.
-Display types can define additional attribute properties.
+### 3. Bridging NFTs from Other Chains
 
-| Display Type Value      | Description                                                                                                                                                   |
-|-------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| icrc97:property         | Shows attribute as property with e.g. rarity, this is the default display type.                                                                               |
-| icrc97:date             | Shows attribute as date, expects epoch timestamp number in milliseconds.                                                                                      |
-| icrc97:time             | Shows attribute as date with time, expects epoch timestamp number in milliseconds.                                                                            |
-| icrc97:rank             | Shows attribute as progress rank e.g. 4 of 10, expects number and additional `max_value` property with a number.                                              |
-| icrc97:stat             | Show attribute as stat e.g. 1 out of 2, expects number and additional `max_value` property with a number.                                                     |
-| icrc97:boost            | Shows attribute as boost e.g. +10, expects number and optional additional `min_value` and `max_value` properties. Numbers can be either positive or negative. |
-| icrc97:boost_percentage | Same as `icrc97:boost` but shows values with %.                                                                                                               |
+Point to their metadata on **IPFS**, a common decentralized file system.
 
-## Future work
-
-This standard defines a token metadata standard for ICRC-7. But also applies to future standards like ICRC-8, where needed ICRC-97 can be extended with additional asset purposes and display type values to accomodate for these standards.
+```candid
+vec {
+    record {
+         "icrc97:metadata"; 
+         variant { Array = vec {
+             variant { Text = "ipfs://bafybeihkoviema7g3gxyt6la7vd5ho32ictqbilu3wnlo3rs7ewhnp7lly" };
+             variant { Text = "https://ipfs.io/ipfs/bafybeihkoviema7g3gxyt6la7vd5ho32ictqbilu3wnlo3rs7ewhnp7lly" };
+         }; };
+    }
+}
+```
