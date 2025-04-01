@@ -26,7 +26,7 @@ This standard introduces four new block types:
 
 ## Block Types & Schema
 
-Each block introduced by this standard MUST include a `tx` field containing a map that encodes the freeze or unfreeze instruction, similarly to how transaction blocks defined in ICRC-1 and ICRC-2 include the submitted transaction.
+Each block introduced by this standard MUST include a `tx` field containing a map that encodes the freeze or unfreeze transaction submitted to the ledger that caused this block to be created, similarly to how transaction blocks defined in ICRC-1 and ICRC-2 include the submitted transaction.
 
 This enables canister clients, indexers, and auditors to reconstruct the exact instruction that led to the block being appended to the ledger.
 
@@ -37,7 +37,7 @@ Each block consists of the following top-level fields:
 | `btype`  | `Text`                | Yes      | MUST be one of: `"123freezeaccount"`, `"123unfreezeaccount"`, `"123freezeprincipal"`, or `"123unfreezeprincipal"`. |
 | `ts`     | `Nat`                 | Yes      | Timestamp in nanoseconds when the block was added to the ledger. |
 | `phash`  | `Blob`                | Yes      | Hash of the parent block. |
-| `tx`     | `Map(Text, Value)`    | Yes      | Contains the freeze or unfreeze instruction payload. |
+| `tx`     | `Map(Text, Value)`    | Yes      | Encodes the specific transaction that was submitted to the ledger and which resulted in the block being created. |
 
 ### `tx` Field Schemas
 
