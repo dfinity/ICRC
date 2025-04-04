@@ -55,7 +55,7 @@ Each block consists of the following top-level fields:
 |Field        | Type (ICRC-3 `Value`)         | Required | Description |
 |--------------|-------------------------------|----------|-------------|
 | `account`    | `Array(vec { Blob [, Blob] })` | Yes     | The account to unfreeze. |
-| `authorizer` | `Blob`                        | Yes     | Principal who authorized the freeze. |
+| `authorizer` | `Blob`                        | Yes     | Principal who authorized the unfreeze. |
 | `metadata`   | `Map(Text, Value)`            | Optional | Additional metadata. |
 
 #### For `123freezeprincipal`
@@ -71,7 +71,7 @@ Each block consists of the following top-level fields:
 | Field        | Type (ICRC-3 `Value`) | Required | Description |
 |--------------|------------------------|----------|-------------|
 | `principal`  | `Blob`                | Yes      | The principal to unfreeze. |
-| `authorizer` | `Blob`                | Yes      | Principal who authorized the freeze. |
+| `authorizer` | `Blob`                | Yes      | Principal who authorized the unfreeze. |
 | `metadata`   | `Map(Text, Value)`    | Optional | Additional metadata. |
 
 
@@ -102,7 +102,7 @@ Otherwise, the account is considered **NON-RESTRICTED**.
 
 ### Ledger Enforcement Rules
 
-- A ledger **MUST reject** any transfer transaction (`icrc1_transfer` or `icrc2_trasfer_from`) where the **sender or recipient account is currently RESTRICTED**.
+- A ledger **MUST reject** any transfer transaction (`icrc1_transfer` or `icrc2_transfer_from`) where the **sender or recipient account is currently RESTRICTED**.
 - Freeze and unfreeze blocks do **not** modify or invalidate previous transactions. They apply only to transactions **at or after** the block height at which the freeze/unfreeze block is recorded.
 - Freeze and unfreeze blocks MUST be **permanently recorded** and included in the block hash chain.
 
