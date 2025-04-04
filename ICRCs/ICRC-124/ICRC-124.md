@@ -1,12 +1,8 @@
-## Motivation
+# ICRC-124: Ledger Pausing, Unpausing, and Deactivation
 
-ICRC-124 provides essential administrative controls for token ledgers on the Internet Computer to:
+ICRC-124 introduces new block types for recording administrative actions that control the operational state of an ICRC-compliant ledger. These blocks allow ledgers to be paused (temporarily halted), unpaused (resumed), or permanently deactivated (made immutable). This standard provides a consistent, auditable way to represent these state transitions within the ledger itself, ensuring transparency and enabling robust governance and recovery mechanisms.
 
-1. **Emergency Response**: Enable temporary suspension during security incidents or suspected fraud
-2. **Regulatory Compliance**: Support mechanisms for meeting legal requirements
-3. **Lifecycle Management**: Allow for transparent and standardized token retirement
-4. **Auditability**: Create clear records of administrative actions and their authorization
-5. **Operational Stability**: Provide standardized recovery paths from exceptional states
+
 
 
 ## Overview of Block Types
