@@ -11,7 +11,7 @@ This standard follows the conventions set by ICRC-3, inheriting key structural c
 
 Each block introduced by this standard MUST include a `tx` field containing a map that encodes the token mint or burn transaction submitted to the ledger that caused this block to be created, similarly to how transaction blocks defined in ICRC-1 and ICRC-2 include the submitted transaction.
 
-This enables canister clients, indexers, and auditors to reconstruct the exact instruction that led to the block being appended to the ledger.
+This enables canister clients, indexers, and auditors to reconstruct the exact instruction that led to the block being recorded to the ledger.
 
 Each `122burn` or `122mint` block consists of the following top-level fields:
 
@@ -48,7 +48,7 @@ Each `122burn` or `122mint` block consists of the following top-level fields:
 - Accounts are represented using an **array of one or two blobs**: the first blob is the owner principal, and the second blob is the subaccount (if present). If no subaccount is specified, only the owner is included.
 - The `amount` field uses the `Nat` type from ICRC-3’s `Value` specification.
 - The `authorizer` field in the `tx` object identifies the principal who authorized the operation.
-- Each `122burn` or `122mint` block contains a `tx` field that encodes the mint or burn instruction that caused the block to be appended to the ledger.
+- Each `122burn` or `122mint` block contains a `tx` field that encodes the mint or burn instruction that caused the block to be recorded in the ledger.
 
 ## Semantics
 
@@ -77,7 +77,7 @@ variant { Map = vec {
     // Block type identifier
     record { "btype"; variant { Text = "122burn" }};
 
-    // Timestamp when the block was appended (nanoseconds since epoch)
+    // Timestamp when the block was recorded (nanoseconds since epoch)
     record { "ts"; variant { Nat = 1_741_312_737_184_874_392 : nat }};
 
     // Hash of the previous block in the ledger chain
@@ -109,7 +109,7 @@ variant { Map = vec {
     // Block type identifier
     record { "btype"; variant { Text = "122mint" }};
 
-    // Timestamp when the block was appended (nanoseconds since epoch)
+    // Timestamp when the block was recorded (nanoseconds since epoch)
     record { "ts"; variant { Nat = 1_741_312_737_184_874_392 : nat }};
 
     // Hash of the previous block in the ledger chain
