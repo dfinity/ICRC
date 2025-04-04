@@ -55,7 +55,7 @@ variant { Map = vec {
     // Block type identifier
     record { "btype"; variant { Text = "124pause" }};
 
-    // Timestamp when the block was appended (nanoseconds since epoch)
+    // Timestamp when the block was recorded (nanoseconds since epoch)
     record { "ts"; variant { Nat = 1_741_312_737_184_874_392 : nat }};
 
     // Hash of the previous block in the ledger chain
