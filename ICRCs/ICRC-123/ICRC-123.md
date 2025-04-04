@@ -4,10 +4,10 @@ ICRC-123 introduces new block types for recording account and unfreezing events 
 
 ## Common Elements
 
-This standard follows the conventions set by ICRC-3, inheriting key structural components. Accounts are recorded as an `Array` of two `Value` variants, where:
+This standard follows the conventions set by ICRC-3, inheriting key structural components. Accounts are recorded as an `Array` of one or two `Value` variants, where:
 
 - The first element is a `variant { Blob = <owner principal> }`, representing the account owner.
-- The second element is a `variant { Blob = <subaccount> }`, representing the subaccount. If no subaccount is specified, this field MUST be an empty `Blob`.
+- The second element is a `variant { Blob = <subaccount> }`, representing the subaccount. If no subaccount is specified, only the owner is included.
 
 Additionally, each block includes:
 
