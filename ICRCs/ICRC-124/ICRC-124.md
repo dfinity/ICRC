@@ -48,6 +48,8 @@ Once a `124deactivate` block is recorded, the ledger's state becomes **immutable
 
 ## Example blocks
 
+### 124pause Example
+
 ```
 variant { Map = vec {
     // Block type identifier
@@ -64,7 +66,7 @@ variant { Map = vec {
     // Pause transaction payload
     record { "tx"; variant { Map = vec {
         // Principal that authorized the pause
-        record { "authorizer"; variant { Blob = blob "\ab\cd\01\23\45\67\89\ef\01\23\45\67\89\ab\cd\ef\01\02\03\04\05\06\07\08\09\0a\0b\0c\0d\0e\0f" }};
+        record { "authorizer"; variant { Blob = blob "\ab\cd\01\23\45\67\89\ef\01\23\45\67\89\ab\cd\ef\01\02\03\04\05\06\07\08\09\0a\0b\0c\0d\0e\01" }};
 
         // Optional metadata
         record { "metadata"; variant { Map = vec {
@@ -74,7 +76,43 @@ variant { Map = vec {
 }};
 ```
 
+### 124unpause Example
 
+```
+variant { Map = vec {
+    record { "btype"; variant { Text = "124unpause" }};
+    record { "ts"; variant { Nat = 1_741_312_737_200_000_000 : nat }};
+    record { "phash"; variant {
+        Blob = blob "\be\ba\fe\ca\01\02\03\04\05\06\07\08\09\0a\0b\0c\0d\0e\0f\10\11\12\13\14\15\16\17\18\19\1a\1b"
+    }};
+    record { "tx"; variant { Map = vec {
+        record { "authorizer"; variant { Blob = blob "\11\22\33\44\55\66\77\88\99\aa\bb\cc\dd\ee\ff\00\01\02\03\04\05\06\07\08\09\0a\0b\0c\0d\0e\01" }};
+        record { "metadata"; variant { Map = vec {
+            record { "note"; variant { Text = "Ledger resumes after maintenance window" }}
+        }}}
+    }}};
+}};
+```
+
+### 124deactivate Example
+
+```
+variant { Map = vec {
+    record { "btype"; variant { Text = "124deactivate" }};
+    record { "ts"; variant { Nat = 1_741_312_737_250_000_000 : nat }};
+    record { "phash"; variant {
+        Blob = blob "\c0\ff\ee\00\10\20\30\40\50\60\70\80\90\a0\b0\c0\d0\e0\f0\00\11\22\33\44\55\66\77\88\99\aa\bb\cc"
+    }};
+    record { "tx"; variant { Map = vec {
+        record { "authorizer"; variant { Blob = blob "\de\ad\be\ef\00\11\22\33\44\55\66\77\88\99\aa\bb\cc\dd\ee\ff\10\20\30\40\50\60\70\80\90\a0\b0\01" }};
+        record { "metadata"; variant { Map = vec {
+            record { "finalized_by"; variant { Text = "SNS DAO proposal 314" }},
+            record { "note"; variant { Text = "Ledger permanently frozen to preserve historical state" }}
+        }}}
+    }}};
+}};
+
+```
 ## Compliance Reporting
 
 Ledgers implementing this standard MUST return the following entries from `icrc3_supported_block_types`:
