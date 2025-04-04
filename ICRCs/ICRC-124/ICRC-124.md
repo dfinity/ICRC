@@ -46,6 +46,35 @@ All three block types share the same schema:
 Once a `124deactivate` block is recorded, the ledger's state becomes **immutable** for transfer operations while maintaining read access to historical data.
 
 
+## Example blocks
+
+```
+variant { Map = vec {
+    // Block type identifier
+    record { "btype"; variant { Text = "124pause" }};
+
+    // Timestamp when the block was appended (nanoseconds since epoch)
+    record { "ts"; variant { Nat = 1_741_312_737_184_874_392 : nat }};
+
+    // Hash of the previous block in the ledger chain
+    record { "phash"; variant {
+        Blob = blob "\de\ad\be\ef\00\11\22\33\44\55\66\77\88\99\aa\bb\cc\dd\ee\ff\10\20\30\40\50\60\70\80\90\a0\b0\c0"
+    }};
+
+    // Pause transaction payload
+    record { "tx"; variant { Map = vec {
+        // Principal that authorized the pause
+        record { "authorizer"; variant { Blob = blob "\ab\cd\01\23\45\67\89\ef\01\23\45\67\89\ab\cd\ef\01\02\03\04\05\06\07\08\09\0a\0b\0c\0d\0e\0f" }};
+
+        // Optional metadata
+        record { "metadata"; variant { Map = vec {
+            record { "reason"; variant { Text = "DAO vote: pause due to upgrade prep" }}
+        }}}
+    }}};
+}};
+```
+
+
 ## Compliance Reporting
 
 Ledgers implementing this standard MUST return the following entries from `icrc3_supported_block_types`:
