@@ -24,9 +24,8 @@ This standard introduces four new block types:
 - **Freeze Principal**: `123freezeprincipal`
 - **Unfreeze Principal**: `123unfreezeprincipal`
 
-## Block Types & Schema
 
-Each block introduced by this standard MUST include a `tx` field containing a map that encodes the freeze or unfreeze transaction submitted to the ledger that caused this block to be created, similarly to how transaction blocks defined in ICRC-1 and ICRC-2 include the submitted transaction.
+Each block introduced by this standard MUST include a `tx` field containing a map that encodes the freeze or unfreeze transaction submitted to the ledger that caused this block to be created, similarly to how blocks that hold ICRC-1 and ICRC-2 transactions include, explicitly, the transaction that was submitted.
 
 This enables canister clients, indexers, and auditors to reconstruct the exact instruction that led to the block being appended to the ledger.
 
