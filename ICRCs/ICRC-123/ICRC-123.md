@@ -146,6 +146,25 @@ vec {
 
 
 
+### 123freezeaccount Example
+
+```
+variant {
+    Map = vec {
+      record { "btype"; variant { Text = "123freezeaccount" }};  // Block type identifier
+      record { "ts"; variant { Nat = 1741312737184874393 }};     // Timestamp when the block was appended (nanoseconds since epoch)
+      record { "phash"; variant { Blob = blob "\9a\6f\bd\5b\18\65\2c\fa\6d\20\de\4d\fa\43\fc\96\33\e5\6a\1b" }};  // Hash of the previous block in the ledger chain
+      record { "tx"; variant { Map = vec {
+          record { "account"; variant { Array = vec {
+              variant { Blob = blob "\00\00\00\00\02\00\01\0d\01\01" };   // Account to be frozen (owner principal)
+              variant { Blob = blob "\06\ec\cd\3a\97\fb\a8\5f\bc\8d\a3\3e\5d\ba\bc\2f\38\69\60\5d\c7\a1\c9\53\1f\70\a3\66\c5\a7\e4\21" };   // Another account to be frozen
+          }}};
+          record { "reason"; variant { Text = "Security breach" }};  // The reason for the freeze operation
+      }}};
+    }};
+```
+
+
 ### 123unfreezeaccount Example
 
 ```
@@ -153,66 +172,51 @@ variant {
     Map = vec {
       record { "btype"; variant { Text = "123unfreezeaccount" }};  // Block type identifier
       record { "ts"; variant { Nat = 1741312737184874392 }};       // Timestamp when the block was appended (nanoseconds since epoch)
-      record { "phash"; variant { Blob = blob "d5c7eb57a24efa8bd1cc549e49c69fd1938de802d46065e2f23c00043b2e51" }};  // Hash of the previous block in the ledger chain
+      record { "phash"; variant { Blob = blob "\d5\c7\eb\57\a2\4e\fa\d4\8b\d1\cc\54\9e\49\c6\9f\d1\93\8d\e8\02\d4\60\65\e2\f2\3c\00\04\3b\2e\51" }};  // Hash of the previous block in the ledger chain
       record { "tx"; variant { Map = vec {
           record { "account"; variant { Array = vec {
-              record { ""account"; variant { Blob = blob "000000000200010d0101" }};  // The account to be unfrozen (only owner principal specified here)
+              variant { Blob = blob "\00\00\00\00\02\00\01\0d\01\01" };   // Account to be unfrozen (owner principal)
+              variant { Blob = blob "\06\ec\cd\3a\97\fb\a8\5f\bc\8d\a3\3e\5d\ba\bc\2f\38\69\60\5d\c7\a1\c9\53\1f\70\a3\66\c5\a7\e4\21" };   // Another account to be unfrozen
           }}};
           record { "reason"; variant { Text = "Legal case resolved" }};  // The reason for the unfreeze operation
       }}};
 
-        }}};
     }};
 ```
+
 
 ### 123freezeprincipal Example
 ```
-variant { Map = vec {
-    // Block type identifier
-    record { "btype"; variant { Text = "123freezeprincipal" }};
-
-    // Timestamp when the block was appended (nanoseconds since epoch)
-    record { "ts"; variant { Nat = 1_741_312_737_184_874_392 : nat }};
-
-    // Hash of the previous block in the ledger chain
-    record { "phash"; variant {
-        Blob = blob "\d5\c7\eb\57\a2\4e\fa\d4\8b\d1\cc\54\9e\49\c6\9f\d1\93\8d\e8\02\d4\60\65\e2\f2\3c\00\04\3b\2e\51"
-    }};
-
-    // The freeze instruction payload
+variant {
+  Map = vec {
+    record { "btype"; variant { Text = "123freezeprincipal" }};  // Block type identifier
+    record { "ts"; variant { Nat = 1741312737184874393 }};     // Timestamp when the block was appended (nanoseconds since epoch)
+    record { "phash"; variant { Blob = blob "\9a\6f\bd\5b\18\65\2c\fa\6d\20\de\4d\fa\43\fc\96\33\e5\6a\1b" }};  // Hash of the previous block in the ledger chain
     record { "tx"; variant { Map = vec {
-        // The principal whose accounts are to be frozen
-        record { "principal"; variant { Blob = blob "\00\00\00\00\02\00\01\0d\01\01" }};
+      record { "principal"; variant { Array = vec {
+          variant { Blob = blob "\00\00\00\00\02\00\01\0d\01\01" };   // Principal to be frozen
+      }}};
+      record { "reason"; variant { Text = "Suspicion of illicit activity" }};  // Reason for freezing the principal
+  }}};
 
-        // The principal who authorized the freeze operation
-        record { "authorizer"; variant { Blob = blob "\94\85\a4\06\ba\33\de\19\f8\ad\b1\ee\3d\07\9e\63\1d\7f\59\43\57\bc\dd\98\56\63\83\96\02" }};
-    }}};
 }};
 
 ```
 
 ### 123unfreezeprincipal Example
 ```
-variant { Map = vec {
-    // Block type identifier
-    record { "btype"; variant { Text = "123unfreezeprincipal" }};
-
-    // Timestamp when the block was appended (nanoseconds since epoch)
-    record { "ts"; variant { Nat = 1_741_312_737_184_874_392 : nat }};
-
-    // Hash of the previous block in the ledger chain
-    record { "phash"; variant {
-        Blob = blob "\d5\c7\eb\57\a2\4e\fa\d4\8b\d1\cc\54\9e\49\c6\9f\d1\93\8d\e8\02\d4\60\65\e2\f2\3c\00\04\3b\2e\51"
-    }};
-
-    // The unfreeze instruction payload
+variant {
+  Map = vec {
+    record { "btype"; variant { Text = "123unfreezeprincipal" }};  // Block type identifier
+    record { "ts"; variant { Nat = 1741312737184874392 }};       // Timestamp when the block was appended (nanoseconds since epoch)
+    record { "phash"; variant { Blob = blob "\d5\c7\eb\57\a2\4e\fa\d4\8b\d1\cc\54\9e\49\c6\9f\d1\93\8d\e8\02\d4\60\65\e2\f2\3c\00\04\3b\2e\51" }};  // Hash of the previous block in the ledger chain
     record { "tx"; variant { Map = vec {
-        // The principal whose accounts are to be unfrozen
-        record { "principal"; variant { Blob = blob "\00\00\00\00\02\00\01\0d\01\01" }};
+      record { "principal"; variant { Array = vec {
+          variant { Blob = blob "\00\00\00\00\02\00\01\0d\01\01" };   // Principal to be unfrozen
+      }}};
+      record { "reason"; variant { Text = "Court order" }};  // Reason for unfreezing the principal
+  }}};
 
-        // The principal who authorized the unfreeze operation
-        record { "authorizer"; variant { Blob = blob "\94\85\a4\06\ba\33\de\19\f8\ad\b1\ee\3d\07\9e\63\1d\7f\59\43\57\bc\dd\98\56\63\83\96\02" }};
-    }}};
 }};
 
 ```
