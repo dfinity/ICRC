@@ -45,36 +45,28 @@ Each block consists of the following top-level fields:
 | Field        | Type (ICRC-3 `Value`)         | Required | Description |
 |--------------|-------------------------------|----------|-------------|
 | `account`    | `Array(vec { Blob [, Blob] })` | Yes     | The account to freeze. |
-| `authorizer` | `Blob`                        | Yes     | Principal who authorized the freeze. |
-| `metadata`   | `Map(Text, Value)`            | Optional | Additional metadata. |
+| `reason`     | `Text`                         | Yes     | Reason for freezing the account. |
 
 #### For `123unfreezeaccount`
-
 
 |Field        | Type (ICRC-3 `Value`)         | Required | Description |
 |--------------|-------------------------------|----------|-------------|
 | `account`    | `Array(vec { Blob [, Blob] })` | Yes     | The account to unfreeze. |
-| `authorizer` | `Blob`                        | Yes     | Principal who authorized the unfreeze. |
-| `metadata`   | `Map(Text, Value)`            | Optional | Additional metadata. |
+| `reason`     | `Text`                         | Yes     | Reason for unfreezing the account. |
 
 #### For `123freezeprincipal`
 
 | Field        | Type (ICRC-3 `Value`) | Required | Description |
 |--------------|------------------------|----------|-------------|
 | `principal`  | `Blob`                | Yes      | The principal to freeze. |
-| `authorizer` | `Blob`                | Yes      | Principal who authorized the freeze. |
-| `metadata`   | `Map(Text, Value)`    | Optional | Additional metadata. |
+| `reason`     | `Text`                | Yes      | Reason for freezing the principal. |
 
 #### For `123unfreezeprincipal`
 
 | Field        | Type (ICRC-3 `Value`) | Required | Description |
 |--------------|------------------------|----------|-------------|
 | `principal`  | `Blob`                | Yes      | The principal to unfreeze. |
-| `authorizer` | `Blob`                | Yes      | Principal who authorized the unfreeze. |
-| `metadata`   | `Map(Text, Value)`    | Optional | Additional metadata. |
-
-
-
+| `reason`     | `Text`                | Yes      | Reason for unfreezing the principal. |
 ## Semantics
 
 This section defines the semantics of the freeze and unfreeze block types introduced by this standard.
@@ -126,6 +118,8 @@ Ledgers implementing this standard SHOULD expose a query interface (e.g., `is_ac
 
 Ledgers implementing this standard MUST return the following response to `icrc3_supported_block_types` with a URL pointing to the standard defining each block type:
 
+
+
 ```
 vec {
     variant { Record = vec {
@@ -149,56 +143,26 @@ vec {
 
 ## Example Blocks
 
-### 123freezeaccount Example
-```
-variant { Map = vec {
-    // Block type identifier
-    record { "btype"; variant { Text = "123freezeaccount" }};
 
-    // Timestamp when the block was appended (nanoseconds since epoch)
-    record { "ts"; variant { Nat = 1_741_312_737_184_874_392 : nat }};
-
-    // Hash of the previous block in the ledger chain
-    record { "phash"; variant { Blob = blob "\d5\c7\eb\57\a2\4e\fa\d4\8b\d1\cc\54\9e\49\c6\9f\d1\93\8d\e8\02\d4\60\65\e2\f2\3c\00\04\3b\2e\51" }};
-
-    // The freeze instruction payload
-    record { "tx"; variant { Map = vec {
-        // The account to be frozen (only owner principal specified here)
-        record { "account"; variant { Array = vec {
-            variant { Blob = blob "\00\00\00\00\02\00\01\0d\01\01" }
-        }}};
-
-        // The principal that authorized the freeze operation
-        record { "authorizer"; variant { Blob = blob "\94\85\a4\06\ba\33\de\19\f8\ad\b1\ee\3d\07\9e\63\1d\7f\59\43\57\bc\dd\98\56\63\83\96\02" }};
-    }}};
-}};
-```
 
 
 ### 123unfreezeaccount Example
 
 ```
-variant { Map = vec {
-    // Block type identifier
-    record { "btype"; variant { Text = "123unfreezeaccount" }};
+variant {
+    Map = vec {
+      record { "btype"; variant { Text = "123unfreezeaccount" }};  // Block type identifier
+      record { "ts"; variant { Nat = 1741312737184874392 }};       // Timestamp when the block was appended (nanoseconds since epoch)
+      record { "phash"; variant { Blob = blob "d5c7eb57a24efa8bd1cc549e49c69fd1938de802d46065e2f23c00043b2e51" }};  // Hash of the previous block in the ledger chain
+      record { "tx"; variant { Map = vec {
+          record { "account"; variant { Array = vec {
+              record { ""account"; variant { Blob = blob "000000000200010d0101" }};  // The account to be unfrozen (only owner principal specified here)
+          }}};
+          record { "reason"; variant { Text = "Legal case resolved" }};  // The reason for the unfreeze operation
+      }}};
 
-    // Timestamp when the block was appended (nanoseconds since epoch)
-    record { "ts"; variant { Nat = 1_741_312_737_184_874_392 : nat }};
-
-    // Hash of the previous block in the ledger chain
-    record { "phash"; variant { Blob = blob "\d5\c7\eb\57\a2\4e\fa\d4\8b\d1\cc\54\9e\49\c6\9f\d1\93\8d\e8\02\d4\60\65\e2\f2\3c\00\04\3b\2e\51" }};
-
-    // The unfreeze instruction payload
-    record { "tx"; variant { Map = vec {
-        // The account to be unfrozen (only owner principal specified here)
-        record { "account"; variant { Array = vec {
-            variant { Blob = blob "\00\00\00\00\02\00\01\0d\01\01" }
         }}};
-
-        // The principal that authorized the unfreeze operation
-        record { "authorizer"; variant { Blob = blob "\94\85\a4\06\ba\33\de\19\f8\ad\b1\ee\3d\07\9e\63\1d\7f\59\43\57\bc\dd\98\56\63\83\96\02" }};
-    }}};
-}};
+    }};
 ```
 
 ### 123freezeprincipal Example
