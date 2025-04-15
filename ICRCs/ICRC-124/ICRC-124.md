@@ -1,130 +1,142 @@
 # ICRC-124: Ledger Pausing, Unpausing, and Deactivation
 
-ICRC-124 introduces new block types for recording administrative actions that control the operational state of an ICRC-compliant ledger. These blocks allow ledgers to be paused (temporarily halted), unpaused (resumed), or permanently deactivated (made immutable). This standard provides a consistent, auditable way to represent these state transitions within the ledger itself, ensuring transparency and enabling robust governance and recovery mechanisms.
+## Status
 
+Draft
 
+## Introduction
 
+This standard defines new block types for recording administrative actions that control the operational state of an ICRC-compliant ledger: pausing (`124pause`), unpausing (`124unpause`), and deactivating (`124deactivate`). These actions allow ledger operations to be temporarily halted (e.g., for maintenance), resumed, or permanently stopped (making the ledger immutable). This standard provides a consistent, auditable way to represent these ledger-wide state transitions within the ledger's block history, ensuring transparency and enabling robust governance mechanisms.
 
-## Overview of Block Types
+## Motivation
 
-- **Pause Ledger**: `124pause`
-- **Unpause Ledger**: `124unpause`
-- **Deactivate Ledger**: `124deactivate`
+Ledger lifecycle management may require administrative actions like pausing for upgrades, unpausing after checks, or deactivating at the end of a token's useful life. These significant events must be recorded transparently on-chain. This standard provides explicit block types for these actions, defining a minimal block structure sufficient for recording the action and basic context, while relying on the ledger implementation to provide access to the full invocation details (like the authorizing principal) for comprehensive auditability.
 
-## Common Structure
+## Common Elements
+This standard follows the conventions set by ICRC-3, inheriting key structural components.
+- **Principals** involved (like the authorizer, though not stored *in* the `tx` field) are represented using the ICRC-3 `Value` type as `variant { Blob = <principal_bytes> }`.
+- Each block includes `phash`, a `Blob` representing the hash of the parent block, and `ts`, a `Nat` representing the timestamp of the block.
 
-Each block introduced by this standard MUST include a `tx` field containing a map that encodes the specific administrative action that was submitted to the ledger and which resulted in the block being created. These blocks follow the ICRC-3 structure and include:
+## Block Types & Schema
+
+Each block introduced by this standard MUST include a `tx` field containing a map that encodes minimal information about the administrative action, primarily an optional reason.
+
+**Important Note on Transaction Recoverability:** The `tx` field defined below is intentionally minimal, containing only an optional reason string. For full auditability and transparency, ledger implementations compliant with ICRC-124 **MUST** ensure that the complete details of the original transaction invocation that led to the pause, unpause, or deactivation can be recovered independently. This includes, but is not limited to, the principal that invoked the ledger operation (the authorizer/caller), the specific ledger method called (e.g., `pause_ledger`), and the full arguments passed to that method. Mechanisms for recovering this data (e.g., via archive queries or specific lookup methods) are implementation-dependent but necessary for compliance. The `tx` field itself is *not* designed to hold this exhaustive information.
+
+Each block defined by this standard consists of the following top-level fields:
 
 | Field    | Type (ICRC-3 `Value`) | Required | Description |
 |----------|------------------------|----------|-------------|
-| `btype`  | `Text`                 | Yes      | One of: `"124pause"`, `"124unpause"`, or `"124deactivate"` |
-| `ts`     | `Nat`                  | Yes      | Timestamp (in nanoseconds) of block creation |
-| `phash`  | `Blob`                 | Yes      | Hash of the previous block |
-| `tx`     | `Map(Text, Value)`     | Yes      | Encodes the pause, unpause, or deactivate transaction |
+| `btype`  | `Text`                 | Yes      | MUST be one of: `"124pause"`, `"124unpause"`, or `"124deactivate"`. |
+| `ts`     | `Nat`                  | Yes      | Timestamp in nanoseconds when the block was added to the ledger. |
+| `phash`  | `Blob`                 | Yes      | Hash of the parent block. |
+| `tx`     | `Map(Text, Value)`     | Yes      | Encodes minimal information about the pause/unpause/deactivate operation. See schema below. |
 
 ### `tx` Field Schema
 
-All three block types share the same schema:
+The `tx` field schema is the same for `124pause`, `124unpause`, and `124deactivate`:
 
 | Field        | Type (ICRC-3 `Value`) | Required | Description |
 |--------------|------------------------|----------|-------------|
-| `authorizer` | `Blob`                 | Yes      | Principal that authorized the action |
-| `metadata`   | `Map(Text, Value)`     | Optional | Additional context (e.g., reason, governance proposal) |
+| `reason`     | `Text`                 | Optional | Human-readable reason for the administrative action. |
 
 ## Semantics
-- When a `124pause` block is recorded, the ledger MUST reject all new transactions **except** a `124unpause` transaction.
-- When a `124unpause` block is recorded, the ledger MUST resume accepting transactions (unless in terminal state).
-- When a `124deactivate` block is recorded, the ledger MUST transition to a **terminal state** where:
-  - All new state-modifying transactions are permanently rejected
-  - Historical transaction data remains available for querying
-  - The token's transaction history is preserved as an immutable record
 
-Once a `124deactivate` block is recorded, the ledger's state becomes **immutable** for transfer operations while maintaining read access to historical data.
+The recording of these blocks MUST influence the behavior of the ledger according to the following semantics:
 
+### Pause Ledger (`124pause`)
+- When a `124pause` block is recorded, the ledger MUST enter a "paused" state.
+- While paused, the ledger MUST reject all incoming requests that attempt to modify the ledger state (e.g., `icrc1_transfer`, `icrc2_approve`, `icrc122_mint`, `icrc123_freezeaccount`, etc.), **except** for requests that would result in recording a `124unpause` block.
+- Query calls SHOULD generally remain operational.
 
-## Example blocks
+### Unpause Ledger (`124unpause`)
+- When a `124unpause` block is recorded, the ledger MUST exit the "paused" state and resume normal operation, accepting transactions as defined by its implementation and other active states (unless it is in a terminal state).
+- An `124unpause` block has no effect if the ledger is already unpaused or if it is in a terminal state due to deactivation.
+
+### Deactivate Ledger (`124deactivate`)
+- When a `124deactivate` block is recorded, the ledger MUST transition to a permanent "terminal" or "deactivated" state.
+- In this terminal state:
+    - All incoming requests that attempt to modify the ledger state MUST be permanently rejected. This includes transfers, approvals, mints, burns, freezes, pauses, unpauses, and any other state-changing operations.
+    - Query calls retrieving historical data (e.g., transaction history, past balances via `icrc3_get_blocks`) MUST remain available.
+- The deactivated state is irreversible. The ledger effectively becomes an immutable historical record.
+
+## Compliance Reporting
+
+Ledgers implementing this standard MUST return the following entries (including entries for other supported types like ICRC-1, ICRC-3, etc.) from `icrc3_supported_block_types`, with URLs pointing to the standards defining each block type:
+
+```candid
+vec {
+    // ... other supported types like ICRC-1, ICRC-3, ICRC-122, ICRC-123 ...
+    variant { Record = vec {
+        record { "btype"; variant { Text = "124pause" }};
+        record { "url"; variant { Text = "https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-124.md" }}; // Placeholder URL
+    }};
+    variant { Record = vec {
+        record { "btype"; variant { Text = "124unpause" }};
+        record { "url"; variant { Text = "https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-124.md" }}; // Placeholder URL
+    }};
+    variant { Record = vec {
+        record { "btype"; variant { Text = "124deactivate" }};
+        record { "url"; variant { Text = "https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-124.md" }}; // Placeholder URL
+    }};
+}
+```
+
+## Example Blocks
 
 ### 124pause Example
 
-```
+```candid
 variant { Map = vec {
     // Block type identifier
     record { "btype"; variant { Text = "124pause" }};
 
     // Timestamp when the block was recorded (nanoseconds since epoch)
-    record { "ts"; variant { Nat = 1_741_312_737_184_874_392 : nat }};
+    record { "ts"; variant { Nat = 1_741_384_155_000_000_000 : nat }}; // Approx 2025-04-15T10:29:15Z
 
     // Hash of the previous block in the ledger chain
     record { "phash"; variant {
         Blob = blob "\de\ad\be\ef\00\11\22\33\44\55\66\77\88\99\aa\bb\cc\dd\ee\ff\10\20\30\40\50\60\70\80\90\a0\b0\c0"
     }};
 
-    // Pause transaction payload
+    // Minimal pause transaction details
     record { "tx"; variant { Map = vec {
-        // Principal that authorized the pause
-        record { "authorizer"; variant { Blob = blob "\ab\cd\01\23\45\67\89\ef\01\23\45\67\89\ab\cd\ef\01\02\03\04\05\06\07\08\09\0a\0b\0c\0d\0e\01" }};
-
-        // Optional metadata
-        record { "metadata"; variant { Map = vec {
-            record { "reason"; variant { Text = "DAO vote: pause due to upgrade prep" }}
-        }}}
+        // Optional reason
+        record { "reason"; variant { Text = "DAO vote: pause due to upgrade prep" }};
     }}};
 }};
 ```
 
 ### 124unpause Example
 
-```
+```candid
 variant { Map = vec {
     record { "btype"; variant { Text = "124unpause" }};
-    record { "ts"; variant { Nat = 1_741_312_737_200_000_000 : nat }};
+    record { "ts"; variant { Nat = 1_741_384_155_000_000_000 : nat }}; // Approx 2025-04-15T10:29:15Z
     record { "phash"; variant {
         Blob = blob "\be\ba\fe\ca\01\02\03\04\05\06\07\08\09\0a\0b\0c\0d\0e\0f\10\11\12\13\14\15\16\17\18\19\1a\1b"
     }};
+    // Minimal unpause transaction details
     record { "tx"; variant { Map = vec {
-        record { "authorizer"; variant { Blob = blob "\11\22\33\44\55\66\77\88\99\aa\bb\cc\dd\ee\ff\00\01\02\03\04\05\06\07\08\09\0a\0b\0c\0d\0e\01" }};
-        record { "metadata"; variant { Map = vec {
-            record { "note"; variant { Text = "Ledger resumes after maintenance window" }}
-        }}}
+        // Optional reason
+        record { "reason"; variant { Text = "Ledger resumes after maintenance window" }};
     }}};
 }};
 ```
 
 ### 124deactivate Example
 
-```
+```candid
 variant { Map = vec {
     record { "btype"; variant { Text = "124deactivate" }};
-    record { "ts"; variant { Nat = 1_741_312_737_250_000_000 : nat }};
+    record { "ts"; variant { Nat = 1_741_384_155_000_000_000 : nat }}; // Approx 2025-04-15T10:29:15Z
     record { "phash"; variant {
         Blob = blob "\c0\ff\ee\00\10\20\30\40\50\60\70\80\90\a0\b0\c0\d0\e0\f0\00\11\22\33\44\55\66\77\88\99\aa\bb\cc"
     }};
+    // Minimal deactivate transaction details
     record { "tx"; variant { Map = vec {
-        record { "authorizer"; variant { Blob = blob "\de\ad\be\ef\00\11\22\33\44\55\66\77\88\99\aa\bb\cc\dd\ee\ff\10\20\30\40\50\60\70\80\90\a0\b0\01" }};
-        record { "metadata"; variant { Map = vec {
-            record { "finalized_by"; variant { Text = "SNS DAO proposal 314" }},
-            record { "note"; variant { Text = "Ledger permanently frozen to preserve historical state" }}
-        }}}
+        // Optional reason
+        record { "reason"; variant { Text = "Finalized by SNS DAO proposal 314. Ledger permanently frozen to preserve historical state." }};
     }}};
 }};
-
 ```
-## Compliance Reporting
-
-Ledgers implementing this standard MUST return the following entries from `icrc3_supported_block_types`:
-
-```motoko
-vec {
-    variant { Record = vec {
-        record { "btype"; variant { Text = "124pause" }};
-        record { "url"; variant { Text = "https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-124.md" }};
-    }};
-    variant { Record = vec {
-        record { "btype"; variant { Text = "124unpause" }};
-        record { "url"; variant { Text = "https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-124.md" }};
-    }};
-    variant { Record = vec {
-        record { "btype"; variant { Text = "124deactivate" }};
-        record { "url"; variant { Text = "https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-124.md" }};
-    }};
-}
