@@ -46,8 +46,9 @@ The recording of these blocks MUST influence the behavior of the ledger accordin
 
 ### Pause Ledger (`124pause`)
 - When a `124pause` block is recorded, the ledger MUST enter a "paused" state.
-- While paused, the ledger MUST reject all incoming requests that attempt to modify the ledger state (e.g., `icrc1_transfer`, `icrc2_approve`, `icrc122_mint`, `icrc123_freezeaccount`, etc.), **except** for requests that would result in recording a `124unpause` block.
-- Query calls SHOULD generally remain operational.
+- While paused, the ledger MUST reject incoming requests for standard token operations such as `icrc1_transfer` and `icrc2_approve`, and potentially other non-administrative state changes like `icrc122_mint` or `icrc122_burn`.
+- However, while paused, the ledger MUST continue to accept specific administrative or management operations necessary for governance or recovery. This includes operations defined in ICRC-123 (e.g., `123freezeaccount`, `123unfreezeaccount`, `123freezeprincipal`, `123unfreezeprincipal`) and, critically, requests that result in recording a `124unpause` block. The exact set of allowed administrative operations during a pause SHOULD be defined by the specific ledger implementation's policy.
+- Query calls SHOULD generally remain operational while the ledger is paused.
 
 ### Unpause Ledger (`124unpause`)
 - When a `124unpause` block is recorded, the ledger MUST exit the "paused" state and resume normal operation, accepting transactions as defined by its implementation and other active states (unless it is in a terminal state).
@@ -56,9 +57,9 @@ The recording of these blocks MUST influence the behavior of the ledger accordin
 ### Deactivate Ledger (`124deactivate`)
 - When a `124deactivate` block is recorded, the ledger MUST transition to a permanent "terminal" or "deactivated" state.
 - In this terminal state:
-    - All incoming requests that attempt to modify the ledger state MUST be permanently rejected. This includes transfers, approvals, mints, burns, freezes, pauses, unpauses, and any other state-changing operations.
-    - Query calls retrieving historical data (e.g., transaction history, past balances via `icrc3_get_blocks`) MUST remain available.
-- The deactivated state is irreversible. The ledger effectively becomes an immutable historical record.
+    - All ingress calls attempting to modify the ledger state MUST be permanently rejected. This includes, but is not limited to, transfers, approvals, mints, burns, freezes, unfreezes, pauses, unpauses, and any other state-changing operations defined now or in the future. **No transactions that alter state are permitted.**
+    - Query calls retrieving historical data (e.g., transaction history, past balances via `icrc3_get_blocks`) MUST remain available indefinitely to preserve the immutable record.
+- The deactivated state is irreversible.
 
 ## Compliance Reporting
 
