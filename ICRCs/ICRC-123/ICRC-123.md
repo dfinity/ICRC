@@ -1,45 +1,43 @@
-# ICRC-123: Account and Principal Freezing & Unfreezing
+# ICRC-123: Freezing and Unfreezing Accounts and Principals
 
-ICRC-123 introduces new block types for recording account and unfreezing events in ICRC-compliant ledgers. These blocks provide a standardized way to document administrative actions restricting or restoring account activity. The `123freezeaccount` block records an account freeze event, while the `123unfreezeaccount` block documents the removal of such restrictions. Additionally, the `123freezeprincipal` block records the freezing of all accounts belonging to a principal, and the `123unfreezeprincipal` block records the unfreezing of all accounts belonging to a principal.
+## Status
 
-## Common Elements
+Draft
 
-This standard follows the conventions set by ICRC-3, inheriting key structural components. Accounts are recorded as an `Array` of one or two `Value` variants, where:
+## Introduction
 
-- The first element is a `variant { Blob = <owner principal> }`, representing the account owner.
-- The second element is a `variant { Blob = <subaccount> }`, representing the subaccount. If no subaccount is specified, only the owner is included.
+This standard defines new block types for ICRC-compliant ledgers that enable freezing and unfreezing of accounts and principals. These operations are relevant in regulatory contexts or under legal obligations where temporarily or permanently disabling interactions with certain accounts or identities is necessary.
 
-Additionally, each block includes:
+## Motivation
 
-- `phash`: a `Blob` representing the hash of the parent block.
-- `ts`: a `Nat` representing the timestamp of the block.
+Freezing an account or principal can be a regulatory requirement in certain jurisdictions, or be required by platform policy. These operations must be reflected transparently on-chain, and must be designed to minimize ambiguity and maximize auditability. This standard provides a minimal yet extensible structure for such blocks.
 
+## Block Types
 
-## Block Types & Schema
+This standard introduces the following block types:
 
-This standard introduces four new block types:
+- `123freezeaccount`: Freezes an account, preventing it from initiating transfers.
+- `123unfreezeaccount`: Unfreezes a previously frozen account.
+- `123freezeprincipal`: Freezes a principal, disabling interactions from any account controlled by this principal.
+- `123unfreezeprincipal`: Unfreezes a previously frozen principal.
 
-- **Freeze Account**: `123freezeaccount`
-- **Unfreeze Account**: `123unfreezeaccount`
-- **Freeze Principal**: `123freezeprincipal`
-- **Unfreeze Principal**: `123unfreezeprincipal`
+Each block contains a `tx` field with minimal information about the entity affected, but can be extended with additional fields to include more context.
 
+## Role of `tx`
 
-Each block introduced by this standard MUST include a `tx` field containing a map that encodes the freeze or unfreeze transaction submitted to the ledger that caused this block to be created, similarly to how blocks that hold ICRC-1 and ICRC-2 transactions include, explicitly, the transaction that was submitted.
+The `tx` field in each of the above block types captures the payload of the operation that triggered the block. This field is structured as a map (a vector of key-value records) and is intentionally minimal. It typically contains only the identity of the account or principal that is being frozen or unfrozen.
 
-This enables canister clients, indexers, and auditors to reconstruct the exact instruction that led to the block being appended to the ledger.
+The field is designed to be extensible. Implementations are free to include additional keys in the `tx` map to provide extra context, such as:
 
-Each block consists of the following top-level fields:
+- The principal that initiated the operation (e.g., a governance canister or privileged controller).
+- The method that was invoked to trigger the operation.
+- The reason for freezing or unfreezing.
 
-| Field    | Type (ICRC-3 `Value`) | Required | Description |
-|----------|------------------------|----------|-------------|
-| `btype`  | `Text`                | Yes      | MUST be one of: `"123freezeaccount"`, `"123unfreezeaccount"`, `"123freezeprincipal"`, or `"123unfreezeprincipal"`. |
-| `ts`     | `Nat`                 | Yes      | Timestamp in nanoseconds when the block was added to the ledger. |
-| `phash`  | `Blob`                | Yes      | Hash of the parent block. |
-| `tx`     | `Map(Text, Value)`    | Yes      | Encodes the specific transaction that was submitted to the ledger and which resulted in the block being created. |
+Including such fields improves auditability and can support more nuanced policies in the ledger's business logic.
 
-### `tx` Field Schemas
+### Example: Extending the `tx` field
 
+<<<<<<< HEAD
 #### For `123freezeaccount`
 
 | Field        | Type (ICRC-3 `Value`)         | Required | Description |
@@ -162,11 +160,30 @@ variant {
           record { "reason"; variant { Text = "Security breach" }};  // The reason for the freeze operation
       }}};
     }};
+=======
+```motoko
+variant { Map = vec {
+  record { "btype"; variant { Text = "123freezeaccount" }},
+  record { "ts"; variant { Nat = 1_741_312_737_184_874_392 }},
+  record { "phash"; variant { Blob = blob "\d5\c7\eb\57..." }},
+  record { "tx"; variant { Map = vec {
+    record { "account"; variant { Array = vec {
+      variant { Blob = blob "\00\00\00\00\02\00\01\0d\01\01" },
+      variant { Blob = blob "\06\ec\cd\3a\97\fb\a8\5f..." }
+    }}},
+    record { "caller"; variant { Blob = blob "\94\85\a4\06..." }},
+    record { "method"; variant { Text = "freeze_account" }},
+    record { "reason"; variant { Text = "Account involved in suspicious activity" }}
+  }}}
+}};
+>>>>>>> 6c5cfb355cb1dbee8ac20ee5dd806ee851e866a8
 ```
 
+This example illustrates a `freezeaccount` block where the `tx` field includes more than just the `account`. By including fields like `caller`, `method`, and `reason`, the ledger provides greater transparency and traceability.
 
-### 123unfreezeaccount Example
+---
 
+<<<<<<< HEAD
 ```
 variant {
     Map = vec {
@@ -199,10 +216,45 @@ variant {
       record { "reason"; variant { Text = "Suspicion of illicit activity" }};  // Reason for freezing the principal
   }}};
 
-}};
+=======
+## Block Examples
 
+### Freeze Account Block
+
+```motoko
+variant { Map = vec {
+  record { "btype"; variant { Text = "123freezeaccount" }},
+  record { "ts"; variant { Nat = 1_741_312_737_184_874_392 }},
+  record { "phash"; variant { Blob = blob "\d5\c7\eb\57..." }},
+  record { "tx"; variant { Map = vec {
+    record { "account"; variant { Array = vec {
+      variant { Blob = blob "\00\00\00\00\02\00\01\0d\01\01" },
+      variant { Blob = blob "\06\ec\cd\3a\97\fb\a8\5f..." }
+    }}},
+    record { "reason"; variant { Text = "Violation of terms" }}
+  }}}
+}};
 ```
 
+### Unfreeze Account Block
+
+```motoko
+variant { Map = vec {
+  record { "btype"; variant { Text = "123unfreezeaccount" }},
+  record { "ts"; variant { Nat = 1_741_312_737_184_874_392 }},
+  record { "phash"; variant { Blob = blob "\d5\c7\eb\57..." }},
+  record { "tx"; variant { Map = vec {
+    record { "account"; variant { Array = vec {
+      variant { Blob = blob "\00\00\00\00\02\00\01\0d\01\01" },
+      variant { Blob = blob "\06\ec\cd\3a\97\fb\a8\5f..." }
+    }}},
+    record { "reason"; variant { Text = "Cleared by compliance team" }}
+  }}}
+>>>>>>> 6c5cfb355cb1dbee8ac20ee5dd806ee851e866a8
+}};
+```
+
+<<<<<<< HEAD
 ### 123unfreezeprincipal Example
 ```
 variant {
@@ -217,6 +269,32 @@ variant {
       record { "reason"; variant { Text = "Court order" }};  // Reason for unfreezing the principal
   }}};
 
-}};
+=======
+### Freeze Principal Block
 
+```motoko
+variant { Map = vec {
+  record { "btype"; variant { Text = "123freezeprincipal" }},
+  record { "ts"; variant { Nat = 1_741_312_737_184_874_392 }},
+  record { "phash"; variant { Blob = blob "\d5\c7\eb\57..." }},
+  record { "tx"; variant { Map = vec {
+    record { "principal"; variant { Blob = blob "\94\85\a4\06..." }},
+    record { "reason"; variant { Text = "Violation of platform policy" }}
+  }}}
+}};
+```
+
+### Unfreeze Principal Block
+
+```motoko
+variant { Map = vec {
+  record { "btype"; variant { Text = "123unfreezeprincipal" }},
+  record { "ts"; variant { Nat = 1_741_312_737_184_874_392 }},
+  record { "phash"; variant { Blob = blob "\d5\c7\eb\57..." }},
+  record { "tx"; variant { Map = vec {
+    record { "principal"; variant { Blob = blob "\94\85\a4\06..." }},
+    record { "reason"; variant { Text = "Review complete, reinstated" }}
+  }}}
+>>>>>>> 6c5cfb355cb1dbee8ac20ee5dd806ee851e866a8
+}};
 ```
