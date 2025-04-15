@@ -37,7 +37,6 @@ Including such fields improves auditability and can support more nuanced policie
 
 ### Example: Extending the `tx` field
 
-<<<<<<< HEAD
 #### For `123freezeaccount`
 
 | Field        | Type (ICRC-3 `Value`)         | Required | Description |
@@ -160,30 +159,12 @@ variant {
           record { "reason"; variant { Text = "Security breach" }};  // The reason for the freeze operation
       }}};
     }};
-=======
-```motoko
-variant { Map = vec {
-  record { "btype"; variant { Text = "123freezeaccount" }},
-  record { "ts"; variant { Nat = 1_741_312_737_184_874_392 }},
-  record { "phash"; variant { Blob = blob "\d5\c7\eb\57..." }},
-  record { "tx"; variant { Map = vec {
-    record { "account"; variant { Array = vec {
-      variant { Blob = blob "\00\00\00\00\02\00\01\0d\01\01" },
-      variant { Blob = blob "\06\ec\cd\3a\97\fb\a8\5f..." }
-    }}},
-    record { "caller"; variant { Blob = blob "\94\85\a4\06..." }},
-    record { "method"; variant { Text = "freeze_account" }},
-    record { "reason"; variant { Text = "Account involved in suspicious activity" }}
-  }}}
-}};
->>>>>>> 6c5cfb355cb1dbee8ac20ee5dd806ee851e866a8
 ```
 
 This example illustrates a `freezeaccount` block where the `tx` field includes more than just the `account`. By including fields like `caller`, `method`, and `reason`, the ledger provides greater transparency and traceability.
 
 ---
 
-<<<<<<< HEAD
 ```
 variant {
     Map = vec {
@@ -216,45 +197,9 @@ variant {
       record { "reason"; variant { Text = "Suspicion of illicit activity" }};  // Reason for freezing the principal
   }}};
 
-=======
-## Block Examples
-
-### Freeze Account Block
-
-```motoko
-variant { Map = vec {
-  record { "btype"; variant { Text = "123freezeaccount" }},
-  record { "ts"; variant { Nat = 1_741_312_737_184_874_392 }},
-  record { "phash"; variant { Blob = blob "\d5\c7\eb\57..." }},
-  record { "tx"; variant { Map = vec {
-    record { "account"; variant { Array = vec {
-      variant { Blob = blob "\00\00\00\00\02\00\01\0d\01\01" },
-      variant { Blob = blob "\06\ec\cd\3a\97\fb\a8\5f..." }
-    }}},
-    record { "reason"; variant { Text = "Violation of terms" }}
-  }}}
 }};
 ```
 
-### Unfreeze Account Block
-
-```motoko
-variant { Map = vec {
-  record { "btype"; variant { Text = "123unfreezeaccount" }},
-  record { "ts"; variant { Nat = 1_741_312_737_184_874_392 }},
-  record { "phash"; variant { Blob = blob "\d5\c7\eb\57..." }},
-  record { "tx"; variant { Map = vec {
-    record { "account"; variant { Array = vec {
-      variant { Blob = blob "\00\00\00\00\02\00\01\0d\01\01" },
-      variant { Blob = blob "\06\ec\cd\3a\97\fb\a8\5f..." }
-    }}},
-    record { "reason"; variant { Text = "Cleared by compliance team" }}
-  }}}
->>>>>>> 6c5cfb355cb1dbee8ac20ee5dd806ee851e866a8
-}};
-```
-
-<<<<<<< HEAD
 ### 123unfreezeprincipal Example
 ```
 variant {
@@ -269,32 +214,5 @@ variant {
       record { "reason"; variant { Text = "Court order" }};  // Reason for unfreezing the principal
   }}};
 
-=======
-### Freeze Principal Block
-
-```motoko
-variant { Map = vec {
-  record { "btype"; variant { Text = "123freezeprincipal" }},
-  record { "ts"; variant { Nat = 1_741_312_737_184_874_392 }},
-  record { "phash"; variant { Blob = blob "\d5\c7\eb\57..." }},
-  record { "tx"; variant { Map = vec {
-    record { "principal"; variant { Blob = blob "\94\85\a4\06..." }},
-    record { "reason"; variant { Text = "Violation of platform policy" }}
-  }}}
-}};
-```
-
-### Unfreeze Principal Block
-
-```motoko
-variant { Map = vec {
-  record { "btype"; variant { Text = "123unfreezeprincipal" }},
-  record { "ts"; variant { Nat = 1_741_312_737_184_874_392 }},
-  record { "phash"; variant { Blob = blob "\d5\c7\eb\57..." }},
-  record { "tx"; variant { Map = vec {
-    record { "principal"; variant { Blob = blob "\94\85\a4\06..." }},
-    record { "reason"; variant { Text = "Review complete, reinstated" }}
-  }}}
->>>>>>> 6c5cfb355cb1dbee8ac20ee5dd806ee851e866a8
 }};
 ```
