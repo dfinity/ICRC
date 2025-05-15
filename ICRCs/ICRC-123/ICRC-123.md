@@ -6,36 +6,35 @@ Draft
 
 ## Introduction
 
-This standard defines new block types for ICRC-compliant ledgers that enable freezing and unfreezing of accounts and principals. These operations are relevant in regulatory contexts or under legal obligations where temporarily or permanently disabling interactions with certain accounts or identities is necessary.
+This standard defines new block types for ICRC-compliant ledgers that enable freezing and unfreezing of accounts and principals. These operations are primarily relevant in regulatory contexts or under specific legal or platform policy obligations where temporarily restricting interactions with certain accounts or identities is necessary. Freezing an account or principal must be reflected transparently on-chain, using a format designed for auditability and clear semantics.
 
 ## Motivation
 
-Freezing an account or principal can be a regulatory requirement in certain jurisdictions, or be required by platform policy. These operations must be reflected transparently on-chain, and must be designed to minimize ambiguity and maximize auditability. This standard provides a minimal yet extensible structure for such blocks.
+Regulatory requirements or platform policies may necessitate the ability to freeze accounts or principals. This standard provides explicit block types (`123freezeaccount`, `123unfreezeaccount`, `123freezeprincipal`, `123unfreezeprincipal`) to record these actions transparently on the ledger, distinct from standard transactional blocks. It defines a minimal block structure sufficient for recording the action while relying on the ledger implementation to provide access to the full invocation context for auditability.
 
-## Block Types
+## Common Elements
+This standard follows the conventions set by ICRC-3, inheriting key structural components.
+- **Accounts** are represented using the ICRC-3 `Value` type, specifically as a `variant { Array = vec { V1 [, V2] } }` where `V1` is `variant { Blob = <owner_principal> }` representing the account owner, and `V2` is `variant { Blob = <subaccount> }` representing the subaccount. If no subaccount is specified, the `Array` MUST contain only one element (`V1`).
+- **Principals** are represented using the ICRC-3 `Value` type as `variant { Blob = <principal_bytes> }`.
+- Each block includes `phash`, a `Blob` representing the hash of the parent block, and `ts`, a `Nat` representing the timestamp of the block.
 
-This standard introduces the following block types:
+## Block Types & Schema
 
-- `123freezeaccount`: Freezes an account, preventing it from initiating transfers.
-- `123unfreezeaccount`: Unfreezes a previously frozen account.
-- `123freezeprincipal`: Freezes a principal, disabling interactions from any account controlled by this principal.
-- `123unfreezeprincipal`: Unfreezes a previously frozen principal.
+Each block introduced by this standard MUST include a `tx` field containing a map that encodes the minimal information about the freeze/unfreeze operation required for identifying the target and providing basic context.
 
-Each block contains a `tx` field with minimal information about the entity affected, but can be extended with additional fields to include more context.
+**Important Note on Transaction Recoverability:** The `tx` field defined below is intentionally minimal, containing only the data strictly necessary to identify the target entity (account or principal) and an optional reason. For full auditability and transparency, ledger implementations compliant with ICRC-123 **MUST** ensure that the complete details of the original transaction invocation that led to the freeze/unfreeze can be recovered independently. This includes, but is not limited to, the principal that invoked the ledger operation (the authorizer/caller), the specific ledger method called (e.g., `freeze_account`), and the full arguments passed to that method. Mechanisms for recovering this data (e.g., via archive queries or specific lookup methods) are implementation-dependent but necessary for compliance. The `tx` field itself is *not* designed to hold this exhaustive information.
 
-## Role of `tx`
+Each block defined by this standard consists of the following top-level fields:
 
-The `tx` field in each of the above block types captures the payload of the operation that triggered the block. This field is structured as a map (a vector of key-value records) and is intentionally minimal. It typically contains only the identity of the account or principal that is being frozen or unfrozen.
+| Field    | Type (ICRC-3 `Value`) | Required | Description |
+|----------|------------------------|----------|-------------|
+| `btype`  | `Text`                 | Yes      | MUST be one of: `"123freezeaccount"`, `"123unfreezeaccount"`, `"123freezeprincipal"`, `"123unfreezeprincipal"`. |
+| `ts`     | `Nat`                  | Yes      | Timestamp in nanoseconds when the block was added to the ledger. |
+| `phash`  | `Blob`                 | Yes      | Hash of the parent block. |
+| `tx`     | `Map(Text, Value)`     | Yes      | Encodes minimal information about the freeze/unfreeze operation. See schemas below. |
 
-The field is designed to be extensible. Implementations are free to include additional keys in the `tx` map to provide extra context, such as:
+### `tx` Field Schemas
 
-- The principal that initiated the operation (e.g., a governance canister or privileged controller).
-- The method that was invoked to trigger the operation.
-- The reason for freezing or unfreezing.
-
-Including such fields improves auditability and can support more nuanced policies in the ledger's business logic.
-
-### Example: Extending the `tx` field
 
 #### For `123freezeaccount`
 
