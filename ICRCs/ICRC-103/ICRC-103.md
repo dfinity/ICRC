@@ -111,7 +111,7 @@ Then:
      - The returned list contains only allowances where the `owner` of `account_1` is `p0`, which matches the `from_account.owner`.
 
 3. **Case 3: Private version of the standard**
-   - If `p0` calls the get allowances endpoint with `from_account = (p1, s0)` (`p0 ≠ p1`), and the ledger implements the private version of the standard, the endpoint returns an empty list.
+   - If `p0` calls the get allowances endpoint with `from_account = (p1, s0)` (`p0 ≠ p1`), and the ledger implements the private version of the standard, the endpoint returns an `AccessDenied`.
      - Since `from_account.owner ≠ caller_principal` and the ledger implements the private version, no allowances are returned.
 
 4. **Case 4: `prev_spender` is not in the list**
