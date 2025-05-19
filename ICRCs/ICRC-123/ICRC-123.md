@@ -188,34 +188,36 @@ variant { Map = vec {
 
 ### 123freezeprincipal Example
 ```
-variant {
-  Map = vec {
-    record { "btype"; variant { Text = "123freezeprincipal" }};  // Block type identifier
-    record { "ts"; variant { Nat = 1741312737184874393 }};     // Timestamp when the block was appended (nanoseconds since epoch)
-    record { "phash"; variant { Blob = blob "\9a\6f\bd\5b\18\65\2c\fa\6d\20\de\4d\fa\43\fc\96\33\e5\6a\1b" }};  // Hash of the previous block in the ledger chain
-    record { "tx"; variant { Map = vec {
-      record { "principal"; variant { Array = vec {
-          variant { Blob = blob "\00\00\00\00\02\00\01\0d\01\01" };   // Principal to be frozen
-      }}};
-      record { "reason"; variant { Text = "Suspicion of illicit activity" }};  // Reason for freezing the principal
-  }}};
-
+variant { Map = vec {
+  record { "btype"; variant { Text = "123freezeprincipal" }};
+  record { "ts"; variant { Nat = 1_747_773_600_000_000_000 : nat }}; // Example: 2025-05-19T12:40:00Z
+  record { "phash"; variant { Blob = blob "\f0\1d\9b\2a\10\20\30\40\50\60\70\80\90\a0\b0\c0\d0\e0\f0\00" }}; // Example parent hash
+  record { "tx"; variant { Map = vec {
+    // The principal that invoked the freeze_principal operation
+    record { "caller"; variant { Blob = blob "\00\00\00\00\00\00\f0\0d\01\02" }}; // Example caller (e.g., DAO canister)
+    // The principal being frozen
+    record { "principal"; variant { Blob = blob "\94\85\a4\06\ef\cd\ab\01\23\45\67\89\12\34\56\78\90\ab\cd\ef" }}; // Example principal to freeze
+    // Optional reason
+    record { "reason"; variant { Text = "Platform terms of service violation." }};
+  }}};
 }};
+
 ```
 
 ### 123unfreezeprincipal Example
 ```
-variant {
-  Map = vec {
-    record { "btype"; variant { Text = "123unfreezeprincipal" }};  // Block type identifier
-    record { "ts"; variant { Nat = 1741312737184874392 }};       // Timestamp when the block was appended (nanoseconds since epoch)
-    record { "phash"; variant { Blob = blob "\d5\c7\eb\57\a2\4e\fa\d4\8b\d1\cc\54\9e\49\c6\9f\d1\93\8d\e8\02\d4\60\65\e2\f2\3c\00\04\3b\2e\51" }};  // Hash of the previous block in the ledger chain
-    record { "tx"; variant { Map = vec {
-      record { "principal"; variant { Array = vec {
-          variant { Blob = blob "\00\00\00\00\02\00\01\0d\01\01" };   // Principal to be unfrozen
-      }}};
-      record { "reason"; variant { Text = "Court order" }};  // Reason for unfreezing the principal
-  }}};
-
+variant { Map = vec {
+  record { "btype"; variant { Text = "123unfreezeprincipal" }};
+  record { "ts"; variant { Nat = 1_747_773_660_000_000_000 : nat }}; // Example: 2025-05-19T12:41:00Z
+  record { "phash"; variant { Blob = blob "\c3\45\e6\b9\fe\dc\ba\98\76\54\32\10\00\00\00\00\00\00\00\00" }}; // Example parent hash
+  record { "tx"; variant { Map = vec {
+    // The principal that invoked the unfreeze_principal operation
+    record { "caller"; variant { Blob = blob "\00\00\00\00\00\00\f0\0d\01\02" }}; // Example caller
+    // The principal being unfrozen
+    record { "principal"; variant { Blob = blob "\94\85\a4\06\ef\cd\ab\01\23\45\67\89\12\34\56\78\90\ab\cd\ef" }};
+    // Optional reason (example of omission for brevity, or if not applicable)
+    // record { "reason"; variant { Text = "Appeal successful." }};
+  }}};
 }};
+
 ```
