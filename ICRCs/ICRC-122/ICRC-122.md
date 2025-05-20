@@ -1,4 +1,4 @@
-# ICRC-122: Token Burning & Minting (Consolidated)
+# ICRC-122: Token Burning & Minting
 
 ICRC-122 introduces new block types for recording token minting and burning events in ICRC-compliant ledgers. These blocks provide a standardized way to document authorized supply modifications, ensuring transparent tracking of token issuance and removal. The `122burn` block records token reductions, while the `122mint` block tracks token increases. The transaction details (`tx`) within each block explicitly include the `caller` principal that authorized the operation.
 
