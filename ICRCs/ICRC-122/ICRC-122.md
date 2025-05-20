@@ -19,7 +19,7 @@ Each `122burn` or `122mint` block consists of the following top-level fields:
 | Field    | Type (ICRC-3 `Value`) | Required | Description |
 |----------|------------------------|----------|-------------|
 | `btype`  | `Text`                 | Yes      | MUST be one of: `"122burn"` or `"122mint"`. |
-| `ts`     | `Nat`                  | Yes      | Timestamp in nanoseconds when the block was added to the ledger. |
+| `ts`     | `Nat`                  | Yes      | Timestamp (in nanoseconds since the Unix epoch) when the block was added to the ledger. |
 | `phash`  | `Blob`                 | Yes      | Hash of the parent block. |
 | `tx`     | `Map(Text, Value)`     | Yes      | Encodes information about the token mint or burn transaction, including the caller. See schemas below. |
 
