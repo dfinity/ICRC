@@ -39,31 +39,19 @@ icp::icrcY:<icrcY-defined-ns>
 
 ## URIs with an authority component
 
-An authority in a URI is the hierarchical component following the `://` after the scheme. It specifies a hierachical name managed by a hierarchy of naming authorities. A name resolves to a network address using systems like the well-known Domain Name System (DNS), or the decentralized alternative Canister Name System (CNS).
+An authority in a URI is the hierarchical component following the `://` following the scheme. It specifies a hierachical name managed by a hierarchy of naming authorities. A name resolves to a network address using systems like the well-known Domain Name System (DNS), or the decentralized alternative Canister Name System (CNS).
 
 ```
-icp://application.app/icrcy/<icrcY-defined-ns> // network defaulting to 1 (harder to parse as fewer path components)
-```
-Alternatives for expressing the network identifier:
-```
-icp://application.app//icrcy/<icrcY-defined-ns> // network defaulting to 1 (empty network path component)
-icp://application.app/1/icrcy/<icrcY-defined-ns> // network is 1 for mainnet
+icp://application.app/icrcy/<icrcY-defined-ns>
 ```
 
-The above shows the basic structure of a URI with an authority component: It starts with the `icp` scheme, followed by `://`, then followed by the authority component, the CNS name `application.app` in the example. This is followed by the network identifier with separators `/1/` and by the ICRC sub-namespace specifier `icrcY` for some ICRC-Y, followed by a slash `/`. This is then followed by the substring as defined by the ICRC-Y standard.
+The above shows the basic structure of a URI with an authority component: It starts with the `icp` scheme, followed by `://`, then followed by the authority component, the CNS name, e.g., `application.app` in the example. This is followed by the ICRC sub-namespace specifier `icrcY` for some ICRC-Y, followed by a slash `/`. This is then followed by the substring as defined by the ICRC-Y standard, with `Y` the number of the respective ICRC standard.
 
-FIX: DNS-based URIs do not have the concept of network, as it always refers to the one Internet. We must express the network when following current thinking that CNS is specific to each network.
-What about expressing the network idenfier as port? A scheme may define a default port, i.e., the `icp` scheme could define port 1 as default, i.e., ICP mainnet as the default network. According to RFC 3986, a port is a sequence of digits, i.e., registered networks can be expressed, however, public key hashes referring to networks cannot be expressed, which may be a show stopper for this approach as it would not support the generic network identification scheme. What about tweaking this specification of the port to allow hexadecimal characters? Lots of implications, e.g., URI parsers break. Or we could map hex values to decimal integers (hard to grasp).
-```
-icp://application.app/icrcy/<icrcY-defined-ns> // default port 1 (ICP mainnet)
-icp://application.app:1/icrcy/<icrcY-defined-ns> // network id as port
-icp://application.app:737ba355e855bd4b61279056603e0550/icrcy/<icrcY-defined-ns> // not permitted by RFC 3986
-```
+*Rationale on the absence of a network identifier:* ICP networks such as ICP mainnet, future testnets, and UTOPIA private networks are conceptually similar to networks comprising the larger Internet. Modelling ICP networks analogous to intranets in the DNS world implies to have a single naming system akin to DNS for all ICP networks. As in the world of the Internet and DNS, a single naming system for all ICP networks makes most sense in terms of how to model names. Thus, identifiers with authority component do, much like URLs on the Internet, not need a network identifier.
 
-FIX If we modelled additional ICP networks such as UTOPIA networks analogous to intranets in the DNS world, we would need to require a single CNS system for all ICP networks. This would solve the network id problem, as the network id would disappear. The network identifier creates lots of issues and is not a natural concept inherent to URIs.
-Alternative: There should be a global CNS name registration system applicable to all ICP-based networks, e.g., managed by ICP and sub-authorities being on any ICP network. This resolves lots of issues and is aligned to the thinking of people w.r.t. names. Also, CNS names should not overlap with DNS names. That is, someone claiming a CNS name must reserve the same DNS name if the TLD exists in DNS.
+There should be a global CNS name registration system applicable to all ICP-based networks with its core managed on ICP mainnet and sub-authorities being hosted on any ICP network, analogous to how DNS decentralizes the authority over different parts of the namespace. This is well aligned to the thinking of people w.r.t. names. CNS names should not overlap with DNS names, i.e., someone claiming a CNS name should reserve the same name on DNS if the TLD exists in DNS.
 
-Other identifier than valid `icrcY` SHOULD NOT be used after the authority component, unless specified in a (future) ICRC standard. Future ICRC standards may define additional uses of the namespace outside of ICRC standards. // FIX this is debatable as it may constrain the developer too much
+Other identifier than valid `icrcY` Other identifiers as root of the resource path may be used at the discretion of the owner of the namespace defined by the authority, unless reserved through an ICRC standard existing at the time of use. Future ICRC standards may define additional uses of the namespace outside of ICRC standards.
 
 The authority component MUST be resolved with CNS. FIX: Is this too restrictive? We only have DNS right now. CNS cannot be used without the browser (or an extension) interpreting it. This requires further discussion. There are many use cases using DNS (all use cases currently), so we may want to support it as well. The problem is that if we support both, it is unclear which one to use in a given context (or we use DNS only for http URLs). Idea: If the client is CNS aware, try resolving a URI with CNS, if this fails, try resolving with DNS. Which attacks might this result in? E.g., someone could register CNS names in the DNS system and get the user to load exploit web sites. Reserving a CNS address also in the DNS system (partially) resolves this issue as then the same party controls both addresses. Means that DNS addresses could not be used in CNS (makes some sense also, as this would be very confusing).
 The question whether and how to also support DNS requires substantial further discussion.
@@ -72,11 +60,12 @@ We can refer to a canister by using the canister principal as authority:
 ```
 icp://ormnc-tiaaa-aaaaq-aadyq-cai/icrcY/<icrcY-defined-ns>
 ```
-Using only `ormnc-tiaaa-aaaaq-aadyq-cai` is much more powerful as global identifier for a canister than the current use of a boundary node domain name along with the canister id, such as ```ormnc-tiaaa-aaaaq-aadyq-cai.ic0.app```. This constrains the validity of the URI only to the specific specified DNS name of boudary nodes, although it should not be dependent on this.
 
-FIX: This does not work out of the box in a browser as it interprets this as DNS name. We need to discuss the implications of this for this ICRC.
+Referring to a canister through only its principal, e.g., `ormnc-tiaaa-aaaaq-aadyq-cai`, is much more powerful as global identifier for a canister than the current use of a boundary node domain name along with the canister id, such as ```ormnc-tiaaa-aaaaq-aadyq-cai.ic0.app```. The latter constrains the validity of the URI only to the specific specified DNS name of boudary nodes, although it should semantically not be dependent on this, while the former removes this limitation.
 
-Authority-based URIs are useful to express concepts that are related to an authority, e.g., a ledger canister. For example, a specific token can be referred to with an authority-ful URI. A substantial subset of authority-based URIs (the ones that are URLs) can be resolved (using DNS or CNS) to a network address on which the URI has a well-defined meaning, e.g., performing a transaction on a canister or loading a resource. Not all URIs need to be resolvable like this, though, and can simply act as well-defined identifier as is typical for URIs.
+Note that this does not work out of the box in a standard browser as it interprets the string as DNS name. // FIX We need to discuss the implications of this for this ICRC.
+
+Authority-based URIs are useful to express concepts that are related to an authority, e.g., a ledger canister. For example, a token of a specific ledger can be referred to with an authority-ful URI by using the ledger canister principal as authority in the URI. A substantial subset of authority-based URIs (the ones that are URLs) can be resolved (using DNS or CNS) to a network address on which the URI has a well-defined meaning, e.g., performing a transaction on a canister or loading a resource. Not all URIs need to be resolvable like this, though, and can simply act as well-defined identifier as is typical for URIs.
 
 
 # References
