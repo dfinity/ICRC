@@ -49,11 +49,19 @@ Each `122burn` or `122mint` block consists of the following top-level fields:
 
 ### Comparison with ICRC-1 Mint/Burn
 
-The `122mint` and `122burn` blocks introduced in ICRC-122 serve as a standardized method for tracking token supply changes, offering more structure than the implicit mint/burn events inferred from ICRC-1 transfer blocks involving the zero account.
+The `122mint` and `122burn` blocks introduced in ICRC-122 offer a more explicit and structured method for tracking token supply changes compared to how these operations are handled under the ICRC-1 standard. It is important to note that a ledger implementing both ICRC-1 and ICRC-122 may feature blocks resulting from both mechanisms, reflecting the distinct operations invoked.
 
-- **ICRC-1**: In the original ICRC-1 standard, mint and burn events were typically represented by transfers to or from a conventionally designated zero account or address. While functional, this lacked explicit block types for supply changes and didn't standardize fields for context (like a reason or the authorizer of the supply change) or facilitate easy querying of *only* mint/burn events.
+- **ICRC-1 Mint/Burn Mechanism**:
+    - **Operation & Block Type**: ICRC-1 defines a `minting_account`. Minting is achieved by an `icrc1_transfer` from this `minting_account` to the recipient, increasing total supply. Burning is an `icrc1_transfer` to the `minting_account`, decreasing total supply. ICRC-3 compliant ledgers supporting ICRC-1 mint and burn operations typically record these events using specific block types, often designated as `1mint` and `1burn` respectively (or similar, such as `icrc1_mint` and `icrc1_burn`). These blocks, while distinct from standard transfers, primarily confirm the transfer details associated with the minting or burning action as defined by ICRC-1.
+    - **Authorization**: Authorization for minting is tied to the control of the `minting_account`. Only the principal that can initiate `icrc1_transfer` calls from this specific account can mint tokens. This centralizes minting authority to the controller of the minting account.
+    - **Contextual Data**: The ICRC-1 `1mint` and `1burn` block structures, as typically derived from the underlying `icrc1_transfer` operation, do not have dedicated fields for a structured `reason` for the supply change beyond what might be placed in the generic `memo` field of the transfer. They also do not explicitly identify an ultimate `caller` or authorizer of the mint/burn operation beyond the `from` field of the transfer (which would be the minting account itself).
 
-- **ICRC-122**: This standard defines explicit `122mint` and `122burn` block types. The `tx` field within each block includes the `caller` principal who initiated the supply change, the essential data for the operation (account, amount), and an optional `reason` field for human-readable context. This allows for clearer auditing, validation, and direct querying of supply modification events and their authorizers recorded on the ledger.
+- **ICRC-122 Mint/Burn Blocks**:
+    - **Explicit Block Types & Dedicated Methods**: This standard defines distinct block types (`122mint`, `122burn`) which result from calls to new, dedicated ledger methods (e.g., `icrc122_mint`, `icrc122_burn`). These are not special cases of `icrc1_transfer`.
+    - **Flexible Authorization & Direct Caller Identification**: Authorization to call the `icrc122_mint` or `icrc122_burn` endpoints can be managed by the ledger implementation's governance logic, potentially allowing multiple, distinct whitelisted principals to initiate minting or burning. The `caller` field within the `tx` map of each `122mint` or `122burn` block directly records the principal that invoked this specific supply change operation.
+    - **Enhanced Context**: The `tx` map includes an optional `reason` field, providing a standardized way to include human-readable context specifically for the supply change.
+    - **Auditability**: The combination of dedicated block types, distinct methods, direct recording of the `caller`, and the optional `reason` field significantly enhances the auditability and transparency of token supply modifications compared to the ICRC-1 mechanism.
+
 
 ### Purpose of the `tx` Field
 
