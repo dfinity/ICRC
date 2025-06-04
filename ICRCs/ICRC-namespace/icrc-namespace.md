@@ -23,6 +23,8 @@ This kind of URIs starts with the prefix `icp` representing the root namespace, 
 
 The above example refers to the hypothetical ICRC-1-defined `account` sub-namespace that defines accounts independent of the ledger. This way, one can refer to an ICRC account in a globally unique manner. This example is conceptually compliant with the CAIP initiative to represent accounts in a globally-unique manner.
 
+FIX: `icrcY | reverse domain name`
+
 Identifiers other than `icrcY` referring to a specific ICRC standard SHOULD NOT be following the chain id without being defined in an ICRC. It is left to future standards to define additional use of the top-level namespace besides `icrc`s.
 
 Authority-less URIs are applied in use cases that do not require an authority, such as a ledger-agnostic account identifier, or a protocol and chain identifier used as part of another URI. Such URIs can also be composed, e.g., a URI representing a token can be used as part of another URI to refer to this token. This kind of identifiers is particularly crucial for creating ICRC standards compliant with the Chain Agnostic standards (CAIP). FIX references;
