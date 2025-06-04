@@ -44,7 +44,7 @@ type GetAllowancesArgs = record {
 }
 
 type GetAllowancesError = variant{
-    AccessDenied : text;
+    AccessDenied: record { reason: text };
     GenericError : record { error_code : nat; message : text };
 }
 
