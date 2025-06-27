@@ -192,7 +192,7 @@ The `icrc107_set_fee_collection` method MUST return an error in the following ca
 This method retrieves the currently active fee collection settings. Unless changed, these settings apply to the next block added to the ledger.
 
 ```
-icrc107_get_fee_collection: () -> (variant { Ok: opt Account; Err: GetFeeCollectionError }) query;
+icrc107_get_fee_collection: () -> (variant { Ok: opt Account; Err: record { error_code : nat; message : text } }) query;
 ```
 
 
