@@ -98,10 +98,10 @@ variant { Map = vec {
             variant { Blob = blob "\06\ec\cd\3a\97\fb\a8\5f\bc\8d\a3\3e\5d\ba\bc\2f\38\69\60\5d\c7\a1\c9\53\1f\70\a3\66\c5\a7\e4\21" }; // Subaccount
         }} };
         record { "created_at_time"; variant { Nat = 1_750_951_727_000_000_000 : nat } }; // Timestamp for deduplication (June 27, 2025, 15:28:47 UTC)
-        record { "caller"; variant { Blob = blob "\00\00\00\00\00\00\00\00\01\01" } }; // Example caller principal
+        record { "caller"; variant { Blob = blob "\00\00\00\00\00\00\00\00\01\01" } }; // Caller principal
     }} };
     // Timestamp: indicates when the block was created
-    record { "ts"; variant { Nat = 1_741_312_737_184_874_392 : nat } }; // Existing block timestamp
+    record { "ts"; variant { Nat = 1_741_312_737_184_874_392 : nat } };
     // Parent hash: links this block to the previous block in the chain
     record { "phash";
               variant {
@@ -126,11 +126,11 @@ variant { Map = vec {
         record { "fee_col"; variant { Array = vec {
                 // Empty array to signify burning fees
             }}};
-        record { "created_at_time"; variant { Nat = 1_750_951_728_000_000_000 : nat } }; // Timestamp for deduplication (incremented from previous example)
-        record { "caller"; variant { Blob = blob "\00\00\00\00\00\00\00\00\01\01" } }; // Example caller principal
+        record { "created_at_time"; variant { Nat = 1_750_951_728_000_000_000 : nat } }; // Timestamp for deduplication
+        record { "caller"; variant { Blob = blob "\00\00\00\00\00\00\00\00\01\01" } }; // Caller principal
     }} };
-    // Timestamp: indicates when the block was created (can be derived from tx.created_at_time or ledger time)
-    record { "ts"; variant { Nat = 1_741_312_737_184_874_392 : nat } }; // Existing block timestamp
+    // Timestamp: indicates when the block was created 
+    record { "ts"; variant { Nat = 1_741_312_737_184_874_392 : nat } };
     // Parent hash: links this block to the previous block in the chain
     record { "phash";
               variant {
