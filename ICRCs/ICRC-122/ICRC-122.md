@@ -31,7 +31,7 @@ Each `122burn` or `122mint` block consists of the following top-level fields:
 |--------------|--------------------------------------------------------------|----------|-------------|
 | `caller`     | `Value` (Must be `variant { Blob = <principal_bytes> }`)     | Yes      | The principal that invoked the ledger method (e.g., `icrc122_burn`) causing this block to be created. |
 | `from`       | `Value` (Must be `variant { Array = vec { V1 [, V2] } }`)¹ | Yes      | The account from which tokens are burned. |
-| `amount`     | `Nat`                                                        | Yes      | The number of tokens to burn. This value **MUST be greater than 0**. |
+| `amt` | `Nat` | Yes | The number of tokens to mint. This value MUST be greater than 0. The amount is denominated in the smallest indivisible unit of the token. |
 | `reason`     | `Text`                                                       | Optional | Human-readable reason for the burn. |
 
 #### For `122mint`
@@ -40,7 +40,7 @@ Each `122burn` or `122mint` block consists of the following top-level fields:
 |--------------|--------------------------------------------------------------|----------|-------------|
 | `caller`     | `Value` (Must be `variant { Blob = <principal_bytes> }`)     | Yes      | The principal that invoked the ledger method (e.g., `icrc122_mint`) causing this block to be created. |
 | `to`         | `Value` (Must be `variant { Array = vec { V1 [, V2] } }`)¹ | Yes      | The account to which tokens are minted. |
-| `amount`     | `Nat`                                                        | Yes      | The number of tokens to mint. This value **MUST be greater than 0**. |
+| `amt` | `Nat` | Yes | The number of tokens to mint. This value MUST be greater than 0. The amount is denominated in the smallest indivisible unit of the token. | This value **MUST be greater than 0**. |
 | `reason`     | `Text`                                                       | Optional | Human-readable reason for the mint. |
 
 ¹ Where `V1` is `variant { Blob = <owner_principal> }` and `V2` is `variant { Blob = <subaccount> }`. If no subaccount exists, the `Array` contains only `V1`.
@@ -68,7 +68,7 @@ The `122mint` and `122burn` blocks introduced in ICRC-122 offer a more explicit 
 The `tx` field within `122mint` and `122burn` blocks is designed to provide a comprehensive summary of the transaction directly within the block:
 - The `caller` identifies the principal that invoked the ledger operation.
 - The `from` (burn) or `to` (mint) account specifies the target of the operation.
-- The `amount` of tokens affected.
+- The amount `amt` of tokens affected.
 - An optional `reason` for the operation provides human-readable context.
 
 This structure ensures that key information about the operation and its initiator is directly available in the `tx` field, enhancing transparency. For further details beyond what's in the block, such as the full original arguments passed to the ledger method (if applicable), implementations should provide separate recovery mechanisms as highlighted in the "Important Note on Transaction Recoverability."
@@ -101,7 +101,7 @@ variant { Map = vec {
     record { "btype"; variant { Text = "122burn" }};
 
     // Timestamp when the block was added (nanoseconds since Unix epoch)
-    record { "ts"; variant { Nat = 1_741_317_147_000_000_000 : nat }}; // Approx 2025-04-14T14:32:27Z 
+    record { "ts"; variant { Nat = 1_741_317_147_000_000_000 : nat }}; // Approx 2025-04-14T14:32:27Z
 
     // Hash of the previous block in the ledger chain
     record { "phash"; variant {
@@ -115,9 +115,10 @@ variant { Map = vec {
             variant { Blob = blob "\00\00\00\00\02\00\01\0d\01\01" }; // Example owner principal
             variant { Blob = blob "\06\ec\cd\3a\97\fb\a8\5f\bc\8d\a3\3e\5d\ba\bc\2f\38\69\60\5d\c7\a1\c9\53\1f\70\a3\66\c5\a7\e4\21" }; // Example subaccount
         }}};
-
+        // The caller principal
+        record { "caller"; variant { Blob = blob "\de\ad\be\ef\01\23\45\67\89\ab\cd\ef\fe\dc\ba\98\76\54\32\10" } };
         // The amount to burn
-        record { "amount"; variant { Nat = 1_000_000 : nat }};
+        record { "amt"; variant { Nat = 1_000_000 : nat }};
 
         // Optional reason for the burn
         record { "reason"; variant { Text = "Token supply adjustment" }};
@@ -147,10 +148,10 @@ variant { Map = vec {
             variant { Blob = blob "\00\00\00\00\02\00\01\0d\01\01" };  // Example owner principal
             variant { Blob = blob "\06\ec\cd\3a\97\fb\a8\5f\bc\8d\a3\3e\5d\ba\bc\2f\38\69\60\5d\c7\a1\c9\53\1f\70\a3\66\c5\a7\e4\21" }  // Example subaccount
         }}};
-
+        // The caller principal
+        record { "caller"; variant { Blob = blob "\de\ad\be\ef\01\23\45\67\89\ab\cd\ef\fe\dc\ba\98\76\54\32\10" } };
         // The amount to mint
-        record { "amount"; variant { Nat = 2_000_000 : nat }};
-
+        record { "amt"; variant { Nat = 2_000_000 : nat }};
         // Optional reason for the mint
         record { "reason"; variant { Text = "Initial distribution" }};
     }}};
