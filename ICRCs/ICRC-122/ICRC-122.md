@@ -56,6 +56,33 @@ The `122mint` and `122burn` blocks introduced in ICRC-122 provide a more explici
   - *Optional Provenance*: Producers may include additional non-semantic fields in `tx` such as `caller` (the principal that invoked the supply change), `reason` (a human-readable string), or `created_at_time`. These fields aid transparency and auditability but do not affect ledger semantics.  
   - *Auditability*: By separating the minimal state-changing fields from optional provenance, ICRC-122 ensures clear semantics while still supporting enhanced transparency compared to the ICRC-1 mechanism.  
 
+### Guidance for Standards That Define Methods
+
+ICRC-122 itself defines only block types (`122mint`, `122burn`) and their semantics.  
+It does not define ledger methods. However, other standards may define methods that
+directly produce ICRC-122 blocks.
+
+Such standards SHOULD:
+
+1. **Include `tx.op`** in the resulting block’s `tx` map.  
+   - Use a namespaced value as recommended in ICRC-3: `<icrc_number><op_name>`.  
+   - Examples: `145mint`, `145burn` if defined in ICRC-145.  
+   - This **prevents collisions** between blocks created by different methods or standards; it does *not* uniquely identify an individual call.
+
+2. **Define a canonical mapping** from method arguments to the minimal `tx` fields:  
+   - `icrcX_mint` → `tx.to`, `tx.amt`.  
+   - `icrcX_burn` → `tx.from`, `tx.amt`.  
+   - Optional provenance (`caller`, `reason`, `created_at_time`) MAY be included but MUST NOT affect semantics.  
+
+3. **Document deduplication inputs** (if any). If a method accepts a caller-supplied timestamp,
+   it SHOULD be recorded in `tx.created_at_time` (nanoseconds, MUST fit into `nat64`).  
+
+This guidance ensures that when future standards define mint/burn methods, they can be
+reliably mapped into ICRC-122 block types while remaining compatible with ICRC-3 rules
+for canonical `tx` mappings and optional provenance.
+
+
+
 ## Compliance Reporting
 
 Ledgers implementing this standard MUST return the following response to `icrc3_supported_block_types` with a URL pointing to the standard defining each block type:
@@ -174,3 +201,40 @@ variant { Map = vec {
 }}
 ```
 
+### Informative Example: Integration with a Standardized Method
+
+ICRC-122 defines only block types (`122mint`, `122burn`) and their semantics.  
+It does not define ledger methods. However, future standards may specify methods
+that directly produce these block types.
+
+For illustration, suppose a future standard (e.g., ICRC-145) introduces the method:
+
+```icrc145_mint : (account, nat, opt text) -> result nat```
+
+
+Calling this method with a target account, an amount, and an optional reason could
+produce a `122mint` block on-chain. A possible encoding is shown below:
+
+```
+variant { Map = vec {
+record { "btype"; variant { Text = "122mint" }};
+record { "ts"; variant { Nat = 1_747_900_000_000_000_000 : nat }};
+record { "phash"; variant { Blob = blob "\aa\bb\cc\dd\ee\ff\00\11\22\33\44\55\66\77\88\99" }};
+record { "tx"; variant { Map = vec {
+// Namespaced op from the method-defining standard (ICRC-145)
+record { "op"; variant { Text = "145mint" }};
+// Optional provenance (non-semantic)
+record { "caller"; variant { Blob = blob "\00\00\00\00\00\00\f0\0d\01\02" }};
+record { "to"; variant { Array = vec {
+variant { Blob = blob "\00\00\00\00\02\00\01\0d\01\01" };
+variant { Blob = blob "\06\ec\cd\3a\97\fb\a8\5f\bc\8d\a3\3e\5d\ba\bc\2f\38\69\60\5d\c7\a1\c9\53\1f\70\a3\66\c5\a7\e4\21" };
+}}};
+record { "amt"; variant { Nat = 1_000_000 : nat }};
+record { "reason"; variant { Text = "Community treasury distribution" }};
+}}};
+}}
+```
+
+This example is non-normative and illustrates how a standardized method can map into
+the ICRC-122 block structure while using a namespaced `tx.op` to prevent collisions
+across standards. The authoritative semantics remain defined by the ICRC-122 block types.
