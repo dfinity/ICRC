@@ -109,7 +109,7 @@ variant { Map = vec {
 
 
 ### 122burn (Extended Example with Provenance and Deduplication Information)  
-This block demonstrates an extended `122burn` including optional provenance fields (`caller`, `reason`, `created_at_time`) alongside the required fields. These additions provide auditability without altering semantics.  
+This block demonstrates an extended `122burn` including optional provenance and deduplication information fields (`caller`, `reason`, `created_at_time`) alongside the required fields. These additions provide auditability and deduplication functionality without altering semantics. 
 
 
 
@@ -153,7 +153,7 @@ variant { Map = vec {
 ---
 
 ### 122mint (Extended Example with Provenance and Deduplication Information)  
-This block demonstrates an extended `122mint` including optional provenance fields (`caller`, `reason`, `created_at_time`) alongside the required fields. These additions provide auditability without altering semantics.  
+This block demonstrates an extended `122mint` including optional provenance and deduplication fields (`caller`, `reason`, `created_at_time`) alongside the required fields. These additions provide auditability and deduplication functionality without altering semantics.  
 
 
 ```
