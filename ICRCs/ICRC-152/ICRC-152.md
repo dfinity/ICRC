@@ -206,15 +206,3 @@ variant {
 Here, the block records the operation (`op = "152burn"`), the account being debited (`from`), the burned amount (`amt`), the caller‑provided timestamp (`ts`), the caller’s principal (`caller`) and the optional `reason`. 
 
 
-
-
-## Supported block types (for `icrc3_supported_block_types`)
-```
-vec {
-  record { block_type = "122mint"; url = "https://example.com/ICRC-122.md#122mint" },
-  record { block_type = "122burn"; url = "https://example.com/ICRC-122.md#122burn" },
-}
-
-
-```
-
