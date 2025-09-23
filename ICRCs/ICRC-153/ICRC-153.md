@@ -309,3 +309,132 @@ Accordingly, ledgers implementing ICRC-153 MUST already advertise support for th
 relevant ICRC-123 block kinds (e.g., `123freeze_account`, `123unfreeze_account`,
 `123freeze_principal`, `123unfreeze_principal`) as required by ICRC-123.
 No additional block types need to be reported.
+
+
+## Query & Introspection Methods
+
+This section defines read-only methods for discovering and checking the current
+freeze state. These queries do **not** produce blocks and are required for
+wallets, explorers, and auditors to efficiently enumerate frozen entities and
+perform quick checks.
+
+All results reflect the ledger’s state **at the time the query is executed**.
+
+
+### `icrc147_list_frozen_accounts`
+
+Lexicographically paginated listing of currently frozen **accounts**.
+
+#### Arguments
+```
+type FrozenAccountsRequest = record {
+    start_after : opt Account;   // return accounts strictly greater than this
+    max_results : nat;
+};
+```
+#### Returns
+```
+type FrozenAccountsResponse = record {
+    accounts : vec Account;
+    has_more : bool;
+};
+
+icrc147_list_frozen_accounts : (FrozenAccountsRequest) -> (FrozenAccountsResponse) query;
+```
+
+
+#### Semantics
+
+- Returns up to `max_results` frozen accounts in **strictly increasing** lexicographic order.
+- If `start_after` is present, the first returned account MUST be **strictly greater** than `start_after`.
+- If `start_after` is absent, the listing starts from the smallest account.
+- `has_more = true` iff there exist additional frozen accounts after the last one returned.
+
+#### Canonical Ordering
+
+Ordering MUST be defined over the ICRC-1 `Account` tuple `(owner, subaccount)` as follows:
+
+1. Compare `owner` by its raw principal **bytes** (as if `variant { Blob = <bytes> }`), lexicographically.
+2. If equal, compare `subaccount`, where:
+   - an absent subaccount sorts **before** a present subaccount;
+   - for two present subaccounts, compare their 32-byte values lexicographically.
+
+This matches the natural `Value::Array`/`Blob` bytewise ordering implied by ICRC-3.
+
+#### Notes
+
+- `max_results` MAY be any non-negative `nat`. If `max_results = 0`, the method returns an empty `accounts` vector and a correct `has_more`.
+- Implementations SHOULD enforce reasonable upper bounds for `max_results` to avoid excessive responses.
+- Results are a **point-in-time snapshot**; concurrent freezes/unfreezes may affect subsequent pages.
+
+### `icrc147_list_frozen_principals`
+
+Lexicographically paginated listing of currently frozen **principals**.
+
+#### Arguments
+```
+type FrozenPrincipalsRequest = record {
+    start_after : opt principal;   // return principals strictly greater than this
+    max_results : nat;
+};
+```
+#### Returns
+```
+type FrozenPrincipalsResponse = record {
+    principals : vec principal;
+    has_more : bool;
+};
+
+icrc147_list_frozen_principals : (FrozenPrincipalsRequest) -> (FrozenPrincipalsResponse) query;
+```
+
+#### Semantics
+
+- Returns up to `max_results` frozen principals in **strictly increasing** lexicographic order.
+- If `start_after` is present, the first returned principal MUST be **strictly greater** than `start_after`.
+- If `start_after` is absent, the listing starts from the smallest principal.
+- `has_more = true` iff there exist additional frozen principals after the last one returned.
+
+#### Canonical Ordering
+
+Principals MUST be ordered by their raw principal **bytes** (as if `variant { Blob = <bytes> }`), lexicographically, consistent with ICRC-3 `Value` ordering.
+
+#### Notes
+
+- `max_results = 0` returns an empty `principals` vector with a correct `has_more`.
+- Implementations SHOULD bound `max_results`.
+- Results are a **point-in-time snapshot**; concurrent changes may affect subsequent pages.
+
+## Effective Freeze Model (Clarification)
+
+ICRC-153 adopts a **compositional freeze rule** consistent with ICRC-123:
+
+- An **account** is *effectively frozen* if **either**:
+  1) the account itself is frozen, **or**
+  2) the account’s `owner` **principal** is frozen.
+
+### Implications for Queries
+
+- `icrc147_list_frozen_accounts`  
+  Returns **only accounts frozen directly** (i.e., via account-level freezes).  
+  It does **not** expand principal-level freezes into per-account entries.
+
+- `icrc147_list_frozen_principals`  
+  Returns **principals** that are frozen. Any account owned by a listed principal is
+  *effectively frozen* by composition, even if it does not appear in the account list.
+
+- `icrc147_is_frozen_account(account)` MUST return `true` if the account is directly frozen
+  **or** if `is_frozen_principal(account.owner)` is `true`.
+
+- `icrc147_is_frozen_principal(principal)` returns whether the **principal-level** freeze is active.
+
+### Integrator Guidance
+
+To determine whether a given account is currently frozen, integrators MUST either:
+- call `icrc147_is_frozen_account(account)`, or
+- check both lists and apply the compositional rule:
+  1) see if `account` appears in `icrc147_list_frozen_accounts`, or
+  2) see if `account.owner` appears in `icrc147_list_frozen_principals`.
+
+This approach avoids large state updates when freezing/unfreezing principals with many accounts,
+while providing a clear, deterministic interpretation of the effective freeze state.
