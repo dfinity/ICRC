@@ -318,10 +318,10 @@ freeze state. These queries do **not** produce blocks and are required for
 wallets, explorers, and auditors to efficiently enumerate frozen entities and
 perform quick checks.
 
-All results reflect the ledger’s state **at the time the query is executed**.
+All results reflect the ledger’s state **at the time the query is executed**. These queries are read-only and do not produce blocks.
 
 
-### `icrc147_list_frozen_accounts`
+### `icrc153_list_frozen_accounts`
 
 Lexicographically paginated listing of currently frozen **accounts**.
 
@@ -339,7 +339,7 @@ type FrozenAccountsResponse = record {
     has_more : bool;
 };
 
-icrc147_list_frozen_accounts : (FrozenAccountsRequest) -> (FrozenAccountsResponse) query;
+icrc153_list_frozen_accounts : (FrozenAccountsRequest) -> (FrozenAccountsResponse) query;
 ```
 
 
@@ -367,7 +367,7 @@ This matches the natural `Value::Array`/`Blob` bytewise ordering implied by ICRC
 - Implementations SHOULD enforce reasonable upper bounds for `max_results` to avoid excessive responses.
 - Results are a **point-in-time snapshot**; concurrent freezes/unfreezes may affect subsequent pages.
 
-### `icrc147_list_frozen_principals`
+### `icrc153_list_frozen_principals`
 
 Lexicographically paginated listing of currently frozen **principals**.
 
@@ -385,7 +385,7 @@ type FrozenPrincipalsResponse = record {
     has_more : bool;
 };
 
-icrc147_list_frozen_principals : (FrozenPrincipalsRequest) -> (FrozenPrincipalsResponse) query;
+icrc153_list_frozen_principals : (FrozenPrincipalsRequest) -> (FrozenPrincipalsResponse) query;
 ```
 
 #### Semantics
@@ -415,26 +415,26 @@ ICRC-153 adopts a **compositional freeze rule** consistent with ICRC-123:
 
 ### Implications for Queries
 
-- `icrc147_list_frozen_accounts`  
+- `icrc153_list_frozen_accounts`  
   Returns **only accounts frozen directly** (i.e., via account-level freezes).  
   It does **not** expand principal-level freezes into per-account entries.
 
-- `icrc147_list_frozen_principals`  
+- `icrc153_list_frozen_principals`  
   Returns **principals** that are frozen. Any account owned by a listed principal is
   *effectively frozen* by composition, even if it does not appear in the account list.
 
-- `icrc147_is_frozen_account(account)` MUST return `true` if the account is directly frozen
+- `icrc153_is_frozen_account(account)` MUST return `true` if the account is directly frozen
   **or** if `is_frozen_principal(account.owner)` is `true`.
 
-- `icrc147_is_frozen_principal(principal)` returns whether the **principal-level** freeze is active.
+- `icrc153_is_frozen_principal(principal)` returns whether the **principal-level** freeze is active.
 
 ### Integrator Guidance
 
 To determine whether a given account is currently frozen, integrators MUST either:
-- call `icrc147_is_frozen_account(account)`, or
+- call `icrc153_is_frozen_account(account)`, or
 - check both lists and apply the compositional rule:
-  1) see if `account` appears in `icrc147_list_frozen_accounts`, or
-  2) see if `account.owner` appears in `icrc147_list_frozen_principals`.
+  1) see if `account` appears in `icrc153_list_frozen_accounts`, or
+  2) see if `account.owner` appears in `icrc153_list_frozen_principals`.
 
 This approach avoids large state updates when freezing/unfreezing principals with many accounts,
 while providing a clear, deterministic interpretation of the effective freeze state.
