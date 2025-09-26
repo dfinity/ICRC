@@ -1,4 +1,4 @@
-# ICRC-123: Freezing and Unfreezing Accounts and Principals
+# ICRC-123: Freeze and Unfreeze Blocks
 
 ## Status
 
