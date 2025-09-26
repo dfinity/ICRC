@@ -1,4 +1,4 @@
-# ICRC-124: Ledger Pausing, Unpausing, and Deactivation
+# ICRC-124:  Pause, Unpause & Deactivate Blocks
 
 ## Status
 
