@@ -438,3 +438,59 @@ To determine whether a given account is currently frozen, integrators MUST eithe
 
 This approach avoids large state updates when freezing/unfreezing principals with many accounts,
 while providing a clear, deterministic interpretation of the effective freeze state.
+
+
+## Example calls and the resulting blocks
+
+#### Call
+The caller invokes:
+
+```
+icrc153_freeze_account({
+  account         = [principal "f5288412af11b299313a5b5a7c128311de102333c4adbe669f2ea1a308"];
+  created_at_time = 1_753_500_100_000_000_000 : nat64;
+  reason          = ?"Fraud investigation hold";
+})
+```
+
+#### Resulting block
+
+This call rsults in a block with btype="122freeze" and the following contents:
+
+```
+variant {
+  Map = vec {
+    record { "btype"; variant { Text = "123freeze_account" } };
+    record { "phash"; variant { Blob = blob "\12\34\56\78\9a\bc\de\f0\01\23\45\67\89\ab\cd\ef\10\32\54\76\98\ba\dc\fe\11\22\33\44\55\66\77\88" } };
+    record { "ts";    variant { Nat64 = 1_753_500_101_000_000_000 : nat64 } };
+    record {
+      "tx";
+      variant {
+        Map = vec {
+          record { "op";      variant { Text = "153freeze_account" } };
+          record { "account"; variant { Array = vec {
+            variant { Blob = blob "\15\28\84\12\af\11\b2\99\31\3a\5b\5a\7c\12\83\11\de\10\23\33\c4\ad\be\66\9f\2e\a1\a3\08" }
+          } } };
+          record { "ts";      variant { Nat64 = 1_753_500_100_000_000_000 : nat64 } };
+          record { "caller";  variant { Blob  = blob "\00\00\00\00\02\30\02\17\01\01" } };
+          record { "reason";  variant { Text  = "Fraud investigation hold" } };
+        }
+      };
+    };
+  }
+};
+```
+
+The block records the operation (op = "153freeze_account"), the account being frozen (account), the caller-supplied timestamp (ts), the caller’s principal (caller), and the optional reason. The account is shown as a principal literal in the call, but stored canonically as a Blob in the block.
+
+#### Call
+The caller invokes:
+```
+icrc153_unfreeze_account({
+  account         = [principal "f5288412af11b299313a5b5a7c128311de102333c4adbe669f2ea1a308"];
+  created_at_time = 1_753_500_100_000_000_000 : nat64;
+  reason          = ?"Lift compliance hold";
+})
+```
+
+
