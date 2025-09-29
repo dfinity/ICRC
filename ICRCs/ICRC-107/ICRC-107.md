@@ -29,7 +29,7 @@ ICRC-107 introduces a global on-chain fee collection setting recorded in the led
 Specifically, ICRC-107 defines:
 
 - A fee collection configuration that specifies the collector account (`icrc107_fee_col`), applying to all subsequent blocks.  
-- A new block type (`btype = 107feecol`) for setting `icrc107_fee_col` to designate the fee collector.  
+- A new block type (`btype = "107feecol"`) for setting `icrc107_fee_col` to designate the fee collector.  
 - A backward-compatible mechanism where, until `icrc107_fee_col` is set, legacy `fee_col` logic applies.  
 
 By embedding fee collection settings entirely on-chain, ICRC-107 ensures **transparency**, **interoperability**, and **simplified integration** for wallets, explorers, and other tools.  
@@ -123,7 +123,7 @@ A `107feecol` block updates the ledger’s global fee collector configuration:
 
 This configuration applies **to all subsequent blocks** until replaced by another `107feecol`.
 
-> Note: `tx.icrc107_fee_col = []` (explicit burn) is not the same as the absence of any `107feecol` block (legacy applies).”
+> Note: `tx.icrc107_fee_col = []` (explicit burn) is not the same as the absence of any `107feecol` block (legacy applies).
 
 ---
 
@@ -383,4 +383,4 @@ To determine who collects the fee in a block:
    - If the block is a transfer block, i.e. of type `1xfer` or `2xfer`:
       - If `fee_col` is specified in the block the fee is collected by `fee_col`.
       - If `fee_col_block` is specified use the `fee_col` from the referenced block index.
-      - If netiher `fee_col` nor `fee_col_block` are specified, then the fee is burned.
+      - If neither `fee_col` nor `fee_col_block` are specified, then the fee is burned.
