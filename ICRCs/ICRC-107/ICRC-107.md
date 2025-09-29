@@ -46,7 +46,7 @@ For any block that charges a fee, handle the fee using this **checklist in order
 2) **Apply the setting**  
    - **Account found:** credit the **effective fee** to that account.  
    - **Burn found (`[]`):** burn the effective fee.  
-   - **No 107feecol setting found:** apply **legacy `fee_col` logic** (Section 5).  
+   - **No 107feecol setting found:** apply **legacy `fee_col` logic (see Legacy Fee Collection Mechanism)**.  
      - If legacy config designates a collector, credit that account.  
      - If no legacy collector is configured, burn the fee.
 
@@ -122,6 +122,8 @@ A `107feecol` block updates the ledger’s global fee collector configuration:
 
 This configuration applies **to all subsequent blocks** until replaced by another `107feecol`.
 
+> Note: `tx.icrc107_fee_col = []` (explicit burn) is not the same as the absence of any `107feecol` block (legacy applies).”
+
 ---
 
 ### Fee Application under ICRC-107
@@ -184,30 +186,45 @@ icrc107_set_fee_collector: (SetFeeCollectorArgs) -> (variant { Ok: nat; Err: Set
 
 ```
 
-### `icrc107_set_fee_collector` — Semantics (clarified link to `tx`)
+### `icrc107_set_fee_collector` — Semantics
 
-This method MUST only be callable by a controller of the ledger or other authorized principals. Unauthorized calls SHOULD result in an error.
+- **Authorization**  
+  The method **MUST** be callable only by a **controller** of the ledger or other explicitly authorized principals. Unauthorized calls **MUST** fail with `AccessDenied`.
 
-- On success, the ledger MUST append a new block with `btype = "107feecol"`.  
-  **The block’s `tx` is a top-level field of this `107feecol` block** and **MUST** be constructed **exactly** as defined in **Canonical `tx` Mapping** below (same keys, types, and encoding). The ledger MUST embed this `tx` map into the newly appended block.
-- The value in `tx.icrc107_fee_col` becomes the active fee-collection setting **from that block’s index onward** (non-retroactive).  
-  - If `icrc107_fee_col` is provided (`Account`), all subsequent effective fees are **credited** to that account until changed by a later `107feecol`.  
-  - If `icrc107_fee_col` is not provided (`null`), it MUST be encoded as `[]` in `tx`; all subsequent effective fees are **burned** until changed by a later `107feecol`.
-- If multiple `107feecol` blocks exist, the **last one at or before** a block’s index determines the setting for that block.
-- The ledger MUST perform deduplication (e.g., using `created_at_time` and implementation-defined inputs). On duplicate detection, it MUST NOT append a new block and MUST return `Err(Duplicate { duplicate_of = <index> })`.
+- **Effect (on success, non-retroactive)**  
+  The ledger **MUST** append a new block with `btype = "107feecol"`.  
+  **The block’s `tx` is a top-level field of that `107feecol` block** and **MUST** be constructed **exactly** as defined in **Canonical `tx` Mapping** (same keys, types, and value encodings) and embedded in the block.  
+  The value in `tx.icrc107_fee_col` becomes the active fee-collection setting **from that block’s index onward**; earlier blocks **MUST NOT** be affected.
 
-The `icrc107_set_fee_collector` method MUST return an error in the following cases:
+  - If `icrc107_fee_col` is **provided** (`Account`), all effective fees for this and later blocks **MUST** be **credited** to that account, until changed by a later `107feecol`.  
+  - If `icrc107_fee_col` is **absent** (`null`), it **MUST** be encoded as an empty array `[]` in `tx`; all effective fees for this and later blocks **MUST** be **burned**, until changed by a later `107feecol`.
 
-- The caller is not authorized to modify the fee collector (`AccessDenied`).  
-- The provided `Account` is invalid (e.g., minting account, anonymous principal, malformed principal or subaccount) (`InvalidAccount`).  
-- A semantically identical transaction was already accepted (per deduplication rules), resulting in `SetFeeCollectorError::Duplicate` (with `duplicate_of`).  
-- Any other failure that prevents appending a valid `107feecol` block (`GenericError`).
+- **Return value**  
+  On success, the method **MUST** return `Ok(index : nat)`, where `index` is the block index of the newly appended `107feecol` block.  The new configuration **MUST** apply starting **at** `index` (non-retroactive).
+
+- **Multiple updates over time**  
+  If multiple `107feecol` blocks exist, the setting that applies to any block **MUST** be the **last** `107feecol` **at or before** that block’s index.
+
+- **Deduplication & idempotency**  
+  The ledger **MUST** perform deduplication (e.g., using `created_at_time` and any implementation-defined inputs).  
+  If a duplicate is detected, the ledger **MUST NOT** append a new block and **MUST** return `Err(Duplicate { duplicate_of = <index> })`.
+
+- **Error cases (normative)**  
+  The method **MUST** return an error in these cases:
+  - **AccessDenied** — caller is not authorized to modify the fee collector.  
+  - **InvalidAccount** — provided collector account is invalid (e.g., minting account, anonymous principal, malformed principal/subaccount).  
+  - **Duplicate** — a semantically identical transaction was already accepted (per the ledger’s deduplication rules); response **MUST** include `duplicate_of` with the existing block index.  
+  - **GenericError** — any other failure that prevents constructing or appending a valid `107feecol` block.
+
+- **Clarifications**  
+  `tx.icrc107_fee_col = []` (explicit **burn**) is **not** the same as “no `107feecol` has ever been set” (which implies **legacy behavior** applies until the first ICRC-107 setting appears).
+
 
 ---
 
 ### Canonical `tx` Mapping (normative and referenced above)
 
-**Scope:** This mapping defines the **exact** content and encoding of the **top-level** `tx` field that MUST be embedded in every `107feecol` block created by `icrc107_set_fee_collector` (or by the ledger itself in the system-generated case).
+**Scope:** This mapping defines the **exact** content of the **top-level** `tx` field that MUST be embedded in every `107feecol` block created by `icrc107_set_fee_collector` (or by the ledger itself in the system-generated case).
 
 | Field             | Type (ICRC-3 `Value`)   | Source / Encoding Rule                                                                 |
 |-------------------|-------------------------|-----------------------------------------------------------------------------------------|
@@ -215,7 +232,10 @@ The `icrc107_set_fee_collector` method MUST return an error in the following cas
 | `created_at_time` | `Nat`                   | From the `created_at_time` argument (ns since Unix epoch; **MUST** fit in `nat64`).     |
 | `caller`          | `Blob`                  | Principal of the caller.                                                                |
 
-> **Conformance note:** Any `107feecol` block produced by this method **MUST** carry a top-level `tx` whose map entries **exactly match** the table above (no additional required keys; optional keys, if any, MUST follow this spec). Consumers MUST interpret fee behavior from this `tx` content.
+> **Conformance note:** Hashing uses **representation-independent hashing (RIH)**, so **field order and concrete map encoding do not affect the hash**. What **does** matter is:
+> - The **presence** (or absence) of the fields listed above.
+> - The **exact values** of those fields, encoded per ICRC-3 `Value`.
+
 
 #### System-Generated `107feecol` Blocks
 
