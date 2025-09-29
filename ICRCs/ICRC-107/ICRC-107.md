@@ -368,3 +368,4 @@ To determine who collects the fee in a block:
    - If the block is a transfer block, i.e. of type `1xfer` or `2xfer`:
       - If `fee_col` is specified in the block the fee is collected by `fee_col`.
       - If `fee_col_block` is specified use the `fee_col` from the referenced block index.
+      - If netiher `fee_col` nor `fee_col_block` are specified, then the fee is burned.
