@@ -70,6 +70,26 @@ A ledger implementing ICRC-152 MUST:
   `"152mint"` and `"152burn"`.
 
 
+## Common Elements
+
+This standard inherits core conventions from **ICRC-3** (block log format, Value encoding, hashing, certification) and **ICRC-122** (typed block kinds).
+
+- **Accounts**  
+  Encoded as ICRC-3 `Value` `variant { Array = vec { V1 [, V2] } }` where  
+  `V1 = variant { Blob = <owner_principal_bytes> }` and optionally  
+  `V2 = variant { Blob = <32-byte_subaccount_bytes> }`.  
+  If no subaccount is provided, the array contains only the owner principal.
+
+- **Principals**  
+  Encoded as `variant { Blob = <principal_bytes> }`.
+
+- **Timestamps**  
+  Caller-supplied `created_at_time` is in **nanoseconds since Unix epoch**.  
+  Encoded as `Nat` in ICRC-3 `Value` and **MUST** fit in `nat64`.
+
+- **Blocks & Parent Hash**  
+  Resulting blocks for these APIs use `btype = "122mint"` and `btype = "122burn"` (per ICRC-122).  
+  Standard metadata (e.g., `phash`, `ts`) follows ICRC-3.
 
 
 
@@ -104,38 +124,51 @@ icrc152_mint : (MintArgs) -> (variant { Ok : nat; Err : MintError });
 
 
 #### Semantics
-- **Credits** `amount` tokens to the `to` account.  
-- **Increases** the total supply by `amount`.  
-- **Creates** a block of type `122mint`.  
-- On success, returns the **index of the created block**.  
-- On failure, returns an appropriate error.  
-- Semantics are consistent with the core transition already defined for `122mint` blocks.  
 
-#### Return Values
-On success, the method returns
+**Authorization**  
+- The method **MUST** be callable only by a **controller** of the ledger or other explicitly authorized principals.  
+- Unauthorized calls **MUST** fail with `Unauthorized`.
 
-- `variant { Ok : nat }`  
-  where the `nat` is the index of the block created in the ledger.  
+**Effect (on success, non-retroactive)**  
+- **Credit** `amount` to `to`.  
+- **Increase** total supply by `amount`.  
+- **Append** a block with `btype = "122mint"`.  
+- The block’s top-level `tx` **MUST** be constructed **exactly** as in **Canonical `tx` Mapping** (keys, types, encodings), and embedded in the block.
 
-On failure, the method returns
+**Return value**  
+- On success, **MUST** return `variant { Ok : nat }` where the `nat` is the index of the created block.  
+- On failure, **MUST** return `variant { Err : MintError }`.
 
-- `variant { Err : MintError }`  
-  describing the reason for rejection.  
+**Deduplication & idempotency**  
+- The ledger **MUST** perform deduplication (e.g., using `created_at_time` and any implementation-defined inputs).  
+- If a duplicate is detected, the ledger **MUST NOT** append a new block and **MUST** return `Err(Duplicate { duplicate_of = <index> })`.
 
+**Error cases (normative)**  
+- `Unauthorized` — caller not permitted.  
+- `InvalidAccount` — malformed/invalid target account (e.g., minting account, anonymous principal, invalid subaccount bytes).  
+- `Duplicate { duplicate_of }` — a semantically identical transaction was already accepted.  
+- `GenericError { error_code, message }` — any other failure preventing a valid `122mint` block.
+
+**Clarifications**  
+- Optional fields **MUST be omitted** from `tx` if not supplied in the call (no null placeholders).  
+- Representation-independent hashing (ICRC-3) applies; field presence and values matter, not map ordering.
 
 
 #### Canonical `tx` Mapping
 A successful call to `icrc152_mint` produces a block of type `122mint`.  
 The `tx` field is derived deterministically as follows:
 
-- `op     = "152mint"`  
-- `to     = MintArgs.to`  
-- `amt    = MintArgs.amount`  
-- `ts     = MintArgs.created_at_time`  
-- `caller = caller_principal (as Blob)`  
-- `reason = MintArgs.reason` (if provided)  
+#### Canonical `tx` Mapping (normative)
 
-Optional fields (`reason`) MUST be omitted from `tx` if not supplied in the call.  
+| Field             | Type (ICRC-3 `Value`) | Source / Encoding Rule                                                     |
+|-------------------|------------------------|-----------------------------------------------------------------------------|
+| `op`              | `Text`                 | **Constant** `"152mint"`.                                                  |
+| `to`              | `Array` (Account)      | From `MintArgs.to`, encoded as ICRC-3 Account.                             |
+| `amt`             | `Nat`                  | From `MintArgs.amount`.                                                    |
+| `created_at_time` | `Nat`                  | From `MintArgs.created_at_time` (ns since Unix epoch; **MUST** fit `nat64`). |
+| `caller`          | `Blob`                 | Principal of the caller (raw bytes).                                       |
+| `reason`          | `Text` *(optional)*    | From `MintArgs.reason` if provided; **omit** if absent.                    |
+
 
 
 
