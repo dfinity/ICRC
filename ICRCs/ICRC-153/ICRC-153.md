@@ -129,6 +129,9 @@ icrc153_freeze_account : (FreezeAccountArgs) -> (variant { Ok : nat; Err : Freez
 - `Duplicate { duplicate_of }` — semantically identical transaction previously accepted.  
 - `GenericError { error_code, message }` — any other failure preventing a valid block.
 
+**Clarifications**  
+- Optional fields **MUST be omitted** from `tx` if not supplied.  
+
 
 #### Canonical `tx` Mapping (normative)
 
@@ -140,9 +143,6 @@ icrc153_freeze_account : (FreezeAccountArgs) -> (variant { Ok : nat; Err : Freez
 | `caller`          | `Blob`                 | Principal of the caller (raw bytes). |
 | `reason`          | `Text` *(optional)*    | From `FreezeAccountArgs.reason` if provided; **omit** if absent. |
 
-
-**Clarifications**  
-- Optional fields **MUST be omitted** from `tx` if not supplied.  
 
 
 
@@ -173,34 +173,45 @@ icrc153_unfreeze_account : (UnfreezeAccountArgs) -> (variant { Ok : nat; Err : U
 
 #### Semantics
 
-- Marks account as **unfrozen** according to ICRC-123 semantics.  
-- Appends a block of type `123unfreeze_account`.  
-- On success, returns the **index of the created block**.  
-- On failure, returns an appropriate error.  
-- Semantics are consistent with the unfreeze semantics defined by ICRC-123.  
+**Authorization**  
+- The method **MUST** be callable only by a **controller** of the ledger or other explicitly authorized principals.  
+- Unauthorized calls **MUST** fail with `Unauthorized`.
 
-#### Return Values
+**Effect (on success, non-retroactive)**  
+- Mark the specified `account` as **unfrozen** according to ICRC-123 semantics.  
+- Append a new block with `btype = "123unfreeze_account"`.  
+- The block’s `tx` field **MUST** be constructed **exactly** as defined in **Canonical `tx` Mapping** (same keys, types, and encodings), with `ts` derived from `created_at_time`.  
+- On success, return the index of the newly appended block.
 
-On success:  
+**Return value**  
+- On success: `variant { Ok : nat }`, where the `nat` is the index of the created block.  
+- On failure: `variant { Err : UnfreezeAccountError }`.
 
-- `variant { Ok : nat }` — the created block index.  
+**Deduplication & idempotency**  
+- The ledger **MUST** perform deduplication (e.g., using `created_at_time`).  
+- If a duplicate is detected, the ledger **MUST NOT** append a new block and **MUST** return `Err(Duplicate { duplicate_of = <index> })`.
 
-On failure:  
+**Error cases (normative)**  
+- `Unauthorized` — caller not permitted.  
+- `InvalidAccount` — malformed or disallowed account.  
+- `NotFrozen` — account is not currently frozen.  
+- `Duplicate { duplicate_of }` — semantically identical transaction previously accepted.  
+- `GenericError { error_code, message }` — any other failure preventing a valid block.
 
-- `variant { Err : UnfreezeAccountError }`.  
+**Clarifications**  
+- The `tx` field uses **`ts`** for the caller-supplied timestamp (`created_at_time`).  
+- Optional fields **MUST be omitted** from `tx` if not supplied.  
+- Representation-independent hashing (ICRC-3) applies; field presence and value determine hash, not field order.
 
-#### Canonical `tx` Mapping
+#### Canonical `tx` Mapping (normative)
 
-A successful call to `icrc153_unfreeze_account` produces a `123unfreeze_account` block.  
-The `tx` field is derived as follows:
-
-- `op      = "153unfreeze_account"`  
-- `account = UnfreezeAccountArgs.account`  
-- `ts      = UnfreezeAccountArgs.created_at_time`  
-- `caller  = caller_principal (as Blob)`  
-- `reason  = UnfreezeAccountArgs.reason` (if provided)  
-
-Optional fields MUST be omitted if not supplied.
+| Field | Type (ICRC-3 `Value`) | Source / Encoding Rule |
+|---|---|---|
+| `op` | `Text` | **Constant** `"153unfreeze_account"`. |
+| `account` | `Array` (Account) | From `UnfreezeAccountArgs.account`. |
+| `ts` | `Nat` | From `UnfreezeAccountArgs.created_at_time`. |
+| `caller` | `Blob` | Principal of the caller. |
+| `reason` | `Text` *(optional)* | From `UnfreezeAccountArgs.reason` if provided; **omit** if absent. |
 
 
 ### `icrc153_freeze_principal`
@@ -229,35 +240,47 @@ icrc153_freeze_principal : (FreezePrincipalArgs) -> (variant { Ok : nat; Err : F
 
 #### Semantics
 
-- Marks the **principal** as frozen (scope per ICRC-123), affecting its accounts.  
-- Appends a block of type `123freeze_principal`.  
-- On success, returns the **index of the created block**.  
-- On failure, returns an appropriate error.  
-- Semantics are consistent with the freeze semantics defined by ICRC-123.  
+**Authorization**  
+- The method **MUST** be callable only by a **controller** of the ledger or other explicitly authorized principals.  
+- Unauthorized calls **MUST** fail with `Unauthorized`.
 
-#### Return Values
+**Effect (on success, non-retroactive)**  
+- Mark the specified `principal` as **frozen** (scope and effect per ICRC-123), impacting its accounts via composition.  
+- Append a new block with `btype = "123freeze_principal"`.  
+- The block’s `tx` field **MUST** be constructed **exactly** as defined in **Canonical `tx` Mapping** (same keys, types, and encodings), with `ts` derived from `created_at_time`.  
+- On success, return the index of the newly appended block.
 
-On success:  
+**Return value**  
+- On success: `variant { Ok : nat }`, where the `nat` is the index of the created block.  
+- On failure: `variant { Err : FreezePrincipalError }`.
 
-- `variant { Ok : nat }` — the created block index.  
+**Deduplication & idempotency**  
+- The ledger **MUST** perform deduplication (e.g., using `created_at_time`).  
+- If a duplicate is detected, the ledger **MUST NOT** append a new block and **MUST** return `Err(Duplicate { duplicate_of = <index> })`.
 
-On failure:  
+**Error cases (normative)**  
+- `Unauthorized` — caller not permitted.  
+- `InvalidPrincipal` — malformed/invalid principal bytes.  
+- `AlreadyFrozen` — principal already frozen at the scope defined by ICRC-123.  
+- `Duplicate { duplicate_of }` — semantically identical transaction previously accepted.  
+- `GenericError { error_code, message }` — any other failure preventing a valid block.
 
-- `variant { Err : FreezePrincipalError }`.  
+**Clarifications**  
+- The `tx` field uses **`ts`** for the caller-supplied timestamp (`created_at_time`).  
+- Optional fields **MUST be omitted** from `tx` if not supplied.  
+- Representation-independent hashing (ICRC-3) applies; field presence and value determine hash, not field order.
 
-#### Canonical `tx` Mapping
+#### Canonical `tx` Mapping (normative)
 
-A successful call to `icrc153_freeze_principal` produces a `123freeze_principal` block.  
-The `tx` field is derived as follows:
+| Field | Type (ICRC-3 `Value`) | Source / Encoding Rule |
+|---|---|---|
+| `op` | `Text` | **Constant** `"153freeze_principal"`. |
+| `principal` | `Blob` | From `FreezePrincipalArgs.principal` (principal bytes). |
+| `ts` | `Nat` | From `FreezePrincipalArgs.created_at_time`. |
+| `caller` | `Blob` | Principal of the caller. |
+| `reason` | `Text` *(optional)* | From `FreezePrincipalArgs.reason` if provided; **omit** if absent. |
 
-- `op        = "153freeze_principal"`  
-- `principal = caller-supplied principal (as Blob)`  
-  (in ICRC-3 Value, principals are encoded as `Blob`)  
-- `ts        = FreezePrincipalArgs.created_at_time`  
-- `caller    = caller_principal (as Blob)`  
-- `reason    = FreezePrincipalArgs.reason` (if provided)  
 
-Optional fields MUST be omitted if not supplied.  
 
 
 ### `icrc153_unfreeze_principal`
@@ -286,34 +309,46 @@ icrc153_unfreeze_principal : (UnfreezePrincipalArgs) -> (variant { Ok : nat; Err
 
 #### Semantics
 
-- Marks the principal as **unfrozen**, lifting restrictions according to ICRC-123 semantics.  
-- Appends a block of type `123unfreeze_principal`.  
-- On success, returns the **index of the created block**.  
-- On failure, returns an appropriate error.  
-- Semantics are consistent with the unfreeze semantics defined by ICRC-123.  
+**Authorization**  
+- The method **MUST** be callable only by a **controller** of the ledger or other explicitly authorized principals.  
+- Unauthorized calls **MUST** fail with `Unauthorized`.
 
-#### Return Values
+**Effect (on success, non-retroactive)**  
+- Mark the specified `principal` as **unfrozen** (lifting restrictions per ICRC-123).  
+- Append a new block with `btype = "123unfreeze_principal"`.  
+- The block’s `tx` field **MUST** be constructed **exactly** as defined in **Canonical `tx` Mapping** (same keys, types, and encodings), with `ts` derived from `created_at_time`.  
+- On success, return the index of the newly appended block.
 
-On success:  
+**Return value**  
+- On success: `variant { Ok : nat }`, where the `nat` is the index of the created block.  
+- On failure: `variant { Err : UnfreezePrincipalError }`.
 
-- `variant { Ok : nat }` — the created block index.  
+**Deduplication & idempotency**  
+- The ledger **MUST** perform deduplication (e.g., using `created_at_time`).  
+- If a duplicate is detected, the ledger **MUST NOT** append a new block and **MUST** return `Err(Duplicate { duplicate_of = <index> })`.
 
-On failure:  
+**Error cases (normative)**  
+- `Unauthorized` — caller not permitted.  
+- `InvalidPrincipal` — malformed/invalid principal bytes.  
+- `NotFrozen` — principal is not currently frozen.  
+- `Duplicate { duplicate_of }` — semantically identical transaction previously accepted.  
+- `GenericError { error_code, message }` — any other failure preventing a valid block.
 
-- `variant { Err : UnfreezePrincipalError }`.  
+**Clarifications**  
+- The `tx` field uses **`ts`** for the caller-supplied timestamp (`created_at_time`).  
+- Optional fields **MUST be omitted** from `tx` if not supplied.  
+- Representation-independent hashing (ICRC-3) applies; field presence and value determine hash, not field order.
 
-#### Canonical `tx` Mapping
+#### Canonical `tx` Mapping (normative)
 
-A successful call to `icrc153_unfreeze_principal` produces a `123unfreeze_principal` block.  
-The `tx` field is derived as follows:
+| Field | Type (ICRC-3 `Value`) | Source / Encoding Rule |
+|---|---|---|
+| `op` | `Text` | **Constant** `"153unfreeze_principal"`. |
+| `principal` | `Blob` | From `UnfreezePrincipalArgs.principal`. |
+| `ts` | `Nat` | From `UnfreezePrincipalArgs.created_at_time`. |
+| `caller` | `Blob` | Principal of the caller. |
+| `reason` | `Text` *(optional)* | From `UnfreezePrincipalArgs.reason` if provided; **omit** if absent. |
 
-- `op        = "153unfreeze_principal"`  
-- `principal = UnfreezePrincipalArgs.principal` (encoded as Blob per ICRC-3 Value)  
-- `ts        = UnfreezePrincipalArgs.created_at_time`  
-- `caller    = caller_principal (as Blob)`  
-- `reason    = UnfreezePrincipalArgs.reason` (if provided)  
-
-Optional fields MUST be omitted if not supplied.
 
 ## Notes on Semantics & Scope
 
@@ -477,7 +512,23 @@ This approach avoids large state updates when freezing/unfreezing principals wit
 while providing a clear, deterministic interpretation of the effective freeze state.
 
 
-## Example calls and the resulting blocks
+## Example: Freeze and Unfreeze — method calls and resulting blocks
+
+> **Encoding note:**  
+> In the example method calls below, principals and accounts are shown in
+> human-readable form (e.g., `principal "abcd..."` or `[principal "abcd..."]`)
+> following Candid notation.  
+>  
+> In the resulting blocks, the same values appear in their canonical
+> **ICRC-3 `Value` representation**, where identifiers are encoded as  
+> `variant { Blob = <raw principal bytes> }` or  
+> `variant { Array = vec { variant { Blob = <owner bytes> } [, variant { Blob = <subaccount bytes> }] } }`.  
+>  
+> These two forms represent the **same identity** — the Candid form is used for
+> readability in examples, while the `Blob` form is the canonical encoding used
+> on-chain for deterministic hashing and certification.
+
+
 
 #### Call
 The caller invokes:
@@ -492,7 +543,7 @@ icrc153_freeze_account({
 
 #### Resulting block
 
-This call rsults in a block with btype="122freeze" and the following contents:
+This call rsults in a block with btype="122freeze_account" and the following contents:
 
 ```
 variant {
@@ -523,11 +574,103 @@ The block records the operation (op = "153freeze_account"), the account being fr
 #### Call
 The caller invokes:
 ```
-icrc153_unfreeze_account({
+iicrc153_unfreeze_account({
   account         = [principal "f5288412af11b299313a5b5a7c128311de102333c4adbe669f2ea1a308"];
-  created_at_time = 1_753_500_100_000_000_000 : nat64;
+  created_at_time = 1_753_500_200_000_000_000 : nat64;
   reason          = ?"Lift compliance hold";
 })
 ```
 
+#### Resulting block
+```
+variant {
+  Map = vec {
+    record { "btype"; variant { Text = "123unfreeze_account" } };
+    record { "phash"; variant { Blob = blob "\9f\aa\10\44\20\19\77\35\c2\9e\00\41\aa\cd\12\ef\04\aa\bb\cc\dd\ee\ff\00\11\22\33\44\55\66\77\88" } }; // illustrative
+    record { "ts";    variant { Nat = 1_753_500_201_000_000_000 : nat } };
+    record {
+      "tx";
+      variant {
+        Map = vec {
+          record { "op";      variant { Text = "153unfreeze_account" } };
+          record { "account"; variant { Array = vec {
+            variant { Blob = blob "\15\28\84\12\af\11\b2\99\31\3a\5b\5a\7c\12\83\11\de\10\23\33\c4\ad\be\66\9f\2e\a1\a3\08" }
+          } } };
+          record { "ts";      variant { Nat  = 1_753_500_200_000_000_000 : nat } };
+          record { "caller";  variant { Blob = blob "\00\00\00\00\02\30\02\17\01\01" } };
+          record { "reason";  variant { Text = "Lift compliance hold" } };
+        }
+      };
+    };
+  }
+};
+```
 
+
+#### Call
+The caller invokes:
+```
+icrc153_freeze_principal({
+  principal       = principal "abcd0123456789abcdef0123456789abcdef0123456789abcdef0123456789";
+  created_at_time = 1_753_600_000_000_000_000 : nat64;
+  reason          = ?"KYC review";
+})
+```
+
+#### Resulting block
+```
+variant {
+  Map = vec {
+    record { "btype"; variant { Text = "123freeze_principal" } };
+    record { "phash"; variant { Blob = blob "\aa\bb\cc\dd\ee\ff\00\11\22\33\44\55\66\77\88\99\01\23\45\67\89\ab\cd\ef\10\32\54\76\98\ba\dc\fe" } }; // illustrative
+    record { "ts";    variant { Nat = 1_753_600_001_000_000_000 : nat } };
+    record {
+      "tx";
+      variant {
+        Map = vec {
+          record { "op";        variant { Text = "153freeze_principal" } };
+          record { "principal"; variant { Blob = blob "\ab\cd\01\23\45\67\89\ab\cd\ef\01\23\45\67\89\ab\cd\ef\01\23\45\67\89\ab\cd\ef\01\23\45\67\89\ab" } };
+          record { "ts";        variant { Nat  = 1_753_600_000_000_000_000 : nat } };
+          record { "caller";    variant { Blob = blob "\00\00\00\00\02\30\02\17\01\01" } };
+          record { "reason";    variant { Text = "KYC review" } };
+        }
+      };
+    };
+  }
+};
+```
+
+#### Call
+The caller invokes:
+
+```
+icrc153_unfreeze_principal({
+  principal       = principal "abcd0123456789abcdef0123456789abcdef0123456789abcdef0123456789";
+  created_at_time = 1_753_600_500_000_000_000 : nat64;
+  reason          = ?"KYC cleared";
+})
+```
+
+
+#### Resulting block
+```
+variant {
+  Map = vec {
+    record { "btype"; variant { Text = "123unfreeze_principal" } };
+    record { "phash"; variant { Blob = blob "\fe\dc\ba\98\76\54\32\10\ef\cd\ab\89\67\45\23\01\99\88\77\66\55\44\33\22\11\00\ff\ee\dd\cc\bb\aa" } }; // illustrative
+    record { "ts";    variant { Nat = 1_753_600_501_000_000_000 : nat } };
+    record {
+      "tx";
+      variant {
+        Map = vec {
+          record { "op";        variant { Text = "153unfreeze_principal" } };
+          record { "principal"; variant { Blob = blob "\ab\cd\01\23\45\67\89\ab\cd\ef\01\23\45\67\89\ab\cd\ef\01\23\45\67\89\ab\cd\ef\01\23\45\67\89\ab" } };
+          record { "ts";        variant { Nat  = 1_753_600_500_000_000_000 : nat } };
+          record { "caller";    variant { Blob = blob "\00\00\00\00\02\30\02\17\01\01" } };
+          record { "reason";    variant { Text = "KYC cleared" } };
+        }
+      };
+    };
+  }
+};
+```
