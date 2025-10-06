@@ -53,6 +53,30 @@ A ledger implementing ICRC-153 MUST:
 - Populate `tx.op` with namespaced values **introduced by this standard**:
   `"153freeze_account"`, `"153unfreeze_account"`, `"153freeze_principal"`, `"153unfreeze_principal"`.
 
+
+## Common Elements
+
+This standard inherits core conventions from **ICRC-3** (block log format, Value encoding, hashing, certification) and **ICRC-123** (typed block kinds and freeze/unfreeze semantics).
+
+- **Accounts**  
+  Encoded as ICRC-3 `Value` `variant { Array = vec { V1 [, V2] } }` where  
+  `V1 = variant { Blob = <owner_principal_bytes> }` and optionally  
+  `V2 = variant { Blob = <32-byte_subaccount_bytes> }`.  
+  If no subaccount is provided, the array contains only the owner principal.
+
+- **Principals**  
+  Encoded as `variant { Blob = <principal_bytes> }`.
+
+- **Timestamps**  
+  Caller-supplied `created_at_time` is in **nanoseconds since Unix epoch**.  
+  Encoded as `Nat` in ICRC-3 `Value` and **MUST** fit in `nat64`.
+
+- **Blocks & Parent Hash**  
+  All blocks created by this API use the ICRC-123 block kinds  
+  (`btype = "123freeze_account"`, `"123unfreeze_account"`, `"123freeze_principal"`, `"123unfreeze_principal"`).  
+  Standard metadata (`ts`, `phash`) follows ICRC-3.
+
+
 ## Methods
 
 ### `icrc153_freeze_account`
@@ -80,34 +104,47 @@ icrc153_freeze_account : (FreezeAccountArgs) -> (variant { Ok : nat; Err : Freez
 ```
 #### Semantics
 
-- Marks the account as **frozen** according to ICRC-123 semantics.  
-- Appends a block of type `123freeze_account`.  
-- On success, returns the **index of the created block**.  
-- On failure, returns an appropriate error.  
-- Semantics are consistent with the freeze semantics defined by ICRC-123.  
+**Authorization**  
+- The method **MUST** be callable only by a **controller** of the ledger or other explicitly authorized principals.  
+- Unauthorized calls **MUST** fail with `Unauthorized`.
 
-#### Return Values
+**Effect (on success, non-retroactive)**  
+- Mark the specified `account` as **frozen** according to ICRC-123 semantics.  
+- Append a new block with `btype = "123freeze_account"`.  
+- The block’s `tx` field **MUST** be constructed **exactly** as defined in **Canonical `tx` Mapping** (same keys, types, and encodings).  
+- On success, return the index of the newly appended block.
 
-On success:  
+**Return value**  
+- On success: `variant { Ok : nat }`, where the `nat` is the index of the created block.  
+- On failure: `variant { Err : FreezeAccountError }`.
 
-- `variant { Ok : nat }` — the created block index.  
+**Deduplication & idempotency**  
+- The ledger **MUST** perform deduplication (e.g., using `created_at_time`).  
+- If a duplicate is detected, **MUST NOT** append a new block and **MUST** return `Err(Duplicate { duplicate_of = <index> })`.
 
-On failure:  
+**Error cases (normative)**  
+- `Unauthorized` — caller not permitted.  
+- `InvalidAccount` — malformed or disallowed account (e.g., minting account, malformed principal/subaccount).  
+- `AlreadyFrozen` — account already frozen.  
+- `Duplicate { duplicate_of }` — semantically identical transaction previously accepted.  
+- `GenericError { error_code, message }` — any other failure preventing a valid block.
 
-- `variant { Err : FreezeAccountError }`.  
 
-#### Canonical `tx` Mapping
+#### Canonical `tx` Mapping (normative)
 
-A successful call to `icrc153_freeze_account` produces a `123freeze_account` block.  
-The `tx` field is derived as follows:
+| Field             | Type (ICRC-3 `Value`) | Source / Encoding Rule |
+|-------------------|------------------------|-------------------------|
+| `op`              | `Text`                 | **Constant** `"153freeze_account"`. |
+| `account`         | `Array` (Account)      | From `FreezeAccountArgs.account`, encoded as ICRC-3 Account. |
+| `created_at_time` | `Nat`                  | From `FreezeAccountArgs.created_at_time` (ns since Unix epoch; **MUST** fit `nat64`). |
+| `caller`          | `Blob`                 | Principal of the caller (raw bytes). |
+| `reason`          | `Text` *(optional)*    | From `FreezeAccountArgs.reason` if provided; **omit** if absent. |
 
-- `op      = "153freeze_account"`  
-- `account = FreezeAccountArgs.account`  
-- `ts      = FreezeAccountArgs.created_at_time`  
-- `caller  = caller_principal (as Blob)`  
-- `reason  = FreezeAccountArgs.reason` (if provided)  
 
-Optional fields MUST be omitted if not supplied.  
+**Clarifications**  
+- Optional fields **MUST be omitted** from `tx` if not supplied.  
+
+
 
 
 ### `icrc153_unfreeze_account`
