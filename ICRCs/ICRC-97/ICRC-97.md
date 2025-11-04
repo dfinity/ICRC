@@ -65,14 +65,13 @@ vec {
 
 ### 2. Multi-Canister Approach (Advanced)
 
-Store JSON metadata on the same canister or another certified canister, served via HTTPS. The ICRC-91 standard improves decentralization by removing the `ic0.app`/`icp0.io` dependency.
+Store JSON metadata on the same canister or another certified canister, served via HTTPS.
 
 ```candid
 vec {
     record {
          "icrc97:metadata"; 
          variant { Array = vec {
-             variant { Text = "ic-http://2225w-rqaaa-aaaai-qtqca-cai/metadata/3456" };
              variant { Text = "https://2225w-rqaaa-aaaai-qtqca-cai.icp0.io/metadata/3456" };
          }; };
     }
