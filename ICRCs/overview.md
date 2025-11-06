@@ -100,14 +100,14 @@ They ensure privileged operations are transparent, auditable, and structured in 
 
 ---
 
-## 2. Signer and Wallet Standards
-Signer standards describe how wallets and dapps communicate securely.  
-They define the request/response formats (via JSON-RPC), message transports, and consent interfaces that make wallet-based authentication and transaction signing safe and interoperable.
+## 2. Signer Standards
+Signer standards describe how signers (e.g. wallets) and dapps communicate securely.  
+They define the request/response formats (via JSON-RPC), message transports, and consent interfaces that make signer-based authentication and transaction signing safe and interoperable.
 
 ---
 
 ### 2.1 JSON-RPC
-Defines the logical communication layer between wallets and dapps — how they connect, exchange requests, and perform signed canister calls.
+Defines the logical communication layer between signers and dapps: how they connect, exchange requests, and perform signed canister calls.
 
 <details>
 <summary>View JSON-RPC Standards</summary>
@@ -157,20 +157,8 @@ These specify how wallets handle user consent, validation, and trusted origins w
 
 ---
 
-### 2.4 Other / Deprecated Standards
-<details>
-<summary>View Deprecated Standards</summary>
-
-| Standard                    | Summary                                                                                                       |
-|-----------------------------|---------------------------------------------------------------------------------------------------------------|
-| **ICRC-32: Sign Challenge** | Early draft for cryptographic identity verification via signed challenges. Superseded by newer RPC standards. |
-
-</details>
-
----
-
 ## 3. Chain-Agnostic Standards
-These standards link the Internet Computer to broader multi-chain ecosystems by defining universal ways to identify chains and accounts.
+These standards link the Internet Computer to broader multichain ecosystems by defining universal ways to identify chains and accounts.
 
 <details>
 <summary>View Chain-Agnostic Standards</summary>
@@ -186,20 +174,71 @@ These standards link the Internet Computer to broader multi-chain ecosystems by 
 
 ## 4. Examples and Usage
 
-| Implementation                           | Standards Used                              | Description                                                                                                   |
-|------------------------------------------|---------------------------------------------|---------------------------------------------------------------------------------------------------------------|
-| **ICRC Ledger (ICRC-1 Ledger Canister)** | ICRC-1, ICRC-2, ICRC-3, ICRC-107            | Implements the main fungible token ledger (used for ICP and ckBTC) with transfers, approvals, and block logs. |
-| **ICRC-7 NFT Ledger**                    | ICRC-7, ICRC-37, ICRC-97                    | Implements NFTs with metadata and approval features; used by marketplaces and art projects.                   |
-| **OISY Wallet**                          | ICRC-25, ICRC-27, ICRC-49, ICRC-29, ICRC-28 | Example wallet implementing signer and JSON-RPC standards for secure dapp connections.                        |
-| **Stoic / Plug / Bitfinity Wallets**     | ICRC-25, ICRC-27, ICRC-49, ICRC-94          | Browser extension wallets implementing discovery and transport standards for interoperability.                |
-| **ICRC Index Canisters**                 | ICRC-3, ICRC-106                            | Provide indexed transaction history and balance tracking for explorers and analytics tools.                   |
+This section illustrates how Internet Computer standards are applied in production-grade systems.  
+Each example demonstrates how multiple ICRC standards interconnect to provide consistent, secure, and extensible functionality.
 
 ---
 
-## 5. Further Reading
+### 4.1 ICRC Ledger — Canonical Fungible Token Implementation
 
-- Token Standards: [dfinity/wg-token-standards](https://github.com/dfinity/wg-token-standards)
-- Identity & Authentication Standards: [dfinity/wg-identity-authentication](https://github.com/dfinity/wg-identity-authentication)
-- Forum context: [Token Standards WG Merge Announcement](https://forum.dfinity.org/t/token-standards-working-group-merging-ledger-and-token-and-nft-working-groups/39900)
+The **ICRC Ledger canister** is the Internet Computer’s canonical implementation for fungible tokens, used for assets such as **ICP**, **ckBTC**, and numerous community tokens.
+
+At its foundation, the ledger implements **ICRC-1**, which defines the basic ledger interface for account handling, transfers, and metadata.  
+Building on this, **ICRC-2** introduces delegated transfer capability — enabling workflows like escrow, token marketplaces, and automated treasury management via the `approve` and `transfer_from` methods.
+
+To maintain a verifiable record of all transactions, the ledger uses **ICRC-3**, which specifies the **block log** structure. This allows explorers and third-party services to retrieve transaction data consistently across ledgers.  
+Finally, **ICRC-107** ensures that transaction fees are collected and reported in a standardized way, making it easier to account for network or ledger-specific costs.
+
+Together, these standards make the ICRC Ledger a modular, secure, and auditable foundation for all fungible tokens on the Internet Computer.
+
+---
+
+### 4.2 ICRC Index Canisters — Transaction History and Ledger Discovery
+
+**Index canisters** provide efficient read-only access to ledger activity, allowing users and tools to query transactions without directly interacting with the main ledger.
+
+They rely on **ICRC-3** to interpret and expose block log data, enabling lightweight transaction history queries.  
+To remain backward-compatible with earlier implementations, **ICRC-106** defines how these index canisters can detect and link to **legacy ledgers**.
+
+In practice, index canisters make it possible for explorers, dashboards, and analytical services to track balances, transfers, and events efficiently across the Internet Computer network.
+
+---
+
+### 4.3 ORIGYN NFT Framework — Implementation of ICRC-7 NFT Standards
+**Repository:** [ORIGYN-SA/nft](https://github.com/ORIGYN-SA/nft)
+
+The **ORIGYN NFT framework** is a full-fledged implementation of the Internet Computer’s non-fungible token standards, demonstrating how **ICRC-7**, **ICRC-37**, and **ICRC-97** integrate to create interoperable, metadata-rich digital assets.
+
+At its core, **ICRC-7** defines the minimal NFT interface for ownership, transfer, and enumeration. This ensures that any dapp, wallet, or marketplace can interact with NFTs in a consistent way.  
+Building on that, **ICRC-37** adds an approval model, allowing marketplaces or custodial agents to transfer NFTs on behalf of users with explicit consent — a crucial component for trust-based exchanges.  
+Finally, **ICRC-97** introduces a standardized metadata schema that includes names, descriptions, media URIs, and traits. This metadata ensures NFTs are portable and renderable across different apps and wallets.
+
+The ORIGYN framework brings these standards together into a cohesive canister-based implementation, used by NFT marketplaces, art projects, and digital identity systems to manage verifiable, tamper-proof assets on-chain.  
+It exemplifies how the ICRC standards can serve as a foundation for complex applications while remaining open and composable.
+
+---
+
+### 4.4 OISY Wallet — Web-Based Signer Using JSON-RPC
+
+The **OISY wallet** implements Internet Computer signer standards to securely connect web dapps with user identities.  
+It operates entirely through a JSON-RPC communication model that standardizes the way dapps request signatures and perform canister calls.
+
+This interaction is governed by **ICRC-25**, which defines the request and response structure for connecting, authorizing, and signing.  
+**ICRC-27** specifies how wallets expose accounts and manage switching between them, while **ICRC-49** extends these interactions to include canister calls performed on behalf of users.
+
+For secure browser communication, **ICRC-29** defines how messages are exchanged using the browser’s `postMessage` API, and **ICRC-28** governs trusted origins — ensuring only approved websites can request user interaction.
+
+By adhering to these standards, OISY provides a web-native, interoperable wallet experience that can interact seamlessly with any compliant Internet Computer dapp.
+
+---
+
+### 4.5 Plug Wallet — Browser Extension Signer
+
+**Plug Wallet** implements the same JSON-RPC and signer architecture as OISY but within a **browser extension environment**, allowing persistent, sandboxed access for dapps.
+
+It leverages **ICRC-25** for RPC-based wallet interaction, **ICRC-27** for account management, and **ICRC-49** for executing signed canister calls.  
+Unlike web-based wallets, Plug follows **ICRC-94**, which defines how browser extensions are discovered by webpages and how secure transport channels are established for message passing.
+
+This enables Plug to interoperate seamlessly with the same dapps that use OISY or other compliant wallets, ensuring a unified and secure user experience across browser and web environments.
 
 ---
