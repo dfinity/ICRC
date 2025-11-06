@@ -101,7 +101,7 @@ They ensure privileged operations are transparent, auditable, and structured in 
 ---
 
 ## 2. Signer
-Signer standards describe how signers (e.g. wallets) and dapps communicate securely.  
+Signer standards describe how signers (e.g. token wallet) and dapps communicate securely.  
 They define the request/response formats (via JSON-RPC), message transports, and consent interfaces that make signer-based authentication and transaction signing safe and interoperable.
 
 ---
@@ -112,15 +112,15 @@ Defines the logical communication layer between signers and dapps: how they conn
 <details>
 <summary>View JSON-RPC Standards</summary>
 
-| Standard                           | Summary                                                                                           |
-|------------------------------------|---------------------------------------------------------------------------------------------------|
-| **ICRC-25: Signer Interaction**    | Core interface for wallet–dapp communication. Defines connect, authorize, and sign message flows. |
-| **ICRC-27: Accounts**              | Describes how wallets represent and expose user accounts and keys.                                |
-| **ICRC-34: Delegation**            | Standardizes delegated signing (a wallet granting another agent permission to act).               |
-| **ICRC-49: Call Canister**         | Allows dapps to request a wallet to call a canister on behalf of a user.                          |
-| **ICRC-95: Derivation Origin**     | Defines consistent derivation paths for identities across different wallets.                      |
-| **ICRC-112: Batch Call Canister**  | Enables multiple canister calls to be grouped and signed together.                                |
-| **ICRC-146: Cross-Chain JSON-RPC** | Extends the standard for cross-chain wallet interaction and signing.                              |
+| Standard                                                                                                                                         | Summary                                                                                |
+|--------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|
+| [**ICRC-25:** Signer Interaction](https://github.com/dfinity/wg-identity-authentication/blob/main/topics/icrc_25_signer_interaction_standard.md) | Defines request and response structure and permissions for all JSON-RPC communication. |
+| [**ICRC-27:** Accounts](https://github.com/dfinity/wg-identity-authentication/blob/main/topics/icrc_27_accounts.md)                              | Describes how signers represent and expose user accounts.                              |
+| [**ICRC-34:** Delegation](https://github.com/dfinity/wg-identity-authentication/blob/main/topics/icrc_34_delegation.md)                          | Standardizes delegated signing (a wallet granting another agent permission to act).    |
+| [**ICRC-49:** Call Canister](https://github.com/dfinity/wg-identity-authentication/blob/main/topics/icrc_49_call_canister.md)                    | Allows dapps to request a signer to call a canister on behalf of a user.               |
+| [**ICRC-95:** Derivation Origin](https://github.com/dfinity/wg-identity-authentication/blob/main/topics/icrc_95_derivationorigin.md)             | Defines consistent derivation paths for identities across different signer.            |
+
+The [WG: Identity & Wallet Standards](https://github.com/dfinity/wg-identity-authentication) defines and discusses these standards, visit the WG for the full list of all ongoing standards that aren't included in above list. The meetings have shifted to an [asynchronous approach](https://forum.dfinity.org/t/newsletter-for-identity-wallet-standards-working-group/42573).
 
 </details>
 
@@ -132,10 +132,12 @@ Defines how wallet–dapp messages are transmitted securely across environments,
 <details>
 <summary>View Message Transport Standards</summary>
 
-| Standard                                             | Summary                                                                                            |
-|------------------------------------------------------|----------------------------------------------------------------------------------------------------|
-| **ICRC-29: Browser Post Message Transport**          | Uses the browser `postMessage` API to establish a secure channel between dapp and wallet contexts. |
-| **ICRC-94: Browser Extension Discovery & Transport** | Describes discovery and communication for browser extension wallets.                               |
+| Standard                                                                                                                                                                    | Summary                                                                                       |
+|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
+| [**ICRC-29:** Browser Post Message Transport](https://github.com/dfinity/wg-identity-authentication/blob/main/topics/icrc_29_window_post_message_transport.md)              | Uses the browser `postMessage` API to establish a secure channel between dapp and web signer. |
+| [**ICRC-94:** Browser Extension Discovery & Transport](https://github.com/dfinity/wg-identity-authentication/blob/main/topics/icrc_94_multi_injected_provider_discovery.md) | Describes discovery and communication for browser extension signers.                          |
+
+The [WG: Identity & Wallet Standards](https://github.com/dfinity/wg-identity-authentication) defines and discusses these standards, visit the WG for the full list of all ongoing standards that aren't included in above list. The meetings have shifted to an [asynchronous approach](https://forum.dfinity.org/t/newsletter-for-identity-wallet-standards-working-group/42573).
 
 </details>
 
@@ -147,11 +149,12 @@ These specify how wallets handle user consent, validation, and trusted origins w
 <details>
 <summary>View Canister Interface Standards</summary>
 
-| Standard                                    | Summary                                                                               |
-|---------------------------------------------|---------------------------------------------------------------------------------------|
-| **ICRC-21: Canister Call Consent Messages** | Defines the format and flow for consent prompts when a dapp requests a canister call. |
-| **ICRC-28: Trusted Origins**                | Specifies how canisters declare and validate which web origins are trusted.           |
-| **ICRC-114: Validate Batch Call**           | Defines verification methods for multiple batched canister calls.                     |
+| Standard                                                                                                                                             | Summary                                                                       |
+|------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------|
+| [**ICRC-21:** Canister Call Consent Messages](https://github.com/dfinity/wg-identity-authentication/blob/main/topics/ICRC-21/icrc_21_consent_msg.md) | Defines the message shown in the signer when a dapp requests a canister call. |
+| [**ICRC-28:** Trusted Origins](https://github.com/dfinity/wg-identity-authentication/blob/main/topics/icrc_28_trusted_origins.md)                    | Specifies how canisters declare and validate which web origins are trusted.   |
+
+The [WG: Identity & Wallet Standards](https://github.com/dfinity/wg-identity-authentication) defines and discusses these standards, visit the WG for the full list of all ongoing standards that aren't included in above list. The meetings have shifted to an [asynchronous approach](https://forum.dfinity.org/t/newsletter-for-identity-wallet-standards-working-group/42573).
 
 </details>
 
@@ -163,10 +166,10 @@ These standards link the Internet Computer to broader multichain ecosystems by d
 <details>
 <summary>View Chain-Agnostic Standards</summary>
 
-| Standard                           | Summary                                                                                |
-|------------------------------------|----------------------------------------------------------------------------------------|
-| **CAIP-2: Blockchain Identifiers** | Defines unique blockchain identifiers (`<namespace>:<reference>`, e.g. `icp:mainnet`). |
-| **CAIP-10: Account Addresses**     | Defines a universal format for account addresses across chains for wallets and dapps.  |
+| Standard                           | Summary                                                                               |
+|------------------------------------|---------------------------------------------------------------------------------------|
+| **CAIP-2:** Blockchain Identifiers | Defines unique blockchain identifiers.                                                |
+| **CAIP-10:** Account Addresses     | Defines a universal format for account addresses across chains for wallets and dapps. |
 
 </details>
 
@@ -204,9 +207,9 @@ In practice, index canisters make it possible for explorers, dashboards, and ana
 
 ---
 
-### 4.3 ORIGYN NFT Framework — Implementation of ICRC-7 NFT Standards
+### 4.3 ORIGYN NFT Framework — Interoperable, Metadata-Rich Digital Assets
 
-The [**ORIGYN NFT framework**](https://github.com/ORIGYN-SA/nft) is a full-fledged implementation of the Internet Computer’s non-fungible token standards, demonstrating how **ICRC-7**, **ICRC-37**, and **ICRC-97** integrate to create interoperable, metadata-rich digital assets.
+The [**ORIGYN NFT framework**](https://github.com/ORIGYN-SA/nft) is a full-fledged implementation of the Internet Computer’s non-fungible token standards.
 
 At its core, **ICRC-7** defines the minimal NFT interface for ownership, transfer, and enumeration. This ensures that any dapp, wallet, or marketplace can interact with NFTs in a consistent way.  
 
@@ -222,8 +225,7 @@ The [**OISY wallet**](https://oisy.com/) implements Internet Computer signer sta
 It operates entirely through a JSON-RPC communication model that standardizes the way dapps request accounts and perform canister calls.
 
 This interaction is governed by **ICRC-25**, which defines the request and response structure and permissions for all JSON-RPC communication.
-
-**ICRC-27** specifies how wallets expose accounts, while **ICRC-49** enables dapps to perform canister calls on behalf these accounts through user approval in the signer.
+**ICRC-27** specifies how wallets expose accounts, while **ICRC-49** enables dapps to perform canister calls on behalf of these accounts with user approval.
 
 For secure browser communication, **ICRC-29** defines how messages are exchanged using the browser's `postMessage` API between the dapp and signer.
 
