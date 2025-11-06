@@ -23,7 +23,7 @@ These standards define the canonical ledger interface and extensions for approva
 | **ICRC-1: Token Standard**               | The core standard for fungible tokens. Defines the ledger interface for balances, transfers, accounts, and metadata such as name, symbol, and decimals. |
 | **ICRC-2: Approve & Transfer From**      | Adds ERC-20-style approval flows, allowing authorized accounts to move tokens on behalf of others.                                                      |
 | **ICRC-103: List Outstanding Approvals** | Enables querying all active approvals for a given account.                                                                                              |
-| **ICRC-107: Fee Collection**             | Specifies a standardized mechanism for ledgers to collect transfer fees.                                                                                |
+| **ICRC-107: Fee Collection**             | Specifies a standardized mechanism for ledgers to collect transaction fees.                                                                                |
 
 </details>
 
@@ -47,7 +47,7 @@ These standards define ownership, transferability, metadata structure, and permi
 ---
 
 ### 1.3 Block Log
-The block log standard defines how ledgers record, expose, and retrieve transactions in a consistent format.  
+The block log standard defines how ledgers record and expose, and retrieve transactions in a consistent format.  
 This supports explorers, analytics tools, and indexing canisters.
 
 <details>
@@ -87,14 +87,14 @@ They ensure privileged operations are transparent, auditable, and structured in 
 |--------------------------------------------------|------------------------------------------------------------------------|
 | **ICRC-122: Mint & Burn Blocks**                 | Specifies block structures for token minting and burning operations.   |
 | **ICRC-123: Freeze & Unfreeze Blocks**           | Defines how blocks represent account freezes and unfreezes.            |
-| **ICRC-124: Pause, Unpause & Deactivate Blocks** | Details block formats for pausing, unpausing, or deactivating ledgers. |
+| **ICRC-124: Pause, Unpause & Deactivate Blocks** | Details block formats for pausing, unpausing, and deactivating ledgers. |
 
 #### Canister Interfaces
 | Standard                                      | Summary                                                       |
 |-----------------------------------------------|---------------------------------------------------------------|
 | **ICRC-152: Mint & Burn API**                 | API for authorized token minting and burning.                 |
-| **ICRC-153: Freeze & Unfreeze API**           | API methods for freezing or unfreezing token accounts.        |
-| **ICRC-154: Pause, Unpause & Deactivate API** | API for controlling ledger operational states (pause/resume). |
+| **ICRC-153: Freeze & Unfreeze API**           | API methods for freezing or unfreezing token accounts and principals.        |
+| **ICRC-154: Pause, Unpause & Deactivate API** | API for controlling ledger operational states (pause/resume/deactivate). |
 
 </details>
 
