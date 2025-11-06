@@ -3,6 +3,19 @@
 A consolidated overview of Internet Computer token, signer, and identity standards.  
 These specifications define how digital assets, wallets, and canisters interact securely and consistently across the ecosystem.
 
+## 0. Compliance & Standards Identification
+
+These standards define how canisters declare which ICRC standards they support. They ensure interoperability by enabling wallets, explorers, dapps, and tooling to automatically detect features, capabilities, and compliance across canisters.
+
+<details>
+<summary>View Compliance Standards</summary>
+
+| Standard                          | Summary                                                                                                                         |
+|-----------------------------------|---------------------------------------------------------------------------------------------------------------------------------|
+| **ICRC-10: Supported Standards**  | Defines a universal method for canisters to declare which ICRC standards they support, enabling automatic compatibility checks. |
+
+</details>
+
 ---
 
 ## 1. Tokens
@@ -176,6 +189,7 @@ These standards link the Internet Computer to broader multichain ecosystems by d
 </details>
 
 ---
+
 
 ## 4. Examples
 
