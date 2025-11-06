@@ -157,7 +157,7 @@ These specify how wallets handle user consent, validation, and trusted origins w
 
 ---
 
-## 3. Chain-Agnostic Standards
+## 3. Chain-Agnostic
 These standards link the Internet Computer to broader multichain ecosystems by defining universal ways to identify chains and accounts.
 
 <details>
@@ -172,7 +172,7 @@ These standards link the Internet Computer to broader multichain ecosystems by d
 
 ---
 
-## 4. Examples and Usage
+## 4. Examples
 
 This section illustrates how Internet Computer standards are applied in production-grade systems.  
 Each example demonstrates how multiple ICRC standards interconnect to provide consistent, secure, and extensible functionality.
