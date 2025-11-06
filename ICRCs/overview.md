@@ -209,33 +209,30 @@ In practice, index canisters make it possible for explorers, dashboards, and ana
 The [**ORIGYN NFT framework**](https://github.com/ORIGYN-SA/nft) is a full-fledged implementation of the Internet Computer’s non-fungible token standards, demonstrating how **ICRC-7**, **ICRC-37**, and **ICRC-97** integrate to create interoperable, metadata-rich digital assets.
 
 At its core, **ICRC-7** defines the minimal NFT interface for ownership, transfer, and enumeration. This ensures that any dapp, wallet, or marketplace can interact with NFTs in a consistent way.  
-Building on that, **ICRC-37** adds an approval model, allowing marketplaces or custodial agents to transfer NFTs on behalf of users with explicit consent — a crucial component for trust-based exchanges.  
-Finally, **ICRC-97** introduces a standardized metadata schema that includes names, descriptions, media URIs, and traits. This metadata ensures NFTs are portable and renderable across different apps and wallets.
 
-The ORIGYN framework brings these standards together into a cohesive canister-based implementation, used by NFT marketplaces, art projects, and digital identity systems to manage verifiable, tamper-proof assets on-chain.  
-It exemplifies how the ICRC standards can serve as a foundation for complex applications while remaining open and composable.
+Building on that, **ICRC-37** adds an approval model, allowing marketplaces or custodial agents to transfer NFTs on behalf of users with explicit consent — a crucial component for trust-based exchanges.  
+
+Finally, **ICRC-97** introduces a standardized metadata schema that includes names, descriptions, media URIs, and traits. This metadata ensures NFTs are portable and renderable across different apps and wallets.
 
 ---
 
 ### 4.4 OISY Wallet — Web-Based Signer Using JSON-RPC
 
 The [**OISY wallet**](https://oisy.com/) implements Internet Computer signer standards to securely connect web dapps with user identities.  
-It operates entirely through a JSON-RPC communication model that standardizes the way dapps request signatures and perform canister calls.
+It operates entirely through a JSON-RPC communication model that standardizes the way dapps request accounts and perform canister calls.
 
-This interaction is governed by **ICRC-25**, which defines the request and response structure for connecting, authorizing, and signing.  
-**ICRC-27** specifies how wallets expose accounts and manage switching between them, while **ICRC-49** extends these interactions to include canister calls performed on behalf of users.
+This interaction is governed by **ICRC-25**, which defines the request and response structure and permissions for all JSON-RPC communication.
 
-For secure browser communication, **ICRC-29** defines how messages are exchanged using the browser’s `postMessage` API, and **ICRC-28** governs trusted origins — ensuring only approved websites can request user interaction.
+**ICRC-27** specifies how wallets expose accounts, while **ICRC-49** enables dapps to perform canister calls on behalf these accounts through user approval in the signer.
 
-By adhering to these standards, OISY provides a web-native, interoperable wallet experience that can interact seamlessly with any compliant Internet Computer dapp.
+For secure browser communication, **ICRC-29** defines how messages are exchanged using the browser's `postMessage` API between the dapp and signer.
 
 ---
 
 ### 4.5 Plug Wallet — Browser Extension Signer
 
-[**Plug Wallet**](https://plugwallet.ooo/) implements the same JSON-RPC and signer architecture as OISY but within a **browser extension environment**, allowing persistent, sandboxed access for dapps.
+[**Plug Wallet**](https://plugwallet.ooo/) implements the same JSON-RPC and signer architecture as OISY but within a **browser extension environment**.
 
-It leverages **ICRC-25** for RPC-based wallet interaction, **ICRC-27** for account management, and **ICRC-49** for executing signed canister calls.  
 Unlike web-based wallets, Plug follows **ICRC-94**, which defines how browser extensions are discovered by webpages and how secure transport channels are established for message passing.
 
 This enables Plug to interoperate seamlessly with the same dapps that use OISY or other compliant wallets, ensuring a unified and secure user experience across browser and web environments.
