@@ -100,7 +100,7 @@ They ensure privileged operations are transparent, auditable, and structured in 
 
 ---
 
-## 2. Signer Standards
+## 2. Signer
 Signer standards describe how signers (e.g. wallets) and dapps communicate securely.  
 They define the request/response formats (via JSON-RPC), message transports, and consent interfaces that make signer-based authentication and transaction signing safe and interoperable.
 
