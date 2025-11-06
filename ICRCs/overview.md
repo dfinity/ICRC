@@ -7,7 +7,7 @@ These specifications define how digital assets, wallets, and canisters interact 
 
 ## 1. Tokens
 Token standards define how digital assets are represented, transferred, and managed on the Internet Computer.  
-They ensure interoperability between ledgers, wallets, and dapps while maintaining extensibility for features like approvals, metadata, and indexing.
+They ensure interoperability between ledgers, wallets, and dapps while maintaining extensibility for features like approvals, metadata, and indexing. The [WG: Token Standards](https://github.com/dfinity/wg-token-standards) defines and discusses these standards. Visit the WG for the full list of standards.
 
 ---
 
@@ -25,6 +25,7 @@ These standards define the canonical ledger interface and extensions for approva
 | **ICRC-103: List Outstanding Approvals** | Enables querying all active approvals for a given account.                                                                                              |
 | **ICRC-107: Fee Collection**             | Specifies a standardized mechanism for ledgers to collect transaction fees.                                                                                |
 
+
 </details>
 
 ---
@@ -41,6 +42,7 @@ These standards define ownership, transferability, metadata structure, and permi
 | [**ICRC-7**: NFT Standard](https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-7/ICRC-7.md)                                          | Establishes a minimal NFT interface (similar to ERC-721), covering ownership, transfers, and enumeration.                              |
 | [**ICRC-37**: NFT Approvals](https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-37/ICRC-37.md)                                      | Extends ICRC-7 to enable granting transfer permissions to third parties.                                                               |
 | [**ICRC-97**: NFT Metadata](https://github.com/sea-snake/ICRC/blob/fda2baab98434928f57a595f8ab94273f1f063b0/ICRCs/ICRC-97/ICRC-97.md) | Defines a consistent structure for NFT metadata — including name, description, and media — ensuring compatibility across marketplaces. |
+
 
 </details>
 
@@ -240,3 +242,4 @@ Unlike web-based wallets, Plug follows **ICRC-94**, which defines how browser ex
 This enables Plug to interoperate seamlessly with the same dapps that use OISY or other compliant wallets, ensuring a unified and secure user experience across browser and web environments.
 
 ---
+
