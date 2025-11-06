@@ -17,7 +17,6 @@ These standards define how canisters declare which ICRC standards they support. 
 </details>
 
 ---
----
 
 ## 1. Tokens
 Token standards define how digital assets are represented, transferred, and managed on the Internet Computer.  
