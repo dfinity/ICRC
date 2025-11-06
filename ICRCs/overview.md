@@ -36,11 +36,11 @@ These standards define ownership, transferability, metadata structure, and permi
 <details>
 <summary>View NFT Standards</summary>
 
-| Standard                         | Summary                                                                                                                                |
-|----------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|
-| **ICRC-7: Minimal NFT Standard** | Establishes a minimal NFT interface (similar to ERC-721), covering ownership, transfers, and enumeration.                              |
-| **ICRC-37: NFT Approvals**       | Extends ICRC-7 to enable granting transfer permissions to third parties.                                                               |
-| **ICRC-97: NFT Metadata**        | Defines a consistent structure for NFT metadata — including name, description, and media — ensuring compatibility across marketplaces. |
+| Standard                                                                                                                              | Summary                                                                                                                                |
+|---------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|
+| [**ICRC-7**: NFT Standard](https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-7/ICRC-7.md)                                          | Establishes a minimal NFT interface (similar to ERC-721), covering ownership, transfers, and enumeration.                              |
+| [**ICRC-37**: NFT Approvals](https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-37/ICRC-37.md)                                      | Extends ICRC-7 to enable granting transfer permissions to third parties.                                                               |
+| [**ICRC-97**: NFT Metadata](https://github.com/sea-snake/ICRC/blob/fda2baab98434928f57a595f8ab94273f1f063b0/ICRCs/ICRC-97/ICRC-97.md) | Defines a consistent structure for NFT metadata — including name, description, and media — ensuring compatibility across marketplaces. |
 
 </details>
 
