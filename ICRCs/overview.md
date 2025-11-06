@@ -196,7 +196,7 @@ Together, these standards make the ICRC Ledger a modular, secure, and auditable 
 
 ---
 
-### 4.2 ICRC Index Canisters — Transaction History and Ledger Discovery
+### 4.2 ICRC Index Canister — Transaction History and Ledger Discovery
 
 **Index canisters** provide efficient read-only access to ledger activity, allowing users and tools to query transactions without directly interacting with the main ledger.
 
