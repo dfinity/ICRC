@@ -10,9 +10,9 @@ These standards define how canisters declare which ICRC standards they support. 
 <details>
 <summary>View Compliance Standards</summary>
 
-| Standard                                                                                                  | Summary                                                                                                                         |
-|-----------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------|
-| **[ICRC-10: Supported Standards](https://github.com/dfinity/ICRC/tree/main/ICRCs/ICRC-10)**               | Defines a universal method for canisters to declare which ICRC standards they support, enabling automatic compatibility checks. |
+| Standard                                                                                    | Summary                                                                                                                         |
+|---------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------|
+| [**ICRC-10:** Supported Standards](https://github.com/dfinity/ICRC/tree/main/ICRCs/ICRC-10) | Defines a universal method for canisters to declare which ICRC standards they support, enabling automatic compatibility checks. |
 
 </details>
 
@@ -33,10 +33,10 @@ These standards define the canonical ledger interface and extensions for approva
 
 | Standard                                                                                             | Summary                                                                                                                                                 |
 |------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **[ICRC-1: Token Standard](https://github.com/dfinity/ICRC-1/tree/main/standards/ICRC-1)**                 | The core standard for fungible tokens. Defines the ledger interface for balances, transfers, accounts, and metadata such as name, symbol, and decimals. |
-| **[ICRC-2: Approve & Transfer From](https://github.com/dfinity/ICRC-1/tree/main/standards/ICRC-2)**        | Adds ERC-20-style approval flows, allowing authorized accounts to move tokens on behalf of others.                                                      |
-| **[ICRC-103: List Outstanding Approvals](https://github.com/dfinity/ICRC/tree/main/ICRCs/ICRC-103)** | Enables querying all active approvals for a given account.                                                                                              |
-| **[ICRC-107: Fee Collection](https://github.com/dfinity/ICRC/tree/main/ICRCs/ICRC-107)**             | Specifies a standardized mechanism for ledgers to collect transaction fees.                                                                             |
+| [**ICRC-1:** Token Standard](https://github.com/dfinity/ICRC-1/tree/main/standards/ICRC-1)           | The core standard for fungible tokens. Defines the ledger interface for balances, transfers, accounts, and metadata such as name, symbol, and decimals. |
+| [**ICRC-2:** Approve & Transfer From](https://github.com/dfinity/ICRC-1/tree/main/standards/ICRC-2)  | Adds ERC-20-style approval flows, allowing authorized accounts to move tokens on behalf of others.                                                      |
+| [**ICRC-103:** List Outstanding Approvals](https://github.com/dfinity/ICRC/tree/main/ICRCs/ICRC-103) | Enables querying all active approvals for a given account.                                                                                              |
+| [**ICRC-107:** Fee Collection](https://github.com/dfinity/ICRC/tree/main/ICRCs/ICRC-107)             | Specifies a standardized mechanism for ledgers to collect transaction fees.                                                                             |
 
 </details>
 
@@ -50,11 +50,11 @@ These standards define ownership, transferability, metadata structure, and permi
 <details>
 <summary>View NFT Standards</summary>
 
-| Standard                                                                                                                              | Summary                                                                                                                                |
-|---------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|
-| [**ICRC-7**: NFT Standard](https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-7/ICRC-7.md)                                          | Establishes a minimal NFT interface (similar to ERC-721), covering ownership, transfers, and enumeration.                              |
-| [**ICRC-37**: NFT Approvals](https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-37/ICRC-37.md)                                      | Extends ICRC-7 to enable granting transfer permissions to third parties.                                                               |
-| [**ICRC-97**: NFT Metadata](https://github.com/sea-snake/ICRC/blob/fda2baab98434928f57a595f8ab94273f1f063b0/ICRCs/ICRC-97/ICRC-97.md) | Defines a consistent structure for NFT metadata — including name, description, and media — ensuring compatibility across marketplaces. |
+| Standard                                                                                                                             | Summary                                                                                                                                |
+|--------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|
+| [**ICRC-7:** NFT Standard](https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-7/ICRC-7.md)                                         | Establishes a minimal NFT interface (similar to ERC-721), covering ownership, transfers, and enumeration.                              |
+| [**ICRC-37:** NFT Approvals](https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-37/ICRC-37.md)                                     | Extends ICRC-7 to enable granting transfer permissions to third parties.                                                               |
+| [**ICRC-97:** NFT Metadata](https://github.com/sea-snake/ICRC/blob/fda2baab98434928f57a595f8ab94273f1f063b0/ICRCs/ICRC-97/ICRC-97.md) | Defines a consistent structure for NFT metadata — including name, description, and media — ensuring compatibility across marketplaces. |
 
 
 </details>
@@ -68,9 +68,9 @@ This supports explorers, analytics tools, and indexing canisters.
 <details>
 <summary>View Block Log Standards</summary>
 
-| Standard              | Summary                                                                                                      |
-|-----------------------|--------------------------------------------------------------------------------------------------------------|
-| **[ICRC-3: Block Log](https://github.com/dfinity/ICRC-1/tree/main/standards/ICRC-3)** | Standardizes how ledgers store and expose block and transaction data for external indexing and verification. |
+| Standard                                                                               | Summary                                                                                                      |
+|----------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------|
+| [**ICRC-3:** Block Log](https://github.com/dfinity/ICRC-1/tree/main/standards/ICRC-3)  | Standardizes how ledgers store and expose block and transaction data for external indexing and verification. |
 
 </details>
 
@@ -82,9 +82,9 @@ Indexing standards define how clients discover and query ledger index canisters 
 <details>
 <summary>View Indexing Standards</summary>
 
-| Standard                                                                                           | Summary                                                                                                            |
-|----------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------|
-| **[ICRC-106: Legacy Index Discovery](https://github.com/dfinity/ICRC/tree/main/ICRCs/ICRC-106)**   | Allows modern clients to detect and use legacy index canisters for older ledgers, ensuring backward compatibility. |
+| Standard                                                                                          | Summary                                                                                                            |
+|---------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------|
+| [**ICRC-106:** Legacy Index Discovery](https://github.com/dfinity/ICRC/tree/main/ICRCs/ICRC-106)  | Allows modern clients to detect and use legacy index canisters for older ledgers, ensuring backward compatibility. |
 
 </details>
 
@@ -98,18 +98,18 @@ They ensure privileged operations are transparent, auditable, and structured in 
 <summary>View Privileged Operation Standards</summary>
 
 #### Block Formats
-| Standard                                                                                               | Summary                                                                |
-|--------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------|
-| **[ICRC-122: Mint & Burn Blocks](https://github.com/dfinity/ICRC/tree/main/ICRCs/ICRC-122)**           | Specifies block structures for token minting and burning operations.   |
-| **[ICRC-123: Freeze & Unfreeze Blocks](https://github.com/dfinity/ICRC/tree/main/ICRCs/ICRC-123)**     | Defines how blocks represent account freezes and unfreezes.            |
-| **[ICRC-124: Pause, Unpause & Deactivate Blocks](https://github.com/dfinity/ICRC/tree/main/ICRCs/ICRC-124)** | Details block formats for pausing, unpausing, and deactivating ledgers. |
+| Standard                                                                                                     | Summary                                                                 |
+|--------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
+| [**ICRC-122:** Mint & Burn Blocks](https://github.com/dfinity/ICRC/tree/main/ICRCs/ICRC-122)                 | Specifies block structures for token minting and burning operations.    |
+| [**ICRC-123:** Freeze & Unfreeze Blocks](https://github.com/dfinity/ICRC/tree/main/ICRCs/ICRC-123)           | Defines how blocks represent account freezes and unfreezes.             |
+| [**ICRC-124:** Pause, Unpause & Deactivate Blocks](https://github.com/dfinity/ICRC/tree/main/ICRCs/ICRC-124) | Details block formats for pausing, unpausing, and deactivating ledgers. |
 
 #### Canister Interfaces
-| Standard                                                                                         | Summary                                                       |
-|--------------------------------------------------------------------------------------------------|---------------------------------------------------------------|
-| **[ICRC-152: Mint & Burn API](https://github.com/dfinity/ICRC/tree/main/ICRCs/ICRC-152)**        | API for authorized token minting and burning.                 |
-| **[ICRC-153: Freeze & Unfreeze API](https://github.com/dfinity/ICRC/tree/main/ICRCs/ICRC-153)**  | API methods for freezing or unfreezing token accounts and principals. |
-| **[ICRC-154: Pause, Unpause & Deactivate API](https://github.com/dfinity/ICRC/tree/main/ICRCs/ICRC-154)** | API for controlling ledger operational states (pause/resume/deactivate). |
+| Standard                                                                                                  | Summary                                                                  |
+|-----------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------|
+| [**ICRC-152:** Mint & Burn API](https://github.com/dfinity/ICRC/tree/main/ICRCs/ICRC-152)                 | API for authorized token minting and burning.                            |
+| [**ICRC-153:** Freeze & Unfreeze API](https://github.com/dfinity/ICRC/tree/main/ICRCs/ICRC-153)           | API methods for freezing or unfreezing token accounts and principals.    |
+| [**ICRC-154:** Pause, Unpause & Deactivate API](https://github.com/dfinity/ICRC/tree/main/ICRCs/ICRC-154) | API for controlling ledger operational states (pause/resume/deactivate). |
 
 </details>
 
