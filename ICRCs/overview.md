@@ -146,7 +146,7 @@ The [WG: Identity & Wallet Standards](https://github.com/dfinity/wg-identity-aut
 ---
 
 ### 2.2 Message Transports
-Defines how wallet–dapp messages are transmitted securely across environments, such as browsers or extensions.
+Defines how wallet–dapp messages are transmitted securely between environments, such as web pages an/or extensions.
 
 <details>
 <summary>View Message Transport Standards</summary>
