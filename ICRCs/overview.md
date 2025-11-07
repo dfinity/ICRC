@@ -21,7 +21,7 @@ These standards define how canisters declare which ICRC standards they support. 
 
 ## 1. Tokens
 Token standards define how digital assets are represented, transferred, and managed on the Internet Computer.  
-They ensure interoperability between ledgers, wallets, and dapps while maintaining extensibility for features like approvals, metadata, and indexing. The [WG: Token Standards](https://github.com/dfinity/wg-token-standards) defines and discusses these standards. Visit the WG for the full list of standards.
+They ensure interoperability between ledgers, wallets, and dapps while maintaining extensibility for features like approvals, metadata, and indexing. 
 
 ---
 
@@ -39,6 +39,7 @@ These standards define the canonical ledger interface and extensions for approva
 | **[ICRC-103: List Outstanding Approvals](https://github.com/dfinity/ICRC/tree/main/ICRCs/ICRC-103)** | Enables querying all active approvals for a given account.                                                                                              |
 | **[ICRC-107: Fee Collection](https://github.com/dfinity/ICRC/tree/main/ICRCs/ICRC-107)**             | Specifies a standardized mechanism for ledgers to collect transaction fees.                                                                             |
 
+The [WG: Token Standards](https://github.com/dfinity/wg-token-standards) defines and discusses these standards. Visit the WG for the full list of standards.
 </details>
 
 
@@ -57,7 +58,7 @@ These standards define ownership, transferability, metadata structure, and permi
 | [**ICRC-37**: NFT Approvals](https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-37/ICRC-37.md)                                      | Extends ICRC-7 to enable granting transfer permissions to third parties.                                                               |
 | [**ICRC-97**: NFT Metadata](https://github.com/sea-snake/ICRC/blob/fda2baab98434928f57a595f8ab94273f1f063b0/ICRCs/ICRC-97/ICRC-97.md) | Defines a consistent structure for NFT metadata — including name, description, and media — ensuring compatibility across marketplaces. |
 
-
+The [WG: Token Standards](https://github.com/dfinity/wg-token-standards) defines and discusses these standards. Visit the WG for the full list of standards.
 </details>
 
 ---
@@ -73,6 +74,7 @@ This supports explorers, analytics tools, and indexing canisters.
 |-----------------------|--------------------------------------------------------------------------------------------------------------|
 | **[ICRC-3: Block Log](https://github.com/dfinity/ICRC-1/tree/main/standards/ICRC-3)** | Standardizes how ledgers store and expose block and transaction data for external indexing and verification. |
 
+The [WG: Token Standards](https://github.com/dfinity/wg-token-standards) defines and discusses these standards. Visit the WG for the full list of standards.
 </details>
 
 ---
@@ -87,6 +89,7 @@ Indexing standards define how clients discover and query ledger index canisters 
 |----------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------|
 | **[ICRC-106: Legacy Index Discovery](https://github.com/dfinity/ICRC/tree/main/ICRCs/ICRC-106)**   | Allows modern clients to detect and use legacy index canisters for older ledgers, ensuring backward compatibility. |
 
+The [WG: Token Standards](https://github.com/dfinity/wg-token-standards) defines and discusses these standards. Visit the WG for the full list of standards.
 </details>
 
 ---
@@ -112,6 +115,7 @@ They ensure privileged operations are transparent, auditable, and structured in 
 | **[ICRC-153: Freeze & Unfreeze API](https://github.com/dfinity/ICRC/tree/main/ICRCs/ICRC-153)**  | API methods for freezing or unfreezing token accounts and principals. |
 | **[ICRC-154: Pause, Unpause & Deactivate API](https://github.com/dfinity/ICRC/tree/main/ICRCs/ICRC-154)** | API for controlling ledger operational states (pause/resume/deactivate). |
 
+The [WG: Token Standards](https://github.com/dfinity/wg-token-standards) defines and discusses these standards. Visit the WG for the full list of standards.
 </details>
 
 ---
