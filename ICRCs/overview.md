@@ -1,6 +1,6 @@
-# Internet Computer Token & Identity Standards Summary
+# Internet Computer ICRC Standards Summary
 
-A consolidated overview of Internet Computer token, signer, and identity standards.  
+A consolidated overview of Internet Computer ICRC standards.  
 These specifications define how digital assets, wallets, and canisters interact securely and consistently across the ecosystem.
 
 ## 0. Compliance & Standards Identification
