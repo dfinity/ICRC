@@ -332,7 +332,7 @@ identified by `"\00\00\00\00\02\00\01\0d\01\01"`, then the
 
 A block that explicitly sets fee burning by **omitting** the fee collector (i.e., all fees are burned from this point onward):
 
-```text
+```
 variant { Map = vec {
   // Block type
   record { "btype"; variant { Text = "107feecol" }};
@@ -350,7 +350,7 @@ variant { Map = vec {
   record { "ts";    variant { Nat = 1_741_312_737_184_874_392 : nat }};
   record { "phash"; variant { Blob = blob "\2d\86\7f\34\c7\2d\1e\2d\00\84\10\a4\00\b0\b6\4c\3e\02\96\c9\e8\55\6f\dd\72\68\e8\df\8d\8e\8a\ee" }};
 }}
-
+```
 
 
 
