@@ -1,5 +1,8 @@
 # ICRC-107: Fee Management
 
+![DRAFT] 
+
+**Authors:** [Bogdan Warinschi](https://github.com/bogwar)
 ## Introduction & Motivation
 
 Different ICRC-based ledgers (e.g., ckBTC) handle fee collection inconsistently.  
@@ -390,3 +393,10 @@ To determine who collects the fee in a block:
       - If `fee_col` is specified in the block the fee is collected by `fee_col`.
       - If `fee_col_block` is specified use the `fee_col` from the referenced block index.
       - If neither `fee_col` nor `fee_col_block` are specified, then the fee is burned.
+
+
+[DRAFT]: https://img.shields.io/badge/STATUS-DRAFT-f25a24.svg
+
+[APPROVED]: https://img.shields.io/badge/STATUS-APPROVED-ed1e7a.svg
+
+[EXTENDS 3]: https://img.shields.io/badge/EXTENDS-ICRC--3-ed1e7a.svg
