@@ -152,7 +152,7 @@ This ensures that fee handling is always well-defined, both before and after the
 **Notes**
 
 - Invariants from ICRC-3 still apply (e.g., `effective fee ≤ amt` for mints; sufficient balance for `amt + effective fee`; allowance reductions include `amt + effective fee` where applicable).  
-- ICRC-107 does **not** define who the fee payer is — that comes from the semantics of each block type (e.g., ICRC-1/2 legacy rules in ICRC-3).
+- ICRC-107 does **not** define who the fee payer is — that comes from the semantics of each block type (e.g., ICRC-1/2  rules in ICRC-3).
 
 
 
@@ -226,8 +226,8 @@ icrc107_set_fee_collector: (SetFeeCollectorArgs) -> (variant { Ok: nat; Err: Set
   - **Duplicate** — a semantically identical transaction was already accepted (per the ledger’s deduplication rules); response **MUST** include `duplicate_of` with the existing block index.  
   - **GenericError** — any other failure that prevents constructing or appending a valid `107feecol` block.
 
-- **Clarifications**  
-  A `107feecol` block whose `tx` omits `fee_collector` (explicit **burn**) is **not** the same as “no `107feecol` has ever been set” (which implies **legacy behavior** applies until the first ICRC-107 setting appears).
+- **Note**  
+  A `107feecol` block whose `tx` omits `fee_collector` (explicit **burn**) is **not** the same as “no `107feecol` has ever been set” (which implies legacy behavior applies until the first ICRC-107 setting appears).
 
 ---
 
