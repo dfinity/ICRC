@@ -238,7 +238,6 @@ This mapping defines the exact `tx` structure that **MUST** appear in every
 
 System-generated `107feecol` blocks (e.g., created by the ledger during an upgrade or
 migration) **do not** need to include all the fields that appear in this mapping.
-They MUST follow the structural rules in Section *System-Generated `107feecol` Blocks*.
 
 For all user-initiated calls, the `tx` map **MUST** contain exactly the following fields,
 with the specified encoding:
@@ -250,23 +249,6 @@ with the specified encoding:
 | `ts`              | `Nat`                  | Always included. MUST equal the `created_at_time` argument (nanoseconds since Unix epoch, fitting in `nat64`). |
 | `caller`          | `Blob`                 | Always included. Principal bytes of the caller. |
 
-
-#### System-Generated `107feecol` Blocks
-
-Ledgers MAY create `107feecol` blocks outside of a direct user call, for example
-during an upgrade, migration, or recovery procedure.
-
-System-generated blocks MUST conform to the following rules:
-
-- MUST include a `tx` map.
-- `tx.op` MUST be `"107set_fee_collector"`.
-- `tx.fee_collector` MUST be present or omitted depending on the intended
-  configuration (collect vs burn).
-- `tx.caller` MAY be omitted.  
-  If included, it SHOULD be set to the ledger canister principal.
-
-System-generated blocks **are not required** to include all fields that appear in the canonical mapping for user-initiated calls.  
-They only need to include the fields listed above.
 
 
 ### `icrc107_get_fee_collector`
