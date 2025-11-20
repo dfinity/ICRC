@@ -1,6 +1,6 @@
 # ICRC-107: Fee Management
 
-![DRAFT] 
+![DRAFT] [![EXTENDS3]](https://github.com/dfinity/ICRC-1/blob/main/standards/ICRC-3/README.md)
 
 **Authors:** [Bogdan Warinschi](https://github.com/bogwar)
 ## Introduction & Motivation
@@ -399,4 +399,4 @@ To determine who collects the fee in a block:
 
 [APPROVED]: https://img.shields.io/badge/STATUS-APPROVED-ed1e7a.svg
 
-[EXTENDS 3]: https://img.shields.io/badge/EXTENDS-ICRC--3-ed1e7a.svg
+[EXTENDS3]: https://img.shields.io/badge/EXTENDS-ICRC--3-ed1e7a.svg
