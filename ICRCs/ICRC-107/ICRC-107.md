@@ -112,7 +112,7 @@ The minimal fields required to interpret a `107feecol` block:
 |----------------|------------------------|----------|-------------|
 | `fee_collector`| Account                | No       | If present, designates the fee collector account. If **absent**, this `107feecol` block explicitly sets all fees to be **burned** from its index onward. |
 
-(Other fields such as `op`, `ts`, and `caller` are defined in the **Canonical `tx` Mapping**.)
+(Other fields such as `mthd`, `ts`, and `caller` are defined in the **Canonical `tx` Mapping**.)
 
 ## Semantics of `107feecol` Blocks
 
@@ -247,7 +247,7 @@ with the specified encoding:
 
 | Field             | Type (ICRC-3 `Value`) | Canonical Encoding Rule |
 |-------------------|------------------------|--------------------------|
-| `op`              | `Text`                 | Always included. **MUST** be `"107set_fee_collector"`. |
+| `mthd`              | `Text`                 | Always included. **MUST** be `"107set_fee_collector"`. |
 | `fee_collector`   | Account                | Included **iff** the `fee_collector` argument is `?Account`. If the argument is `null`, this field **MUST be omitted** from `tx`. |
 | `ts`              | `Nat`                  | Always included. MUST equal the `created_at_time` argument (nanoseconds since Unix epoch, fitting in `nat64`). |
 | `caller`          | `Blob`                 | Always included. Principal bytes of the caller. |
@@ -290,7 +290,7 @@ variant { Map = vec {
 
   // Top-level tx (constructed per Canonical `tx` Mapping)
   record { "tx"; variant { Map = vec {
-    record { "op"; variant { Text = "107set_fee_collector" }};
+    record { "mthd"; variant { Text = "107set_fee_collector" }};
     record { "fee_collector"; variant { Array = vec {
       // Account = [owner, subaccount?]
       variant { Blob = blob "\00\00\00\00\02\00\01\0d\01\01" }; // owner principal bytes
@@ -324,7 +324,7 @@ variant { Map = vec {
 
   // Top-level tx (constructed per Canonical `tx` Mapping)
   record { "tx"; variant { Map = vec {
-    record { "op"; variant { Text = "107set_fee_collector" }};
+    record { "mthd"; variant { Text = "107set_fee_collector" }};
   // NOTE: there is intentionally NO "fee_collector" entry here because
   // the method argument was `fee_collector = null`.
     record { "ts"; variant { Nat = 1_750_951_728_000_000_000 : nat }};
