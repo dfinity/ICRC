@@ -64,9 +64,10 @@ directly produce ICRC-122 blocks.
 
 Such standards SHOULD:
 
-1. **Include `tx.op`** in the resulting block’s `tx` map.  
-   - Use a namespaced value as recommended in ICRC-3: `<icrc_number><op_name>`.  
-   - Examples: `145mint`, `145burn` if defined in ICRC-145.  
+1. **Include a method discriminator** in the resulting block’s `tx` map.
+   - Use a namespaced value as recommended in ICRC-3: `<icrc_number><op_name>`.
+   - The recommended field name is `mthd`; alternatives (e.g., `op`) are permitted provided the choice is documented in the canonical `tx` mapping.
+   - Examples: `"mthd" = "145mint"`, `"mthd" = "145burn"` if defined in ICRC-145.
    - This **prevents collisions** between blocks created by different methods or standards; it does *not* uniquely identify an individual call.
 
 2. **Define a canonical mapping** from method arguments to the minimal `tx` fields:  
@@ -222,7 +223,7 @@ record { "ts"; variant { Nat = 1_747_900_000_000_000_000 : nat }};
 record { "phash"; variant { Blob = blob "\aa\bb\cc\dd\ee\ff\00\11\22\33\44\55\66\77\88\99" }};
 record { "tx"; variant { Map = vec {
 // Namespaced op from the method-defining standard (ICRC-145)
-record { "op"; variant { Text = "145mint" }};
+record { "mthd"; variant { Text = "145mint" }};
 // Optional provenance (non-semantic)
 record { "caller"; variant { Blob = blob "\00\00\00\00\00\00\f0\0d\01\02" }};
 record { "to"; variant { Array = vec {
@@ -236,5 +237,5 @@ record { "reason"; variant { Text = "Community treasury distribution" }};
 ```
 
 This example is non-normative and illustrates how a standardized method can map into
-the ICRC-122 block structure while using a namespaced `tx.op` to prevent collisions
+the ICRC-122 block structure while using a namespaced method discriminator (`tx.mthd`) to prevent collisions
 across standards. The authoritative semantics remain defined by the ICRC-122 block types.
