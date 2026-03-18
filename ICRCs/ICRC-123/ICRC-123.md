@@ -70,16 +70,14 @@ Producers MAY include non-semantic provenance fields within `tx`, such as:
 - `reason : Text` — human-readable context for the action.
 - `created_at_time : Nat` — caller-supplied timestamp in nanoseconds (MUST fit in `nat64`).
 - `policy_ref : Text` — identifier for the policy/order/proposal under which the action occurred.
-- `op : Text` — the logical operation or method that produced the block. This field is **optional** in ICRC-123, but when a separate standard defines methods that create ICRC-123 blocks, that standard **SHOULD** include `tx.op` to make the call uniquely identifiable from `tx`.
+- `mthd : Text` — the method discriminator identifying which standardized method produced the block. This field is **optional** in ICRC-123, but when a separate standard defines methods that create ICRC-123 blocks, that standard **SHOULD** include a method discriminator (recommended field name: `mthd`) to make the call uniquely identifiable from `tx`.
 
-  **Namespacing rule (from ICRC-3):** `tx.op` values SHOULD be namespaced by the standard that defines the method to avoid collisions. Use a numeric ICRC prefix and a lowercase op name:
+  **Namespacing rule (from ICRC-3):** Method discriminator values SHOULD be namespaced by the standard that defines the method to avoid collisions. Use a numeric ICRC prefix and a lowercase op name:
 
   - Format: `<icrc_number><op_name>`
   - Examples: `147freeze_principal`, `147unfreeze_account`
 
-  **Alternative (descriptive) form:** Implementations MAY also include a fully-qualified method name for readability, e.g. `icrc147_freeze_principal`. The numeric-namespaced form above is preferred for compactness and collision-avoidance.  
-
-  `tx.op` is **provenance only**; it MUST NOT affect block semantics or verification.
+  The method discriminator is **provenance only**; it MUST NOT affect block semantics or verification.
 
 
 
@@ -91,8 +89,9 @@ Producers MAY include non-semantic provenance fields within `tx`, such as:
 
 A standard that defines ledger methods which produce ICRC-123 blocks (e.g., “freeze principal” or “unfreeze account”) SHOULD:
 
-1. **Include `tx.op`** in the resulting block’s `tx` map.  
-   - Use a namespaced value per ICRC-3: `<icrc_number><op_name>` (e.g., `147freeze_principal`).  
+1. **Include a method discriminator** in the resulting block’s `tx` map.
+   - The recommended field name is `mthd`; alternatives (e.g., `op`) are permitted provided the choice is documented in the canonical `tx` mapping.
+   - Use a namespaced value per ICRC-3: `<icrc_number><op_name>` (e.g., `"mthd" = "147freeze_principal"`).
    - This makes the call uniquely identifiable and prevents collisions across standards.
 
 2. **Define a canonical mapping** from the method’s call parameters to the block’s minimal `tx` fields:  
@@ -274,7 +273,7 @@ variant { Map = vec {
   record { "phash"; variant { Blob = blob "\aa\bb\cc\dd\ee\ff\00\11\22\33\44\55\66\77\88\99" }};
   record { "tx"; variant { Map = vec {
     // Namespaced op from the method-defining standard (ICRC-147)
-    record { "op"; variant { Text = "147freeze_principal" }};
+    record { "mthd"; variant { Text = "147freeze_principal" }};
     // Optional provenance (non-semantic)
     record { "caller"; variant { Blob = blob "\00\00\00\00\00\00\f0\0d\01\02" }};
     record { "principal"; variant { Blob = blob "\94\85\a4\06\ef\cd\ab\01\23\45\67\89\12\34\56\78\90\ab\cd\ef" }};
@@ -283,4 +282,4 @@ variant { Map = vec {
 }}
 
 ```
-This example is non-normative and illustrates how a standardized method can map into the ICRC-123 block structure while using a namespaced `tx.op` for unambiguous identification. The authoritative semantics remain defined by the ICRC-123 block types.
+This example is non-normative and illustrates how a standardized method can map into the ICRC-123 block structure while using a namespaced method discriminator (`tx.mthd`) for unambiguous identification. The authoritative semantics remain defined by the ICRC-123 block types.
