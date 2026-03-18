@@ -12,7 +12,7 @@ For operational safety, incident response, and regulatory compliance, ledgers of
 
 - Privileged methods (authorized principals only):
   - `icrc154_pause`, `icrc154_unpause`, `icrc154_deactivate`
-- Canonical `tx` mapping with namespaced `op` values (`"154..."`), caller identity, and optional human-readable `reason`.
+- Canonical `tx` mapping with namespaced `mthd` values (`"154..."`), caller identity, and optional human-readable `reason`.
 - Recording uses **ICRC-124** block kinds (this standard **does not** add new block types).
 - Read-only queries: `icrc154_is_paused`, `icrc154_is_deactivated`.
 
@@ -46,7 +46,7 @@ This standard does not introduce new block kinds.
 
 A ledger implementing ICRC-154 MUST:
 - Emit the appropriate **ICRC-124** block on each successful call.
-- Populate `tx.op` with namespaced values **introduced by this standard**:
+- Populate `tx.mthd` with namespaced values **introduced by this standard**:
   `"154pause"`, `"154unpause"`, `"154deactivate"`.
 
 
@@ -142,7 +142,7 @@ icrc154_pause : (PauseArgs) -> (variant { Ok : nat; Err : PauseError });
 
 | Field   | Type (ICRC-3 `Value`) | Source / Encoding Rule |
 |----------|-----------------------|-------------------------|
-| `op`     | `Text`                | Constant `"154pause"`. |
+| `mthd`   | `Text`                | Constant `"154pause"`. |
 | `ts`     | `Nat`                 | From `created_at_time` (ns since Unix epoch; MUST fit in `nat64`). |
 | `caller` | `Blob`                | Principal of the caller. |
 | `reason` | `Text` (optional)     | From `reason` argument; omit if absent. |
@@ -211,7 +211,7 @@ icrc154_unpause : (UnpauseArgs) -> (variant { Ok : nat; Err : UnpauseError });
 
 | Field   | Type (ICRC-3 `Value`) | Source / Encoding Rule |
 |---------|------------------------|-------------------------|
-| `op`    | `Text`                 | **Constant** `"154unpause"`. |
+| `mthd`  | `Text`                 | **Constant** `"154unpause"`. |
 | `ts`    | `Nat`                  | From `created_at_time`. |
 | `caller`| `Blob`                 | Principal of the caller. |
 | `reason`| `Text` *(optional)*    | From `reason` if provided; **omit** if absent. |
@@ -277,7 +277,7 @@ icrc154_deactivate : (DeactivateArgs) -> (variant { Ok : nat; Err : DeactivateEr
 
 | Field   | Type (ICRC-3 `Value`) | Source / Encoding Rule |
 |---------|------------------------|-------------------------|
-| `op`    | `Text`                 | **Constant** `"154deactivate"`. |
+| `mthd`  | `Text`                 | **Constant** `"154deactivate"`. |
 | `ts`    | `Nat`                  | From `created_at_time`. |
 | `caller`| `Blob`                 | Principal of the caller. |
 | `reason`| `Text` *(optional)*    | From `reason` if provided; **omit** if absent. |
@@ -357,7 +357,7 @@ icrc154_pause({
       "tx";
       variant {
         Map = vec {
-          record { "op";     variant { Text = "154pause" } };
+          record { "mthd";   variant { Text = "154pause" } };
           record { "ts";     variant { Nat  = 1_753_700_000_000_000_000 : Nat } };
           record { "caller"; variant { Blob = blob "\00\00\00\00\02\30\02\17\01\01" } };
           record { "reason"; variant { Text = "System maintenance window" } };
@@ -385,17 +385,17 @@ icrc154_unpause({
 ```
 variant {
   Map = vec {
-    record { "btype"; variant { Text = "124pause" } };
+    record { "btype"; variant { Text = "124unpause" } };
     record { "phash"; variant { Blob = blob "\aa\bb\cc\dd\ee\ff\00\11\22\33\44\55\66\77\88\99\01\23\45\67\89\ab\cd\ef\10\32\54\76\98\ba\dc\fe" } }; // illustrative
-    record { "ts";    variant { Nat = 1_753_700_001_000_000_000 : Nat } };
+    record { "ts";    variant { Nat = 1_753_700_501_000_000_000 : Nat } };
     record {
       "tx";
       variant {
         Map = vec {
-          record { "op";     variant { Text = "154pause" } };
-          record { "ts";     variant { Nat  = 1_753_700_000_000_000_000 : Nat } };
+          record { "mthd";   variant { Text = "154unpause" } };
+          record { "ts";     variant { Nat  = 1_753_700_500_000_000_000 : Nat } };
           record { "caller"; variant { Blob = blob "\00\00\00\00\02\30\02\17\01\01" } };
-          record { "reason"; variant { Text = "System maintenance window" } };
+          record { "reason"; variant { Text = "Maintenance completed" } };
         }
       };
     };
@@ -425,7 +425,7 @@ variant {
       "tx";
       variant {
         Map = vec {
-          record { "op";     variant { Text = "154deactivate" } };
+          record { "mthd";   variant { Text = "154deactivate" } };
           record { "ts";     variant { Nat  = 1_753_800_000_000_000_000 : Nat } };
           record { "caller"; variant { Blob = blob "\00\00\00\00\02\30\02\17\01\01" } };
           record { "reason"; variant { Text = "Regulatory directive" } };
