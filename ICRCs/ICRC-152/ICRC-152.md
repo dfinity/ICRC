@@ -66,7 +66,7 @@ This standard does not introduce new block kinds.
 A ledger implementing ICRC-152 MUST:
 - Emit `122mint` for successful `icrc152_mint` calls and `122burn` for successful
   `icrc152_burn` calls.
-- Populate `tx.op` with namespaced values **introduced by this standard**:
+- Populate `tx.mthd` with namespaced values **introduced by this standard**:
   `"152mint"` and `"152burn"`.
 
 
@@ -162,7 +162,7 @@ The `tx` field is derived deterministically as follows:
 
 | Field             | Type (ICRC-3 `Value`) | Source / Encoding Rule                                                     |
 |-------------------|------------------------|-----------------------------------------------------------------------------|
-| `op`              | `Text`                 | **Constant** `"152mint"`.                                                  |
+| `mthd`            | `Text`                 | **Constant** `"152mint"`.                                                  |
 | `to`              | `Array` (Account)      | From `MintArgs.to`, encoded as ICRC-3 Account.                             |
 | `amt`             | `Nat`                  | From `MintArgs.amount`.                                                    |
 | `created_at_time` | `Nat`                  | From `MintArgs.created_at_time` (ns since Unix epoch; **MUST** fit `nat64`). |
@@ -222,7 +222,7 @@ On failure, the method returns
 A successful call to `icrc152_burn` produces a block of type `122burn`.  
 The `tx` field is derived deterministically as follows:
 
-- `op     = "152burn"`  
+- `mthd   = "152burn"`  
 - `from   = BurnArgs.from`  
 - `amt    = BurnArgs.amount`  
 - `ts     = BurnArgs.created_at_time`  
@@ -288,7 +288,7 @@ variant {
       "tx";
       variant {
         Map = vec {
-          record { "op";     variant { Text  = "152mint" } };
+          record { "mthd";   variant { Text  = "152mint" } };
           record {
             "to";
             variant {
@@ -311,7 +311,7 @@ variant {
 
 
 
-The block records the operation (`op = "152mint"`), the recipient account (`to`), 
+The block records the method (`mthd = "152mint"`), the recipient account (`to`), 
 the minted amount (`amt`), the timestamp supplied by the caller (`ts`), the caller’s 
 principal (`caller`), and the optional `reason`.  
 
@@ -356,7 +356,7 @@ variant {
       "tx";
       variant {
         Map = vec {
-          record { "op";     variant { Text  = "152burn" } };
+          record { "mthd";   variant { Text  = "152burn" } };
           record {
             "from";
             variant {
@@ -378,7 +378,7 @@ variant {
 
 ```
 
-Here, the block records the operation (`op = "152burn"`), the account being debited (`from`), 
+Here, the block records the method (`mthd = "152burn"`), the account being debited (`from`), 
 the burned amount (`amt`), the caller-provided timestamp (`ts`), the caller’s principal (`caller`), 
 and the optional `reason`.  
 
