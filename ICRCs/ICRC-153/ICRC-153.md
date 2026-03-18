@@ -14,7 +14,7 @@ ICRC-153 addresses this by standardizing four privileged methods that append can
 - `icrc153_freeze_account`, `icrc153_unfreeze_account`
 - `icrc153_freeze_principal`, `icrc153_unfreeze_principal`
 
-**Canonical `tx` mapping** with namespaced `op` values (`"153..."`), caller identity, and optional human-readable reason.
+**Canonical `tx` mapping** with namespaced `mthd` values (`"153..."`), caller identity, and optional human-readable reason.
 
 Recording uses **ICRC-123** block kinds (this standard does **not** add new block types).
 
@@ -27,8 +27,8 @@ Specifically, it defines:
 - **APIs** to freeze/unfreeze **accounts** and **principals**, callable only by authorized entities.
 - **Canonical `tx` mapping** rules ensuring deterministic block content and easy attribution/auditing.
 - **Use of ICRC-123 block kinds** to record these actions:
-  - `btype = "123freeze_account"`, `btype = "123unfreeze_account"`
-  - `btype = "123freeze_principal"`, `btype = "123unfreeze_principal"`
+  - `btype = "123freezeaccount"`, `btype = "123unfreezeaccount"`
+  - `btype = "123freezeprincipal"`, `btype = "123unfreezeprincipal"`
 - **Compliance reporting** through ICRC-10 methods.
 
 This enables wallets, explorers, and auditors to:
@@ -43,14 +43,14 @@ This standard does not introduce new block kinds.
 
 - **ICRC-3** — Block log format, hashing, certification, and canonical `tx` mapping rules.
 - **ICRC-123** — Defines the typed block kinds that ICRC-153 uses:
-  - `btype = "123freeze_account"`
-  - `btype = "123unfreeze_account"`
-  - `btype = "123freeze_principal"`
-  - `btype = "123unfreeze_principal"`
+  - `btype = "123freezeaccount"`
+  - `btype = "123unfreezeaccount"`
+  - `btype = "123freezeprincipal"`
+  - `btype = "123unfreezeprincipal"`
 
 A ledger implementing ICRC-153 MUST:
 - Emit the appropriate **ICRC-123** block on each successful call.
-- Populate `tx.op` with namespaced values **introduced by this standard**:
+- Populate `tx.mthd` with namespaced values **introduced by this standard**:
   `"153freeze_account"`, `"153unfreeze_account"`, `"153freeze_principal"`, `"153unfreeze_principal"`.
 
 
@@ -73,7 +73,7 @@ This standard inherits core conventions from **ICRC-3** (block log format, Value
 
 - **Blocks & Parent Hash**  
   All blocks created by this API use the ICRC-123 block kinds  
-  (`btype = "123freeze_account"`, `"123unfreeze_account"`, `"123freeze_principal"`, `"123unfreeze_principal"`).  
+  (`btype = "123freezeaccount"`, `"123unfreezeaccount"`, `"123freezeprincipal"`, `"123unfreezeprincipal"`).  
   Standard metadata (`ts`, `phash`) follows ICRC-3.
 
 
@@ -110,7 +110,7 @@ icrc153_freeze_account : (FreezeAccountArgs) -> (variant { Ok : nat; Err : Freez
 
 **Effect (on success, non-retroactive)**  
 - Mark the specified `account` as **frozen** according to ICRC-123 semantics.  
-- Append a new block with `btype = "123freeze_account"`.  
+- Append a new block with `btype = "123freezeaccount"`.  
 - The block’s `tx` field **MUST** be constructed **exactly** as defined in **Canonical `tx` Mapping** (same keys, types, and encodings).  
 - On success, return the index of the newly appended block.
 
@@ -137,7 +137,7 @@ icrc153_freeze_account : (FreezeAccountArgs) -> (variant { Ok : nat; Err : Freez
 
 | Field             | Type (ICRC-3 `Value`) | Source / Encoding Rule |
 |-------------------|------------------------|-------------------------|
-| `op`              | `Text`                 | **Constant** `"153freeze_account"`. |
+| `mthd`            | `Text`                 | **Constant** `"153freeze_account"`. |
 | `account`         | `Array` (Account)      | From `FreezeAccountArgs.account`, encoded as ICRC-3 Account. |
 | `created_at_time` | `Nat`                  | From `FreezeAccountArgs.created_at_time` (ns since Unix epoch; **MUST** fit `nat64`). |
 | `caller`          | `Blob`                 | Principal of the caller (raw bytes). |
@@ -179,7 +179,7 @@ icrc153_unfreeze_account : (UnfreezeAccountArgs) -> (variant { Ok : nat; Err : U
 
 **Effect (on success, non-retroactive)**  
 - Mark the specified `account` as **unfrozen** according to ICRC-123 semantics.  
-- Append a new block with `btype = "123unfreeze_account"`.  
+- Append a new block with `btype = "123unfreezeaccount"`.  
 - The block’s `tx` field **MUST** be constructed **exactly** as defined in **Canonical `tx` Mapping** (same keys, types, and encodings), with `ts` derived from `created_at_time`.  
 - On success, return the index of the newly appended block.
 
@@ -207,7 +207,7 @@ icrc153_unfreeze_account : (UnfreezeAccountArgs) -> (variant { Ok : nat; Err : U
 
 | Field | Type (ICRC-3 `Value`) | Source / Encoding Rule |
 |---|---|---|
-| `op` | `Text` | **Constant** `"153unfreeze_account"`. |
+| `mthd` | `Text` | **Constant** `"153unfreeze_account"`. |
 | `account` | `Array` (Account) | From `UnfreezeAccountArgs.account`. |
 | `ts` | `Nat` | From `UnfreezeAccountArgs.created_at_time`. |
 | `caller` | `Blob` | Principal of the caller. |
@@ -246,7 +246,7 @@ icrc153_freeze_principal : (FreezePrincipalArgs) -> (variant { Ok : nat; Err : F
 
 **Effect (on success, non-retroactive)**  
 - Mark the specified `principal` as **frozen** (scope and effect per ICRC-123), impacting its accounts via composition.  
-- Append a new block with `btype = "123freeze_principal"`.  
+- Append a new block with `btype = "123freezeprincipal"`.  
 - The block’s `tx` field **MUST** be constructed **exactly** as defined in **Canonical `tx` Mapping** (same keys, types, and encodings), with `ts` derived from `created_at_time`.  
 - On success, return the index of the newly appended block.
 
@@ -274,7 +274,7 @@ icrc153_freeze_principal : (FreezePrincipalArgs) -> (variant { Ok : nat; Err : F
 
 | Field | Type (ICRC-3 `Value`) | Source / Encoding Rule |
 |---|---|---|
-| `op` | `Text` | **Constant** `"153freeze_principal"`. |
+| `mthd` | `Text` | **Constant** `"153freeze_principal"`. |
 | `principal` | `Blob` | From `FreezePrincipalArgs.principal` (principal bytes). |
 | `ts` | `Nat` | From `FreezePrincipalArgs.created_at_time`. |
 | `caller` | `Blob` | Principal of the caller. |
@@ -315,7 +315,7 @@ icrc153_unfreeze_principal : (UnfreezePrincipalArgs) -> (variant { Ok : nat; Err
 
 **Effect (on success, non-retroactive)**  
 - Mark the specified `principal` as **unfrozen** (lifting restrictions per ICRC-123).  
-- Append a new block with `btype = "123unfreeze_principal"`.  
+- Append a new block with `btype = "123unfreezeprincipal"`.  
 - The block’s `tx` field **MUST** be constructed **exactly** as defined in **Canonical `tx` Mapping** (same keys, types, and encodings), with `ts` derived from `created_at_time`.  
 - On success, return the index of the newly appended block.
 
@@ -343,7 +343,7 @@ icrc153_unfreeze_principal : (UnfreezePrincipalArgs) -> (variant { Ok : nat; Err
 
 | Field | Type (ICRC-3 `Value`) | Source / Encoding Rule |
 |---|---|---|
-| `op` | `Text` | **Constant** `"153unfreeze_principal"`. |
+| `mthd` | `Text` | **Constant** `"153unfreeze_principal"`. |
 | `principal` | `Blob` | From `UnfreezePrincipalArgs.principal`. |
 | `ts` | `Nat` | From `UnfreezePrincipalArgs.created_at_time`. |
 | `caller` | `Blob` | Principal of the caller. |
@@ -378,8 +378,8 @@ variant { Vec = vec {
 
 ICRC-153 extends ICRC-123 and does not introduce new block kinds.
 Accordingly, ledgers implementing ICRC-153 MUST already advertise support for the
-relevant ICRC-123 block kinds (e.g., `123freeze_account`, `123unfreeze_account`,
-`123freeze_principal`, `123unfreeze_principal`) as required by ICRC-123.
+relevant ICRC-123 block kinds (e.g., `123freezeaccount`, `123unfreezeaccount`,
+`123freezeprincipal`, `123unfreezeprincipal`) as required by ICRC-123.
 No additional block types need to be reported.
 
 
@@ -543,19 +543,19 @@ icrc153_freeze_account({
 
 #### Resulting block
 
-This call rsults in a block with btype="122freeze_account" and the following contents:
+This call results in a block with `btype = "123freezeaccount"` and the following contents:
 
 ```
 variant {
   Map = vec {
-    record { "btype"; variant { Text = "123freeze_account" } };
+    record { "btype"; variant { Text = "123freezeaccount" } };
     record { "phash"; variant { Blob = blob "\12\34\56\78\9a\bc\de\f0\01\23\45\67\89\ab\cd\ef\10\32\54\76\98\ba\dc\fe\11\22\33\44\55\66\77\88" } };
     record { "ts";    variant { Nat64 = 1_753_500_101_000_000_000 : nat64 } };
     record {
       "tx";
       variant {
         Map = vec {
-          record { "op";      variant { Text = "153freeze_account" } };
+          record { "mthd";    variant { Text = "153freeze_account" } };
           record { "account"; variant { Array = vec {
             variant { Blob = blob "\15\28\84\12\af\11\b2\99\31\3a\5b\5a\7c\12\83\11\de\10\23\33\c4\ad\be\66\9f\2e\a1\a3\08" }
           } } };
@@ -569,12 +569,12 @@ variant {
 };
 ```
 
-The block records the operation (op = "153freeze_account"), the account being frozen (account), the caller-supplied timestamp (ts), the caller’s principal (caller), and the optional reason. The account is shown as a principal literal in the call, but stored canonically as a Blob in the block.
+The block records the method (`mthd = "153freeze_account"`), the account being frozen (`account`), the caller-supplied timestamp (`ts`), the caller’s principal (`caller`), and the optional `reason`. The account is shown as a principal literal in the call, but stored canonically as a Blob in the block.
 
 #### Call
 The caller invokes:
 ```
-iicrc153_unfreeze_account({
+icrc153_unfreeze_account({
   account         = [principal "f5288412af11b299313a5b5a7c128311de102333c4adbe669f2ea1a308"];
   created_at_time = 1_753_500_200_000_000_000 : nat64;
   reason          = ?"Lift compliance hold";
@@ -585,14 +585,14 @@ iicrc153_unfreeze_account({
 ```
 variant {
   Map = vec {
-    record { "btype"; variant { Text = "123unfreeze_account" } };
+    record { "btype"; variant { Text = "123unfreezeaccount" } };
     record { "phash"; variant { Blob = blob "\9f\aa\10\44\20\19\77\35\c2\9e\00\41\aa\cd\12\ef\04\aa\bb\cc\dd\ee\ff\00\11\22\33\44\55\66\77\88" } }; // illustrative
     record { "ts";    variant { Nat = 1_753_500_201_000_000_000 : nat } };
     record {
       "tx";
       variant {
         Map = vec {
-          record { "op";      variant { Text = "153unfreeze_account" } };
+          record { "mthd";    variant { Text = "153unfreeze_account" } };
           record { "account"; variant { Array = vec {
             variant { Blob = blob "\15\28\84\12\af\11\b2\99\31\3a\5b\5a\7c\12\83\11\de\10\23\33\c4\ad\be\66\9f\2e\a1\a3\08" }
           } } };
@@ -621,14 +621,14 @@ icrc153_freeze_principal({
 ```
 variant {
   Map = vec {
-    record { "btype"; variant { Text = "123freeze_principal" } };
+    record { "btype"; variant { Text = "123freezeprincipal" } };
     record { "phash"; variant { Blob = blob "\aa\bb\cc\dd\ee\ff\00\11\22\33\44\55\66\77\88\99\01\23\45\67\89\ab\cd\ef\10\32\54\76\98\ba\dc\fe" } }; // illustrative
     record { "ts";    variant { Nat = 1_753_600_001_000_000_000 : nat } };
     record {
       "tx";
       variant {
         Map = vec {
-          record { "op";        variant { Text = "153freeze_principal" } };
+          record { "mthd";      variant { Text = "153freeze_principal" } };
           record { "principal"; variant { Blob = blob "\ab\cd\01\23\45\67\89\ab\cd\ef\01\23\45\67\89\ab\cd\ef\01\23\45\67\89\ab\cd\ef\01\23\45\67\89\ab" } };
           record { "ts";        variant { Nat  = 1_753_600_000_000_000_000 : nat } };
           record { "caller";    variant { Blob = blob "\00\00\00\00\02\30\02\17\01\01" } };
@@ -656,14 +656,14 @@ icrc153_unfreeze_principal({
 ```
 variant {
   Map = vec {
-    record { "btype"; variant { Text = "123unfreeze_principal" } };
+    record { "btype"; variant { Text = "123unfreezeprincipal" } };
     record { "phash"; variant { Blob = blob "\fe\dc\ba\98\76\54\32\10\ef\cd\ab\89\67\45\23\01\99\88\77\66\55\44\33\22\11\00\ff\ee\dd\cc\bb\aa" } }; // illustrative
     record { "ts";    variant { Nat = 1_753_600_501_000_000_000 : nat } };
     record {
       "tx";
       variant {
         Map = vec {
-          record { "op";        variant { Text = "153unfreeze_principal" } };
+          record { "mthd";      variant { Text = "153unfreeze_principal" } };
           record { "principal"; variant { Blob = blob "\ab\cd\01\23\45\67\89\ab\cd\ef\01\23\45\67\89\ab\cd\ef\01\23\45\67\89\ab\cd\ef\01\23\45\67\89\ab" } };
           record { "ts";        variant { Nat  = 1_753_600_500_000_000_000 : nat } };
           record { "caller";    variant { Blob = blob "\00\00\00\00\02\30\02\17\01\01" } };
