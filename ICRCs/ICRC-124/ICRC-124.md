@@ -48,7 +48,7 @@ Producers MAY include fields such as:
 - `reason : Text` — human-readable context.  
 - `created_at_time : Nat` — caller-supplied timestamp (ns; MUST fit nat64).  
 - `policy_ref : Text` — identifier for proposal/vote/policy.  
-- `op : Text` — namespaced operation identifier, e.g. `148pause_ledger`.  
+- `mthd : Text` — namespaced method discriminator, e.g. `148pause_ledger`.
 
 These fields MUST NOT affect semantics or verification. Verifiers MUST ignore them.
 
@@ -80,8 +80,9 @@ These fields MUST NOT affect semantics or verification. Verifiers MUST ignore th
 
 A standard that defines ledger methods which produce ICRC-124 blocks (e.g., “pause ledger” or “deactivate ledger”) SHOULD:
 
-1. **Include `tx.op`** in the resulting block’s `tx` map.  
-   - Use a namespaced value per ICRC-3: `<icrc_number><op_name>` (e.g., `148pause_ledger`).  
+1. **Include a method discriminator** in the resulting block’s `tx` map.
+   - The recommended field name is `mthd`; alternatives (e.g., `op`) are permitted provided the choice is documented in the canonical `tx` mapping.
+   - Use a namespaced value per ICRC-3: `<icrc_number><op_name>` (e.g., `"mthd" = "148pause_ledger"`).
    - This makes the call uniquely identifiable and prevents collisions across standards.
 
 2. **Define a canonical mapping** from the method’s call parameters to the block’s minimal `tx` fields.  
@@ -188,11 +189,11 @@ variant { Map = vec {
     Blob = blob "\aa\bb\cc\dd\ee\ff\00\11\22\33\44\55\66\77\88\99"
   }};
   record { "tx"; variant { Map = vec {
-    record { "op"; variant { Text = "148pause_ledger" }};
+    record { "mthd"; variant { Text = "148pause_ledger" }};
     record { "caller"; variant { Blob = blob "\00\00\00\00\00\00\f0\0d\01\03" }};
     record { "reason"; variant { Text = "DAO vote #101: emergency pause" }};
   }}};
 }};
 ```
 
-This example is non-normative and illustrates how a standardized method can map into the ICRC-124 block structure while using a namespaced `tx.op` for unambiguous identification. The authoritative semantics remain defined by the ICRC-124 block types.
+This example is non-normative and illustrates how a standardized method can map into the ICRC-124 block structure while using a namespaced method discriminator (`tx.mthd`) for unambiguous identification. The authoritative semantics remain defined by the ICRC-124 block types.
