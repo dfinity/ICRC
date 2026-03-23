@@ -163,7 +163,6 @@ type UnfreezeAccountArgs = record {
 type UnfreezeAccountError = variant {
   Unauthorized : text;
   InvalidAccount : text;
-  NotFrozen : text;                  // account is not currently frozen
   Duplicate : record { duplicate_of : nat };
   GenericError : record { error_code : nat; message : text };
 };
@@ -191,16 +190,16 @@ icrc153_unfreeze_account : (UnfreezeAccountArgs) -> (variant { Ok : nat; Err : U
 - The ledger **MUST** perform deduplication (e.g., using `created_at_time`).  
 - If a duplicate is detected, the ledger **MUST NOT** append a new block and **MUST** return `Err(Duplicate { duplicate_of = <index> })`.
 
-**Error cases (normative)**  
-- `Unauthorized` — caller not permitted.  
-- `InvalidAccount` — malformed or disallowed account.  
-- `NotFrozen` — account is not currently frozen.  
-- `Duplicate { duplicate_of }` — semantically identical transaction previously accepted.  
+**Error cases (normative)**
+- `Unauthorized` — caller not permitted.
+- `InvalidAccount` — malformed or disallowed account.
+- `Duplicate { duplicate_of }` — semantically identical transaction previously accepted.
 - `GenericError { error_code, message }` — any other failure preventing a valid block.
 
-**Clarifications**  
-- The `tx` field uses **`ts`** for the caller-supplied timestamp (`created_at_time`).  
-- Optional fields **MUST be omitted** from `tx` if not supplied.  
+**Clarifications**
+- The call MUST succeed even if the account is not currently frozen at account level. Under ICRC-123's latest-action-wins rule, recording an unfreeze block can lift freeze blocks at other levels (e.g., account-level freezes lifted by a principal unfreeze).
+- The `tx` field uses **`ts`** for the caller-supplied timestamp (`created_at_time`).
+- Optional fields **MUST be omitted** from `tx` if not supplied.
 - Representation-independent hashing (ICRC-3) applies; field presence and value determine hash, not field order.
 
 #### Canonical `tx` Mapping (normative)
@@ -299,7 +298,6 @@ type UnfreezePrincipalArgs = record {
 type UnfreezePrincipalError = variant {
   Unauthorized : text;
   InvalidPrincipal : text;
-  NotFrozen : text;                  // principal is not currently frozen
   Duplicate : record { duplicate_of : nat };
   GenericError : record { error_code : nat; message : text };
 };
@@ -327,16 +325,16 @@ icrc153_unfreeze_principal : (UnfreezePrincipalArgs) -> (variant { Ok : nat; Err
 - The ledger **MUST** perform deduplication (e.g., using `created_at_time`).  
 - If a duplicate is detected, the ledger **MUST NOT** append a new block and **MUST** return `Err(Duplicate { duplicate_of = <index> })`.
 
-**Error cases (normative)**  
-- `Unauthorized` — caller not permitted.  
-- `InvalidPrincipal` — malformed/invalid principal bytes.  
-- `NotFrozen` — principal is not currently frozen.  
-- `Duplicate { duplicate_of }` — semantically identical transaction previously accepted.  
+**Error cases (normative)**
+- `Unauthorized` — caller not permitted.
+- `InvalidPrincipal` — malformed/invalid principal bytes.
+- `Duplicate { duplicate_of }` — semantically identical transaction previously accepted.
 - `GenericError { error_code, message }` — any other failure preventing a valid block.
 
-**Clarifications**  
-- The `tx` field uses **`ts`** for the caller-supplied timestamp (`created_at_time`).  
-- Optional fields **MUST be omitted** from `tx` if not supplied.  
+**Clarifications**
+- The call MUST succeed even if the principal is not currently frozen at principal level. Under ICRC-123's latest-action-wins rule, recording an unfreeze block can lift freeze blocks at other levels (e.g., account-level freezes lifted by a principal unfreeze).
+- The `tx` field uses **`ts`** for the caller-supplied timestamp (`created_at_time`).
+- Optional fields **MUST be omitted** from `tx` if not supplied.
 - Representation-independent hashing (ICRC-3) applies; field presence and value determine hash, not field order.
 
 #### Canonical `tx` Mapping (normative)
