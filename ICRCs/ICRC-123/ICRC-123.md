@@ -133,7 +133,8 @@ Implications:
 
 ### Idempotency and Redundancy
 
-- A ledger MAY reject freeze or unfreeze blocks that would have **no effect** on the current RESTRICTED status of the target account or principal (e.g., freezing an already frozen account via the same mechanism), or MAY choose to **record them anyway** for auditability.
+- A ledger MAY reject **freeze** blocks that would have no effect on the current status at the same level (e.g., freezing an already-frozen account via the same mechanism), or MAY choose to record them for auditability.
+- A ledger MUST accept **unfreeze** blocks even when the target is not frozen at that level. Under the latest-action-wins rule, an unfreeze block at one level (e.g., principal) can lift freeze blocks recorded at another level (e.g., account). Rejecting such calls would prevent legitimate cross-level unfreezing.
 - Clients interpreting freeze status MUST follow the **"latest-action-wins" rule** as defined in "Account Status": the most recent freeze or unfreeze block affecting an account or principal determines its effective status.
 
 ### Querying Freeze Status
