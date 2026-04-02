@@ -165,7 +165,7 @@ The `tx` field is derived deterministically as follows:
 | `mthd`            | `Text`                 | **Constant** `"152mint"`.                                                  |
 | `to`              | `Array` (Account)      | From `MintArgs.to`, encoded as ICRC-3 Account.                             |
 | `amt`             | `Nat`                  | From `MintArgs.amount`.                                                    |
-| `created_at_time` | `Nat`                  | From `MintArgs.created_at_time` (ns since Unix epoch; **MUST** fit `nat64`). |
+| `ts`              | `Nat`                  | From `MintArgs.created_at_time` (ns since Unix epoch; **MUST** fit `nat64`). |
 | `caller`          | `Blob`                 | Principal of the caller (raw bytes).                                       |
 | `reason`          | `Text` *(optional)*    | From `MintArgs.reason` if provided; **omit** if absent.                    |
 
