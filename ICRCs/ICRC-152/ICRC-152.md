@@ -154,11 +154,9 @@ icrc152_mint : (MintArgs) -> (variant { Ok : nat; Err : MintError });
 - Representation-independent hashing (ICRC-3) applies; field presence and values matter, not map ordering.
 
 
-#### Canonical `tx` Mapping
-A successful call to `icrc152_mint` produces a block of type `122mint`.  
-The `tx` field is derived deterministically as follows:
-
 #### Canonical `tx` Mapping (normative)
+A successful call to `icrc152_mint` produces a block of type `122mint`.
+The `tx` field is derived deterministically as follows:
 
 | Field             | Type (ICRC-3 `Value`) | Source / Encoding Rule                                                     |
 |-------------------|------------------------|-----------------------------------------------------------------------------|
@@ -240,12 +238,12 @@ Ledgers implementing ICRC-152 MUST indicate compliance through the
 including in the output of these methods:
 
 ```
-variant { Vec = vec {
+vec {
     record {
-        "name"; variant { Text = "ICRC-152" };
-        "url";  variant { Text = "https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-152.md" };
+        name = "ICRC-152";
+        url  = "https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-152/ICRC-152.md";
     }
-}};
+}
 ```
 
 #### Supported Block Types
@@ -261,13 +259,13 @@ No additional block types need to be reported.
 The caller invokes
 ```
 icrc152_mint({
-  to              = [principal "f5288412af11b299313a5b5a7c128311de102333c4adbe669f2ea1a308"];
+  to              = record { owner = principal "ryjl3-tyaaa-aaaaa-aaaba-cai"; subaccount = null };
   amount          = 500_000;
   created_at_time = 1_753_344_737_123_456_789 : nat64;
-  reason          = ?"Initial allocation";
+  reason          = opt "Initial allocation";
 })
 ```
-Here, `to` is the account of the recipient, `amount` is the number of tokens to mint, `created_at_time` is the caller‑supplied timestamp, and `reason` provides an optional human‑readable note.
+Here, `to` is the Candid `Account` of the recipient (with `owner` as a principal and an optional `subaccount`), `amount` is the number of tokens to mint, `created_at_time` is the caller‑supplied timestamp, and `reason` provides an optional human‑readable note.
 
 #### Resulting block
 
@@ -283,7 +281,7 @@ variant {
         Blob = blob "\a0\5f\d2\f3\4c\26\73\58\00\7f\ea\02\18\43\47\70\85\50\2e\d2\1f\23\e0\dc\e6\af\3c\cf\9e\6f\4a\d8"
       };
     };
-    record { "ts"; variant { Nat64 = 1_753_344_738_000_000_000 : nat64 } };
+    record { "ts"; variant { Nat = 1_753_344_738_000_000_000 } };
     record {
       "tx";
       variant {
@@ -293,12 +291,12 @@ variant {
             "to";
             variant {
               Array = vec {
-                variant { Blob = blob "\15\28\84\12\af\11\b2\99\31\3a\5b\5a\7c\12\83\11\de\10\23\33\c4\ad\be\66\9f\2e\a1\a3\08" }
+                variant { Blob = blob "\d3\e2\95\d8\63\bc\ef\0d\02" }
               }
             };
           };
-          record { "amt";    variant { Nat64 = 500_000 : nat64 } };
-          record { "ts";     variant { Nat64 = 1_753_344_737_123_456_789 : nat64 } };
+          record { "amt";    variant { Nat = 500_000 } };
+          record { "ts";     variant { Nat = 1_753_344_737_123_456_789 } };
           record { "caller"; variant { Blob  = blob "\00\00\00\00\02\30\02\17\01\01" } };
           record { "reason"; variant { Text  = "Initial allocation" } };
         }
@@ -315,11 +313,9 @@ The block records the method (`mthd = "152mint"`), the recipient account (`to`),
 the minted amount (`amt`), the timestamp supplied by the caller (`ts`), the caller’s 
 principal (`caller`), and the optional `reason`.  
 
-In the method call example above, the recipient is shown as a human-readable 
-principal literal. In the resulting block, the same principal is encoded canonically 
-as `variant { Blob = ... }`, where the `Blob` contains the raw byte representation 
-of the principal as defined by ICRC-3. Both forms represent the same identity; 
-the difference is only in presentation.  
+In the method call example above, the recipient is specified as a Candid `Account`
+record. In the resulting block, the account is encoded as an ICRC-3 `Array` containing
+the principal's raw bytes as a `Blob`, as defined by ICRC-3.
 
 
 ### Example burn call and resulting block
@@ -328,14 +324,13 @@ the difference is only in presentation.
 The caller invokes
 ```
 icrc152_burn({
-  from            = [principal "abcd0123456789abcdef0123456789abcdef0123456789abcdef0123456789"];
+  from            = record { owner = principal "uf6dk-hyaaa-aaaaq-qaaaq-cai"; subaccount = null };
   amount          = 200_000;
   created_at_time = 1_753_344_740_000_000_000 : nat64;
-  reason          = ?"Burn to reduce supply";
+  reason          = opt "Burn to reduce supply";
 })
-
 ```
-Here, `from` is the account to be debited, `amount` is the number of tokens to burn, `created_at_time` is the caller‑supplied timestamp, and `reason` provides an optional human‑readable note.
+Here, `from` is the Candid `Account` to be debited (with `owner` as a principal and an optional `subaccount`), `amount` is the number of tokens to burn, `created_at_time` is the caller‑supplied timestamp, and `reason` provides an optional human‑readable note.
 
 #### Resulting block
 
@@ -351,7 +346,7 @@ variant {
         Blob = blob "\7f\89\42\a5\be\4d\af\50\3b\6e\2a\8e\9c\c7\dd\f1\c9\e8\24\f0\98\bb\d7\af\ae\d2\90\10\67\df\1e\c1\0a"
       };
     };
-    record { "ts"; variant { Nat64 = 1_753_344_740_500_000_000 : nat64 } };
+    record { "ts"; variant { Nat = 1_753_344_740_500_000_000 } };
     record {
       "tx";
       variant {
@@ -361,12 +356,12 @@ variant {
             "from";
             variant {
               Array = vec {
-                variant { Blob = blob "\ab\cd\01\23\45\67\89\ab\cd\ef\01\23\45\67\89\ab\cd\ef\01\23\45\67\89\ab\cd\ef\01\23\45\67\89\ab" }
+                variant { Blob = blob "\b4\a7\c6\39\5e\e3\69\fa\02" }
               }
             };
           };
-          record { "amt";    variant { Nat64 = 200_000 : nat64 } };
-          record { "ts";     variant { Nat64 = 1_753_344_740_000_000_000 : nat64 } };
+          record { "amt";    variant { Nat = 200_000 } };
+          record { "ts";     variant { Nat = 1_753_344_740_000_000_000 } };
           record { "caller"; variant { Blob  = blob "\00\00\00\00\02\30\02\17\01\01" } };
           record { "reason"; variant { Text  = "Burn to reduce supply" } };
         }
@@ -382,7 +377,7 @@ Here, the block records the method (`mthd = "152burn"`), the account being debit
 the burned amount (`amt`), the caller-provided timestamp (`ts`), the caller’s principal (`caller`), 
 and the optional `reason`.  
 
-In the method call example, the account is shown as a principal literal. In the resulting block, 
-the same principal is encoded canonically as `variant { Blob = ... }`. These two forms 
-represent the same identity; the difference is only in presentation.  
+In the method call example, the account is specified as a Candid `Account` record.
+In the resulting block, the account is encoded as an ICRC-3 `Array` containing the
+principal's raw bytes as a `Blob`, as defined by ICRC-3.
 
