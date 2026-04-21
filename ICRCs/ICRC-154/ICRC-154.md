@@ -55,6 +55,7 @@ ICRC-122, 123, and 124.
   entity performing the privileged operation.
 
 
+## Methods
 
 ### `icrc154_pause`
 
@@ -64,8 +65,8 @@ Temporarily move the ledger into a **paused** state (semantics per ICRC-124).
 
 ```
 type PauseArgs = record {
-  reason          : opt text;
   created_at_time : nat64;
+  reason          : opt text;
 };
 
 type PauseError = variant {
@@ -141,8 +142,8 @@ Return the ledger to **unpaused** operation (semantics per ICRC-124).
 #### Arguments
 ```
 type UnpauseArgs = record {
-  reason          : opt text;
   created_at_time : nat64;
+  reason          : opt text;
 };
 
 type UnpauseError = variant {
@@ -213,8 +214,8 @@ Move the ledger into a **deactivated** state (long-lived/terminal safe state as 
 #### Arguments
 ```
 type DeactivateArgs = record {
-  reason          : opt text;
   created_at_time : nat64;
+  reason          : opt text;
 };
 
 type DeactivateError = variant {
@@ -307,15 +308,25 @@ icrc154_is_deactivated : () -> (bool) query;
 - **Operational semantics**: The precise operational effects of pause/unpause/deactivate (which operations are blocked, permanence of deactivation, etc.) are **entirely defined by ICRC-124**. ICRC-154 only defines the interface and canonical `tx` mapping.
 - **No fees**: ICRC-154 calls do not involve fees; ledgers MUST NOT include a top-level `fee` field for these blocks.
 
-## Reporting Compliance
+## Compliance Reporting
 
 ### Supported Standards
 
-Ledgers implementing ICRC-154 MUST indicate compliance via `icrc10_supported_standards`, and via `icrc1_supported_standards` if ICRC-1 is also implemented, by including:
+Ledgers implementing ICRC-154 MUST indicate compliance through the
+`icrc10_supported_standards` method by including in its output:
 
 ```candid
-record { name = "ICRC-154"; url = "https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-154/ICRC-154.md" }
+vec {
+    record {
+        name = "ICRC-154";
+        url  = "https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-154/ICRC-154.md";
+    }
+}
 ```
+
+Ledgers that also implement ICRC-1 MUST additionally include this entry in
+the output of `icrc1_supported_standards`.
+
 ### Supported Block Types
 
 ICRC-154 extends **ICRC-124** and does not introduce new block kinds.
@@ -325,7 +336,9 @@ No additional block types need to be reported.
 
 
 
-### Example calls and resulting blocks
+## Examples
+
+### Example: `icrc154_pause`
 
 #### Call
 ```
@@ -336,7 +349,9 @@ icrc154_pause({
 ```
 
 
-#### Resulting Block```variant {
+#### Resulting Block
+```
+variant {
   Map = vec {
     record { "btype"; variant { Text = "124pause" } };
     record { "phash"; variant { Blob = blob "\aa\bb\cc\dd\ee\ff\00\11\22\33\44\55\66\77\88\99\01\23\45\67\89\ab\cd\ef\10\32\54\76\98\ba\dc\fe" } }; // illustrative
