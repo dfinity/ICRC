@@ -350,13 +350,12 @@ icrc153_unfreeze_principal : (UnfreezePrincipalArgs) -> (variant { Ok : nat; Err
 - **Effect on operations**: The precise effects of freeze/unfreeze (which operations are blocked, account vs principal precedence, etc.) are entirely defined by ICRC-123. ICRC-153 only defines the interface and canonical `tx` mapping.
 - **No fees**: ICRC-153 calls do not involve fees; ledgers MUST NOT include a top-level `fee` field for these blocks.
 
-## Reporting Compliance
+## Compliance Reporting
 
 ### Supported Standards
 
 Ledgers implementing ICRC-153 MUST indicate compliance through the
-`icrc1_supported_standards` and `icrc10_supported_standards` methods by
-including:
+`icrc10_supported_standards` method by including in its output:
 
 ```candid
 vec {
@@ -366,6 +365,9 @@ vec {
     }
 }
 ```
+
+Ledgers that also implement ICRC-1 MUST additionally include this entry in
+the output of `icrc1_supported_standards`.
 
 ### Supported Block Types
 

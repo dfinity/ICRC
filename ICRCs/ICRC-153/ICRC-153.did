@@ -65,11 +65,33 @@ type UnfreezePrincipalError = variant {
   GenericError     : record { error_code : nat; message : text };
 };
 
+type FrozenAccountsRequest = record {
+  start_after : opt Account;
+  max_results : nat;
+};
+
+type FrozenAccountsResponse = record {
+  accounts : vec Account;
+  has_more : bool;
+};
+
+type FrozenPrincipalsRequest = record {
+  start_after : opt principal;
+  max_results : nat;
+};
+
+type FrozenPrincipalsResponse = record {
+  principals : vec principal;
+  has_more  : bool;
+};
+
 service : {
-  icrc153_freeze_account    : (FreezeAccountArgs)    -> (variant { Ok : nat; Err : FreezeAccountError });
-  icrc153_unfreeze_account  : (UnfreezeAccountArgs)  -> (variant { Ok : nat; Err : UnfreezeAccountError });
-  icrc153_freeze_principal  : (FreezePrincipalArgs)  -> (variant { Ok : nat; Err : FreezePrincipalError });
+  icrc153_freeze_account     : (FreezeAccountArgs)     -> (variant { Ok : nat; Err : FreezeAccountError });
+  icrc153_unfreeze_account   : (UnfreezeAccountArgs)   -> (variant { Ok : nat; Err : UnfreezeAccountError });
+  icrc153_freeze_principal   : (FreezePrincipalArgs)   -> (variant { Ok : nat; Err : FreezePrincipalError });
   icrc153_unfreeze_principal : (UnfreezePrincipalArgs) -> (variant { Ok : nat; Err : UnfreezePrincipalError });
-  icrc153_is_frozen_account   : (Account)    -> (bool) query;
-  icrc153_is_frozen_principal : (principal)  -> (bool) query;
+  icrc153_is_frozen_account     : (Account)   -> (bool) query;
+  icrc153_is_frozen_principal   : (principal) -> (bool) query;
+  icrc153_list_frozen_accounts   : (FrozenAccountsRequest)   -> (FrozenAccountsResponse)   query;
+  icrc153_list_frozen_principals : (FrozenPrincipalsRequest) -> (FrozenPrincipalsResponse) query;
 };
