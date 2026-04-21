@@ -97,7 +97,7 @@ A standard that defines ledger methods which produce ICRC-123 blocks (e.g., “f
 
 1. **Include a method discriminator** in the resulting block’s `tx` map.
    - The recommended field name is `mthd`; alternatives (e.g., `op`) are permitted provided the choice is documented in the canonical `tx` mapping.
-   - Use a namespaced value per ICRC-3: `<icrc_number><op_name>` (e.g., `"mthd" = "147freezeprincipal"`).
+   - Use a namespaced value per ICRC-3: `<icrc_number><op_name>` (e.g., `"mthd" = "147freeze_principal"`).
    - This makes the call uniquely identifiable and prevents collisions across standards.
 
 2. **Define a canonical mapping** from the method’s call parameters to the block’s minimal `tx` fields:  
@@ -134,7 +134,7 @@ Implications:
   - `icrc2_approve` (granting approval): a RESTRICTED account MUST NOT grant approvals.  
   - `icrc2_approve` (receiving approval): policy-defined; even if granted, a RESTRICTED spender MUST NOT use it while restricted.  
   - `icrc2_transfer_from` (acting as spender): a RESTRICTED account MUST NOT act as spender.
-- **Authorized operations:** Privileged ledger operations performed by explicitly authorized principals (e.g., `icrc122_mint`, `icrc122_burn`) MUST NOT be blocked by the RESTRICTED status of the affected account. Freeze restrictions apply to user-initiated operations only.
+- **Authorized operations:** Privileged ledger operations performed by explicitly authorized principals (e.g., `icrc152_mint`, `icrc152_burn`) MUST NOT be blocked by the RESTRICTED status of the affected account. Freeze restrictions apply to user-initiated operations only.
 - Freeze/unfreeze blocks do not retroactively modify prior transactions; they apply to transactions attempted **at or after** their block height.
 - Freeze/unfreeze blocks MUST be permanently recorded and included in the hash chain.
 
@@ -172,17 +172,14 @@ vec {
 ```
 variant { Map = vec {
   record { "btype"; variant { Text = "123freezeaccount" }};
-  record { "ts"; variant { Nat = 1_747_773_480_000_000_000 : nat }}; // Example: 2025-05-19T12:38:00Z
-  record { "phash"; variant { Blob = blob "\d5\c7\eb\57\a2\4e\fa\d4\8b\d1\cc\54\9e\49\c6\9f\d1\93\8d\e8\3a\1b\fc\20\d4\e7\05\91\8c\72\b3\4f" }}; // Example parent hash
+  record { "ts"; variant { Nat = 1_747_773_480_000_000_000 : nat }};
+  record { "phash"; variant { Blob = blob "\d5\c7\eb\57\a2\4e\fa\d4\8b\d1\cc\54\9e\49\c6\9f\d1\93\8d\e8\3a\1b\fc\20\d4\e7\05\91\8c\72\b3\4f" }};
   record { "tx"; variant { Map = vec {
-    // Optional provenance: the principal that invoked the operation
-    record { "caller"; variant { Blob = blob "\00\00\00\00\00\00\f0\0d\01\01" }}; // Example caller principal (e.g., a compliance officer canister)
-    // The account being frozen (owner + subaccount)
+    record { "caller"; variant { Blob = blob "\00\00\00\00\00\00\f0\0d\01\01" }};
     record { "account"; variant { Array = vec {
-      variant { Blob = blob "\00\00\00\00\02\00\01\0d\01\01" }; // Example owner principal of the account
-      variant { Blob = blob "\06\ec\cd\3a\97\fb\a8\5f\bc\8d\a3\3e\5d\ba\bc\2f\38\69\60\5d\c7\a1\c9\53\1f\70\a3\66\c5\a7\e4\21" }; // Example subaccount
+      variant { Blob = blob "\00\00\00\00\02\00\01\0d\01\01" };
+      variant { Blob = blob "\06\ec\cd\3a\97\fb\a8\5f\bc\8d\a3\3e\5d\ba\bc\2f\38\69\60\5d\c7\a1\c9\53\1f\70\a3\66\c5\a7\e4\21" };
     }}};
-    // Optional reason
     record { "reason"; variant { Text = "Regulatory compliance order #REG-1138" }};
     record { "policy_ref"; variant { Text = "REG-1138" }};
   }}};
@@ -196,21 +193,17 @@ variant { Map = vec {
 ```
 variant { Map = vec {
   record { "btype"; variant { Text = "123unfreezeaccount" }};
-  record { "ts"; variant { Nat = 1_747_773_540_000_000_000 : nat }}; // Example: 2025-05-19T12:39:00Z
-  record { "phash"; variant { Blob = blob "\e8\a1\03\ff\00\11\22\33\44\55\66\77\88\99\aa\bb\cc\dd\ee\ff\12\34\56\78\9a\bc\de\f0\13\57\9b\df" }}; // Example parent hash
+  record { "ts"; variant { Nat = 1_747_773_540_000_000_000 : nat }};
+  record { "phash"; variant { Blob = blob "\e8\a1\03\ff\00\11\22\33\44\55\66\77\88\99\aa\bb\cc\dd\ee\ff\12\34\56\78\9a\bc\de\f0\13\57\9b\df" }};
   record { "tx"; variant { Map = vec {
-    // Optional provenance: the principal that invoked the operation
-    record { "caller"; variant { Blob = blob "\00\00\00\00\00\00\f0\0d\01\01" }}; // Example caller principal
-    // The account being unfrozen
+    record { "caller"; variant { Blob = blob "\00\00\00\00\00\00\f0\0d\01\01" }};
     record { "account"; variant { Array = vec {
       variant { Blob = blob "\00\00\00\00\02\00\01\0d\01\01" };
       variant { Blob = blob "\06\ec\cd\3a\97\fb\a8\5f\bc\8d\a3\3e\5d\ba\bc\2f\38\69\60\5d\c7\a1\c9\53\1f\70\a3\66\c5\a7\e4\21" };
     }}};
-    // Optional reason
     record { "reason"; variant { Text = "Compliance review complete. Order #REG-1138 lifted." }};
   }}};
 }};
-
 ```
 
 
@@ -218,36 +211,27 @@ variant { Map = vec {
 ```
 variant { Map = vec {
   record { "btype"; variant { Text = "123freezeprincipal" }};
-  record { "ts"; variant { Nat = 1_747_773_600_000_000_000 : nat }}; // Example: 2025-05-19T12:40:00Z
-  record { "phash"; variant { Blob = blob "\f0\1d\9b\2a\10\20\30\40\50\60\70\80\90\a0\b0\c0\d0\e0\f0\00\24\68\ac\e0\13\57\9b\df\48\ac\01\23" }}; // Example parent hash
+  record { "ts"; variant { Nat = 1_747_773_600_000_000_000 : nat }};
+  record { "phash"; variant { Blob = blob "\f0\1d\9b\2a\10\20\30\40\50\60\70\80\90\a0\b0\c0\d0\e0\f0\00\24\68\ac\e0\13\57\9b\df\48\ac\01\23" }};
   record { "tx"; variant { Map = vec {
-    // Optional provenance: the principal that invoked the operation
-    record { "caller"; variant { Blob = blob "\00\00\00\00\00\00\f0\0d\01\01" }}; // Example caller (e.g., DAO canister)
-    // The principal being frozen
-    record { "principal"; variant { Blob = blob "\94\85\a4\06\ef\cd\ab\01\23\45\67\89\12\34\56\78\90\ab\cd\02" }}; // Example principal to freeze
-    // Optional reason
+    record { "caller"; variant { Blob = blob "\00\00\00\00\00\00\f0\0d\01\01" }};
+    record { "principal"; variant { Blob = blob "\94\85\a4\06\ef\cd\ab\01\23\45\67\89\12\34\56\78\90\ab\cd\02" }};
     record { "reason"; variant { Text = "Platform terms of service violation." }};
   }}};
 }};
-
 ```
 
 ### 123unfreezeprincipal Example
 ```
 variant { Map = vec {
   record { "btype"; variant { Text = "123unfreezeprincipal" }};
-  record { "ts"; variant { Nat = 1_747_773_660_000_000_000 : nat }}; // Example: 2025-05-19T12:41:00Z
-  record { "phash"; variant { Blob = blob "\c3\45\e6\b9\fe\dc\ba\98\76\54\32\10\ef\cd\ab\89\67\45\23\01\fe\dc\ba\98\76\54\32\10\ef\cd\ab\89" }}; // Example parent hash
+  record { "ts"; variant { Nat = 1_747_773_660_000_000_000 : nat }};
+  record { "phash"; variant { Blob = blob "\c3\45\e6\b9\fe\dc\ba\98\76\54\32\10\ef\cd\ab\89\67\45\23\01\fe\dc\ba\98\76\54\32\10\ef\cd\ab\89" }};
   record { "tx"; variant { Map = vec {
-    // Optional provenance: the principal that invoked the operation
-    record { "caller"; variant { Blob = blob "\00\00\00\00\00\00\f0\0d\01\01" }}; // Example caller
-    // The principal being unfrozen
+    record { "caller"; variant { Blob = blob "\00\00\00\00\00\00\f0\0d\01\01" }};
     record { "principal"; variant { Blob = blob "\94\85\a4\06\ef\cd\ab\01\23\45\67\89\12\34\56\78\90\ab\cd\02" }};
-    // Optional reason (example of omission for brevity, or if not applicable)
-    // record { "reason"; variant { Text = "Appeal successful." }};
   }}};
 }};
-
 ```
 
 ### Informative Example: Integration with a Standardized Method
@@ -269,14 +253,11 @@ variant { Map = vec {
   record { "ts"; variant { Nat = 1_747_800_000_000_000_000 : nat }};
   record { "phash"; variant { Blob = blob "\aa\bb\cc\dd\ee\ff\00\11\22\33\44\55\66\77\88\99\aa\bb\cc\dd\ee\ff\00\11\22\33\44\55\66\77\88\99" }};
   record { "tx"; variant { Map = vec {
-    // Namespaced op from the method-defining standard (ICRC-147)
-    record { "mthd"; variant { Text = "147freezeprincipal" }};
-    // Optional provenance (non-semantic)
+    record { "mthd"; variant { Text = "147freeze_principal" }};
     record { "caller"; variant { Blob = blob "\00\00\00\00\00\00\f0\0d\01\01" }};
     record { "principal"; variant { Blob = blob "\94\85\a4\06\ef\cd\ab\01\23\45\67\89\12\34\56\78\90\ab\cd\02" }};
     record { "reason"; variant { Text = "Sanctions order #147-2025" }};
   }}};
 }}
-
 ```
 This example is non-normative and illustrates how a standardized method can map into the ICRC-123 block structure while using a namespaced method discriminator (`tx.mthd`) for unambiguous identification. The authoritative semantics remain defined by the ICRC-123 block types.
