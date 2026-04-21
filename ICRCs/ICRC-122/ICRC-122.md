@@ -135,8 +135,8 @@ This block demonstrates an extended `122burn` including optional provenance and 
 ```
 variant { Map = vec {
     record { "btype"; variant { Text = "122burn" }};
-    record { "ts"; variant { Nat = 1_741_317_147_000_000_000 : nat }};
-    record { "phash"; variant { Blob = blob "\6f\7e\d9\13\75\69\91\bc\d0\0d\04\b6\60\7b\82\f9\e9\62\a8\39\d3\02\80\f2\88\e4\d7\0e\23\2d\29\87" }};
+    record { "ts"; variant { Nat = 1_741_317_148_000_000_000 : nat }};
+    record { "phash"; variant { Blob = blob "\3c\8a\f1\20\b4\55\e7\9d\01\cc\44\87\2e\f9\36\50\da\71\b8\2c\90\e5\af\63\14\d2\7f\88\1b\c3\49\6e" }};
     record { "tx"; variant { Map = vec {
         record { "from"; variant { Array = vec {
             variant { Blob = blob "\00\00\00\00\02\00\01\0d\01\01" };
