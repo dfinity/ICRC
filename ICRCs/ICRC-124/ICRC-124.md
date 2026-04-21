@@ -2,15 +2,21 @@
 
 ## Status
 
-Draft
+| Status |
+|:------:|
+| Draft  |
+
+## Dependencies
+
+- **ICRC-3** — Provides the block log format, Value encoding, hashing, certification, and the canonical `tx` mapping rules that this standard extends.
 
 ## Introduction
 
-This standard defines new block types for recording administrative actions that control the operational state of an ICRC-compliant ledger: pausing (`124pause`), unpausing (`124unpause`), and deactivating (`124deactivate`). These actions allow ledger operations to be temporarily halted (e.g., for maintenance), resumed, or permanently stopped (making the ledger immutable). This standard provides a consistent, auditable way to represent these ledger-wide state transitions within the ledger's block history, ensuring transparency and enabling robust governance mechanisms.
+Ledger lifecycle management may require administrative actions like pausing for upgrades, unpausing after checks, or deactivating at the end of a token's useful life. ICRC-124 provides explicit block types to record these ledger-wide state transitions transparently on-chain:
 
-## Motivation
-
-Ledger lifecycle management may require administrative actions like pausing for upgrades, unpausing after checks, or deactivating at the end of a token's useful life. These significant events must be recorded transparently on-chain. This standard provides explicit block types for these actions, defining a minimal block structure sufficient for semantics, while allowing optional provenance for auditability.
+- **`124pause`** — temporarily halt all state-changing operations (e.g., for maintenance).
+- **`124unpause`** — resume normal operation after a pause.
+- **`124deactivate`** — permanently deactivate the ledger (terminal state).
 
 ## Common Elements
 
@@ -46,7 +52,7 @@ Producers MAY include fields such as:
 
 - `caller : Blob` — principal that invoked the operation.  
 - `reason : Text` — human-readable context.  
-- `created_at_time : Nat` — caller-supplied timestamp (ns; MUST fit nat64).  
+- `ts : Nat` — caller-supplied timestamp (ns; MUST fit nat64).  
 - `policy_ref : Text` — identifier for proposal/vote/policy.  
 - `mthd : Text` — namespaced method discriminator, e.g. `148pause_ledger`.
 
@@ -88,7 +94,7 @@ A standard that defines ledger methods which produce ICRC-124 blocks (e.g., “p
 2. **Define a canonical mapping** from the method’s call parameters to the block’s minimal `tx` fields.  
    - Since 124 blocks have no required fields, only provenance may be mapped.  
 
-3. **Document deduplication inputs** (if any). If the method uses a caller-supplied timestamp, put it in `tx.created_at_time`.
+3. **Document deduplication inputs** (if any). If the method uses a caller-supplied timestamp, put it in `tx.ts`.
 
 ---
 
@@ -98,9 +104,9 @@ Ledgers implementing this standard MUST return the following entries (along with
 
 ```candid
 vec {
-  record { block_type = "124pause"; url = "https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-124.md" };
-  record { block_type = "124unpause"; url = "https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-124.md" };
-  record { block_type = "124deactivate"; url = "https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-124.md" };
+  record { block_type = "124pause";      url = "https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-124/ICRC-124.md" };
+  record { block_type = "124unpause";    url = "https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-124/ICRC-124.md" };
+  record { block_type = "124deactivate"; url = "https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-124/ICRC-124.md" };
 }
 ```
 
@@ -124,7 +130,7 @@ variant { Map = vec {
     // Pause transaction details
     record { "tx"; variant { Map = vec {
         // The principal that invoked the pause_ledger operation
-        record { "caller"; variant { Blob = blob "\00\00\00\00\00\00\f0\0d\01\03" }}; // Example caller principal (e.g., a governance canister)
+        record { "caller"; variant { Blob = blob "\00\00\00\00\00\00\f0\0d\01\01" }}; // Example caller principal (e.g., a governance canister)
         // Optional reason
         record { "reason"; variant { Text = "DAO vote #78: pause for scheduled maintenance." }};
     }}};
@@ -144,7 +150,7 @@ variant { Map = vec {
     // Unpause transaction details
     record { "tx"; variant { Map = vec {
         // The principal that invoked the unpause_ledger operation
-        record { "caller"; variant { Blob = blob "\00\00\00\00\00\00\f0\0d\01\03" }}; // Example caller principal
+        record { "caller"; variant { Blob = blob "\00\00\00\00\00\00\f0\0d\01\01" }}; // Example caller principal
         // Optional reason
         record { "reason"; variant { Text = "Ledger resumes after maintenance window (DAO vote #79)." }};
     }}};
@@ -163,7 +169,7 @@ variant { Map = vec {
     // Deactivate transaction details
     record { "tx"; variant { Map = vec {
         // The principal that invoked the deactivate_ledger operation
-        record { "caller"; variant { Blob = blob "\00\00\00\00\00\00\f0\0d\01\04" }}; // Example caller (e.g., project multisig or final DAO vote)
+        record { "caller"; variant { Blob = blob "\00\00\00\00\00\00\f0\0d\01\01" }}; // Example caller (e.g., project multisig or final DAO vote)
         // Optional reason
         record { "reason"; variant { Text = "Token project sunset. Ledger permanently archived as per SNS DAO proposal #314." }};
     }}};
@@ -186,11 +192,11 @@ variant { Map = vec {
   record { "btype"; variant { Text = "124pause" }};
   record { "ts"; variant { Nat = 1_747_900_000_000_000_000 : nat }};
   record { "phash"; variant {
-    Blob = blob "\aa\bb\cc\dd\ee\ff\00\11\22\33\44\55\66\77\88\99"
+    Blob = blob "\aa\bb\cc\dd\ee\ff\00\11\22\33\44\55\66\77\88\99\01\23\45\67\89\ab\cd\ef\10\32\54\76\98\ba\dc\fe"
   }};
   record { "tx"; variant { Map = vec {
     record { "mthd"; variant { Text = "148pause_ledger" }};
-    record { "caller"; variant { Blob = blob "\00\00\00\00\00\00\f0\0d\01\03" }};
+    record { "caller"; variant { Blob = blob "\00\00\00\00\00\00\f0\0d\01\01" }};
     record { "reason"; variant { Text = "DAO vote #101: emergency pause" }};
   }}};
 }};
