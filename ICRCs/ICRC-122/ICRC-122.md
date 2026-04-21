@@ -53,7 +53,7 @@ The `122mint` and `122burn` blocks introduced in ICRC-122 provide a more explici
 - **ICRC-122 Mint/Burn Blocks**:  
   - *Typed Blocks*: This standard defines distinct block types, `122mint` and `122burn`. They are not special cases of `icrc1_transfer`; they represent supply changes directly.  
   - *Minimal Structure*: The minimal `tx` structure contains only the target account (`to` for mint, `from` for burn) and the amount (`amt`). These fields are sufficient to determine the ledger’s state transition.  
-  - *Optional Provenance*: Producers may include additional non-semantic fields in `tx` such as `caller` (the principal that invoked the supply change), `reason` (a human-readable string), or `created_at_time`. These fields aid transparency and auditability but do not affect ledger semantics.  
+  - *Optional Provenance*: Producers may include additional non-semantic fields in `tx` such as `caller` (the principal that invoked the supply change), `reason` (a human-readable string), or `ts` (caller-supplied timestamp). These fields aid transparency and auditability but do not affect ledger semantics.  
   - *Auditability*: By separating the minimal state-changing fields from optional provenance, ICRC-122 ensures clear semantics while still supporting enhanced transparency compared to the ICRC-1 mechanism.  
 
 ### Guidance for Standards That Define Methods
@@ -73,10 +73,10 @@ Such standards SHOULD:
 2. **Define a canonical mapping** from method arguments to the minimal `tx` fields:  
    - `icrcX_mint` → `tx.to`, `tx.amt`.  
    - `icrcX_burn` → `tx.from`, `tx.amt`.  
-   - Optional provenance (`caller`, `reason`, `created_at_time`) MAY be included but MUST NOT affect semantics.  
+   - Optional provenance (`caller`, `reason`, `ts`) MAY be included but MUST NOT affect semantics.  
 
 3. **Document deduplication inputs** (if any). If a method accepts a caller-supplied timestamp,
-   it SHOULD be recorded in `tx.created_at_time` (nanoseconds, MUST fit into `nat64`).  
+   it SHOULD be recorded in `tx.ts` (nanoseconds, MUST fit into `nat64`).  
 
 This guidance ensures that when future standards define mint/burn methods, they can be
 reliably mapped into ICRC-122 block types while remaining compatible with ICRC-3 rules
@@ -108,7 +108,7 @@ The following examples illustrate how `122burn` and `122mint` blocks are encoded
 Each operation is shown in two forms:
 
 - **Minimal form**, which includes only the required fields needed to define the state change.  
-- **Extended form**, which demonstrates how optional provenance fields such as `caller`, `reason`, or `created_at_time` may be included to enhance transparency and auditability.  
+- **Extended form**, which demonstrates how optional provenance fields such as `caller`, `reason`, or `ts` may be included to enhance transparency and auditability.  
 
 These examples are intended to guide implementers and tool builders in interpreting both the essential and optional elements of ICRC-122 blocks.
 
@@ -137,7 +137,7 @@ variant { Map = vec {
 
 
 ### 122burn (Extended Example with Provenance and Deduplication Information)  
-This block demonstrates an extended `122burn` including optional provenance and deduplication information fields (`caller`, `reason`, `created_at_time`) alongside the required fields. These additions provide auditability and deduplication functionality without altering semantics. 
+This block demonstrates an extended `122burn` including optional provenance and deduplication information fields (`caller`, `reason`, `ts`) alongside the required fields. These additions provide auditability and deduplication functionality without altering semantics. 
 
 
 
@@ -154,7 +154,7 @@ variant { Map = vec {
         record { "amt"; variant { Nat = 1_000_000 : nat }};
         record { "caller"; variant { Blob = blob "\00\00\00\00\00\00\00\00\01\01" }};
         record { "reason"; variant { Text = "Token supply adjustment" }};
-        record { "created_at_time"; variant { Nat = 1_741_317_146_900_000_000 : nat }};
+        record { "ts"; variant { Nat = 1_741_317_146_900_000_000 : nat }};
     }}};
 }}
 ```
@@ -181,7 +181,7 @@ variant { Map = vec {
 ---
 
 ### 122mint (Extended Example with Provenance and Deduplication Information)  
-This block demonstrates an extended `122mint` including optional provenance and deduplication fields (`caller`, `reason`, `created_at_time`) alongside the required fields. These additions provide auditability and deduplication functionality without altering semantics.  
+This block demonstrates an extended `122mint` including optional provenance and deduplication fields (`caller`, `reason`, `ts`) alongside the required fields. These additions provide auditability and deduplication functionality without altering semantics.  
 
 
 ```
@@ -197,7 +197,7 @@ variant { Map = vec {
         record { "amt"; variant { Nat = 2_000_000 : nat }};
         record { "caller"; variant { Blob = blob "\00\00\00\00\00\00\00\00\01\01" }};
         record { "reason"; variant { Text = "Initial distribution" }};
-        record { "created_at_time"; variant { Nat = 1_741_317_146_900_000_000 : nat }};
+        record { "ts"; variant { Nat = 1_741_317_146_900_000_000 : nat }};
     }}};
 }}
 ```
