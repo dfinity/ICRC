@@ -4,38 +4,18 @@
 |:------:|
 | Draft  |
 
-## Introduction & Motivation
+## Introduction
 
-Operational and regulatory requirements for custodial tokens, stablecoins, and RWA ledgers often include the ability to **freeze** (temporarily disable) or **unfreeze** transfer activity for specific **accounts** or for all accounts belonging to a **principal**. Absent a standard interface, integrators cannot reliably determine whether funds are movable, nor attribute freezes to clear, on-chain actions.
+Operational and regulatory requirements for custodial tokens, stablecoins, and RWA ledgers often require the ability to freeze or unfreeze transfer activity for specific accounts or principals. Absent a standard interface, integrators cannot reliably determine whether funds are movable, nor attribute freezes to clear, on-chain actions.
 
-ICRC-153 addresses this by standardizing four privileged methods that append canonical, typed blocks (as defined in **ICRC-123**) and by defining the canonical mapping from method inputs to the `tx` field for those blocks.
+ICRC-153 standardizes this by defining four privileged methods that append canonical, typed blocks to the ledger (as defined in **ICRC-123**):
 
-**Privileged methods (authorized principals only):**
-- `icrc153_freeze_account`, `icrc153_unfreeze_account`
-- `icrc153_freeze_principal`, `icrc153_unfreeze_principal`
+- **`icrc153_freeze_account`** / **`icrc153_unfreeze_account`** — freeze or unfreeze a specific account.
+- **`icrc153_freeze_principal`** / **`icrc153_unfreeze_principal`** — freeze or unfreeze all accounts belonging to a principal.
 
-**Canonical `tx` mapping** with namespaced `mthd` values (`"153..."`), caller identity, and optional human-readable reason.
+Two query methods (`icrc153_list_frozen_accounts`, `icrc153_list_frozen_principals`) and two status checks (`icrc153_is_frozen_account`, `icrc153_is_frozen_principal`) allow wallets, explorers, and auditors to determine freeze state on-chain and attribute actions to specific authorized callers.
 
-Recording uses **ICRC-123** block kinds (this standard does **not** add new block types).
-
-## Overview
-
-ICRC-153 standardizes privileged freeze/unfreeze controls for ICRC ledgers.
-
-Specifically, it defines:
-
-- **APIs** to freeze/unfreeze **accounts** and **principals**, callable only by authorized entities.
-- **Canonical `tx` mapping** rules ensuring deterministic block content and easy attribution/auditing.
-- **Use of ICRC-123 block kinds** to record these actions:
-  - `btype = "123freezeaccount"`, `btype = "123unfreezeaccount"`
-  - `btype = "123freezeprincipal"`, `btype = "123unfreezeprincipal"`
-- **Compliance reporting** through ICRC-10 methods.
-
-This enables wallets, explorers, and auditors to:
-
-- Determine, on-chain, whether an account or a principal is currently frozen.
-- Attribute actions to a specific authorized caller and (optionally) a recorded reason.
-- Interoperate across ledgers that implement the same API and block semantics.
+Recording uses **ICRC-123** block kinds; this standard does not add new block types.
 
 ## Dependencies
 
@@ -68,8 +48,7 @@ This standard inherits core conventions from **ICRC-3** (block log format, Value
   Encoded as `variant { Blob = <principal_bytes> }`.
 
 - **Timestamps**  
-  Caller-supplied `created_at_time` is in **nanoseconds since Unix epoch**.  
-  Encoded as `Nat` in ICRC-3 `Value` and **MUST** fit in `nat64`.
+  The caller-supplied timestamp is recorded as `ts` in the block's `tx` map, in **nanoseconds since Unix epoch**, encoded as `Nat` in ICRC-3 `Value` and **MUST** fit in `nat64`.
 
 - **Blocks & Parent Hash**  
   All blocks created by this API use the ICRC-123 block kinds  
@@ -95,8 +74,10 @@ type FreezeAccountArgs = record {
 type FreezeAccountError = variant {
   Unauthorized : text;               // caller not permitted
   InvalidAccount : text;             // malformed or disallowed account
-  AlreadyFrozen : text;              // account is already frozen
-  Duplicate : record { duplicate_of : nat };
+  AlreadyFrozen   : text;              // account is already frozen
+  TooOld;
+  CreatedInFuture  : record { ledger_time : nat64 };
+  Duplicate        : record { duplicate_of : nat };
   GenericError : record { error_code : nat; message : text };
 };
 
@@ -126,7 +107,9 @@ icrc153_freeze_account : (FreezeAccountArgs) -> (variant { Ok : nat; Err : Freez
 - `Unauthorized` — caller not permitted.  
 - `InvalidAccount` — malformed or disallowed account (e.g., minting account, malformed principal/subaccount).  
 - `AlreadyFrozen` — account already frozen.  
-- `Duplicate { duplicate_of }` — semantically identical transaction previously accepted.  
+- `TooOld` — `created_at_time` is before the ledger's deduplication window.  
+- `CreatedInFuture { ledger_time }` — `created_at_time` is ahead of the ledger's current time.  
+- `Duplicate { duplicate_of }` — identical transaction previously accepted.  
 - `GenericError { error_code, message }` — any other failure preventing a valid block.
 
 **Clarifications**  
@@ -139,7 +122,7 @@ icrc153_freeze_account : (FreezeAccountArgs) -> (variant { Ok : nat; Err : Freez
 |-------------------|------------------------|-------------------------|
 | `mthd`            | `Text`                 | **Constant** `"153freeze_account"`. |
 | `account`         | `Array` (Account)      | From `FreezeAccountArgs.account`, encoded as ICRC-3 Account. |
-| `created_at_time` | `Nat`                  | From `FreezeAccountArgs.created_at_time` (ns since Unix epoch; **MUST** fit `nat64`). |
+| `ts`              | `Nat`                  | From `FreezeAccountArgs.created_at_time` (ns since Unix epoch; **MUST** fit `nat64`). |
 | `caller`          | `Blob`                 | Principal of the caller (raw bytes). |
 | `reason`          | `Text` *(optional)*    | From `FreezeAccountArgs.reason` if provided; **omit** if absent. |
 
@@ -161,9 +144,11 @@ type UnfreezeAccountArgs = record {
 };
 
 type UnfreezeAccountError = variant {
-  Unauthorized : text;
-  InvalidAccount : text;
-  Duplicate : record { duplicate_of : nat };
+  Unauthorized    : text;
+  InvalidAccount  : text;
+  TooOld;
+  CreatedInFuture : record { ledger_time : nat64 };
+  Duplicate       : record { duplicate_of : nat };
   GenericError : record { error_code : nat; message : text };
 };
 
@@ -193,7 +178,9 @@ icrc153_unfreeze_account : (UnfreezeAccountArgs) -> (variant { Ok : nat; Err : U
 **Error cases (normative)**
 - `Unauthorized` — caller not permitted.
 - `InvalidAccount` — malformed or disallowed account.
-- `Duplicate { duplicate_of }` — semantically identical transaction previously accepted.
+- `TooOld` — `created_at_time` is before the ledger's deduplication window.
+- `CreatedInFuture { ledger_time }` — `created_at_time` is ahead of the ledger's current time.
+- `Duplicate { duplicate_of }` — identical transaction previously accepted.
 - `GenericError { error_code, message }` — any other failure preventing a valid block.
 
 **Clarifications**
@@ -229,8 +216,10 @@ type FreezePrincipalArgs = record {
 type FreezePrincipalError = variant {
   Unauthorized : text;
   InvalidPrincipal : text;
-  AlreadyFrozen : text;              // principal is already frozen at scope defined by ICRC-123
-  Duplicate : record { duplicate_of : nat };
+  AlreadyFrozen    : text;              // principal is already frozen at scope defined by ICRC-123
+  TooOld;
+  CreatedInFuture  : record { ledger_time : nat64 };
+  Duplicate        : record { duplicate_of : nat };
   GenericError : record { error_code : nat; message : text };
 };
 
@@ -261,7 +250,9 @@ icrc153_freeze_principal : (FreezePrincipalArgs) -> (variant { Ok : nat; Err : F
 - `Unauthorized` — caller not permitted.  
 - `InvalidPrincipal` — malformed/invalid principal bytes.  
 - `AlreadyFrozen` — principal already frozen at the scope defined by ICRC-123.  
-- `Duplicate { duplicate_of }` — semantically identical transaction previously accepted.  
+- `TooOld` — `created_at_time` is before the ledger's deduplication window.  
+- `CreatedInFuture { ledger_time }` — `created_at_time` is ahead of the ledger's current time.  
+- `Duplicate { duplicate_of }` — identical transaction previously accepted.  
 - `GenericError { error_code, message }` — any other failure preventing a valid block.
 
 **Clarifications**  
@@ -296,9 +287,11 @@ type UnfreezePrincipalArgs = record {
 };
 
 type UnfreezePrincipalError = variant {
-  Unauthorized : text;
+  Unauthorized     : text;
   InvalidPrincipal : text;
-  Duplicate : record { duplicate_of : nat };
+  TooOld;
+  CreatedInFuture  : record { ledger_time : nat64 };
+  Duplicate        : record { duplicate_of : nat };
   GenericError : record { error_code : nat; message : text };
 };
 
@@ -328,7 +321,9 @@ icrc153_unfreeze_principal : (UnfreezePrincipalArgs) -> (variant { Ok : nat; Err
 **Error cases (normative)**
 - `Unauthorized` — caller not permitted.
 - `InvalidPrincipal` — malformed/invalid principal bytes.
-- `Duplicate { duplicate_of }` — semantically identical transaction previously accepted.
+- `TooOld` — `created_at_time` is before the ledger's deduplication window.
+- `CreatedInFuture { ledger_time }` — `created_at_time` is ahead of the ledger's current time.
+- `Duplicate { duplicate_of }` — identical transaction previously accepted.
 - `GenericError { error_code, message }` — any other failure preventing a valid block.
 
 **Clarifications**
@@ -363,13 +358,13 @@ Ledgers implementing ICRC-153 MUST indicate compliance through the
 `icrc1_supported_standards` and `icrc10_supported_standards` methods by
 including:
 
-```
-variant { Vec = vec {
-  record {
-    "name"; variant { Text = "ICRC-153" };
-    "url";  variant { Text = "https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-153.md" };
-  }
-}};
+```candid
+vec {
+    record {
+        name = "ICRC-153";
+        url  = "https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-153/ICRC-153.md";
+    }
+}
 ```
 
 ### Supported Block Types
@@ -475,6 +470,28 @@ Principals MUST be ordered by their raw principal **bytes** (as if `variant { Bl
 - Implementations SHOULD bound `max_results`.
 - Results are a **point-in-time snapshot**; concurrent changes may affect subsequent pages.
 
+### `icrc153_is_frozen_account`
+
+Returns whether a given account is currently effectively frozen.
+
+```
+icrc153_is_frozen_account : (Account) -> (bool) query;
+```
+
+Returns `true` iff the account is *effectively frozen* under ICRC-123's latest-action-wins rule,
+considering both account-level and principal-level actions.
+
+### `icrc153_is_frozen_principal`
+
+Returns whether a given principal is currently frozen at the principal level.
+
+```
+icrc153_is_frozen_principal : (principal) -> (bool) query;
+```
+
+Returns `true` iff the most recent **principal-level** action for the given principal was a freeze.
+Does not consider account-level actions.
+
 ## Effective Freeze Model (Clarification)
 
 ICRC-153 adopts the **latest-action-wins** rule defined in ICRC-123:
@@ -548,7 +565,7 @@ The caller invokes:
 
 ```
 icrc153_freeze_account({
-  account         = [principal "f5288412af11b299313a5b5a7c128311de102333c4adbe669f2ea1a308"];
+  account         = [principal "ryjl3-tyaaa-aaaaa-aaaba-cai"];
   created_at_time = 1_753_500_100_000_000_000 : nat64;
   reason          = ?"Fraud investigation hold";
 })
@@ -563,16 +580,16 @@ variant {
   Map = vec {
     record { "btype"; variant { Text = "123freezeaccount" } };
     record { "phash"; variant { Blob = blob "\12\34\56\78\9a\bc\de\f0\01\23\45\67\89\ab\cd\ef\10\32\54\76\98\ba\dc\fe\11\22\33\44\55\66\77\88" } };
-    record { "ts";    variant { Nat64 = 1_753_500_101_000_000_000 : nat64 } };
+    record { "ts";    variant { Nat = 1_753_500_101_000_000_000 : nat } };
     record {
       "tx";
       variant {
         Map = vec {
           record { "mthd";    variant { Text = "153freeze_account" } };
           record { "account"; variant { Array = vec {
-            variant { Blob = blob "\15\28\84\12\af\11\b2\99\31\3a\5b\5a\7c\12\83\11\de\10\23\33\c4\ad\be\66\9f\2e\a1\a3\08" }
+            variant { Blob = blob "\00\00\00\00\00\00\00\02\01\01" }
           } } };
-          record { "ts";      variant { Nat64 = 1_753_500_100_000_000_000 : nat64 } };
+          record { "ts";      variant { Nat = 1_753_500_100_000_000_000 : nat } };
           record { "caller";  variant { Blob  = blob "\00\00\00\00\02\30\02\17\01\01" } };
           record { "reason";  variant { Text  = "Fraud investigation hold" } };
         }
@@ -588,7 +605,7 @@ The block records the method (`mthd = "153freeze_account"`), the account being f
 The caller invokes:
 ```
 icrc153_unfreeze_account({
-  account         = [principal "f5288412af11b299313a5b5a7c128311de102333c4adbe669f2ea1a308"];
+  account         = [principal "ryjl3-tyaaa-aaaaa-aaaba-cai"];
   created_at_time = 1_753_500_200_000_000_000 : nat64;
   reason          = ?"Lift compliance hold";
 })
@@ -607,7 +624,7 @@ variant {
         Map = vec {
           record { "mthd";    variant { Text = "153unfreeze_account" } };
           record { "account"; variant { Array = vec {
-            variant { Blob = blob "\15\28\84\12\af\11\b2\99\31\3a\5b\5a\7c\12\83\11\de\10\23\33\c4\ad\be\66\9f\2e\a1\a3\08" }
+            variant { Blob = blob "\00\00\00\00\00\00\00\02\01\01" }
           } } };
           record { "ts";      variant { Nat  = 1_753_500_200_000_000_000 : nat } };
           record { "caller";  variant { Blob = blob "\00\00\00\00\02\30\02\17\01\01" } };
@@ -624,7 +641,7 @@ variant {
 The caller invokes:
 ```
 icrc153_freeze_principal({
-  principal       = principal "abcd0123456789abcdef0123456789abcdef0123456789abcdef0123456789";
+  principal       = principal "uf6dk-hyaaa-aaaaq-qaaaq-cai";
   created_at_time = 1_753_600_000_000_000_000 : nat64;
   reason          = ?"KYC review";
 })
@@ -642,7 +659,7 @@ variant {
       variant {
         Map = vec {
           record { "mthd";      variant { Text = "153freeze_principal" } };
-          record { "principal"; variant { Blob = blob "\ab\cd\01\23\45\67\89\ab\cd\ef\01\23\45\67\89\ab\cd\ef\01\23\45\67\89\ab\cd\ef\01\23\45\67\89\ab" } };
+          record { "principal"; variant { Blob = blob "\00\00\00\00\02\10\00\01\01\01" } };
           record { "ts";        variant { Nat  = 1_753_600_000_000_000_000 : nat } };
           record { "caller";    variant { Blob = blob "\00\00\00\00\02\30\02\17\01\01" } };
           record { "reason";    variant { Text = "KYC review" } };
@@ -658,7 +675,7 @@ The caller invokes:
 
 ```
 icrc153_unfreeze_principal({
-  principal       = principal "abcd0123456789abcdef0123456789abcdef0123456789abcdef0123456789";
+  principal       = principal "uf6dk-hyaaa-aaaaq-qaaaq-cai";
   created_at_time = 1_753_600_500_000_000_000 : nat64;
   reason          = ?"KYC cleared";
 })
@@ -677,7 +694,7 @@ variant {
       variant {
         Map = vec {
           record { "mthd";      variant { Text = "153unfreeze_principal" } };
-          record { "principal"; variant { Blob = blob "\ab\cd\01\23\45\67\89\ab\cd\ef\01\23\45\67\89\ab\cd\ef\01\23\45\67\89\ab\cd\ef\01\23\45\67\89\ab" } };
+          record { "principal"; variant { Blob = blob "\00\00\00\00\02\10\00\01\01\01" } };
           record { "ts";        variant { Nat  = 1_753_600_500_000_000_000 : nat } };
           record { "caller";    variant { Blob = blob "\00\00\00\00\02\30\02\17\01\01" } };
           record { "reason";    variant { Text = "KYC cleared" } };
