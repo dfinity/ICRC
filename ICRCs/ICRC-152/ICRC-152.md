@@ -4,53 +4,30 @@
 |:------:|
 | Draft  |
 
-## Introduction & Motivation
+## Introduction
 
 Most ICRC-based ledgers (e.g., ICRC-1, ICRC-2) treat minting and burning as
-system-only operations that occur indirectly.
+system-only operations that occur indirectly: minting is a transfer *from* the
+minting account; burning is a transfer *into* it.
 
-- Minting is represented as a transfer from the minting account.
-- Burning is represented as a transfer into the minting account.
+This approach is insufficient for administrator-controlled or regulated assets
+such as stablecoins, Real-World Asset (RWA) tokens, or managed ledgers (NFTs,
+reward points, internal credits), where compliance requires explicit, auditable
+supply management actions by an authorized principal.
 
-This approach works for decentralized tokens but is insufficient for
-administrator-controlled or regulated assets, such as:
+ICRC-152 standardizes this by defining:
 
-- Stablecoins, which must allow an issuer to adjust circulating supply.
-- Real-World Asset (RWA) tokens, where compliance requires explicit
-  mint and burn actions.
-- Other managed ledgers (NFTs, reward points, internal credits).
+- **`icrc152_mint` and `icrc152_burn`** — privileged methods callable only by
+  authorized principals.
+- **Canonical `tx` mapping** — deterministic block content rules, including
+  optional metadata and caller tracking.
+- **ICRC-122 block kinds** — `btype = "122mint"` and `btype = "122burn"` to
+  record privileged supply actions.
+- **Compliance reporting** — via ICRC-10 methods.
 
-Without a standardized API, integrators and tooling cannot reliably
-distinguish user-initiated supply changes from privileged supply
-management actions.
-
-ICRC-152 addresses this gap by introducing:
-
-- Two privileged methods, `icrc152_mint` and `icrc152_burn`, callable only by authorized principals.
-- A canonical mapping from method inputs to block `tx` fields, including optional metadata and caller tracking.
-- Recording of these operations using the typed block kinds **defined in ICRC-122**:
-  `btype = "122mint"` for mints and `btype = "122burn"` for burns.
-
-
-## Overview
-
-ICRC-152 standardizes privileged supply management in ICRC-based ledgers.
-
-Specifically, it defines:
-
-- **APIs** for minting and burning tokens under ledger authorization.
-- **Canonical `tx` mapping** rules ensuring deterministic block content.
-- **Use of ICRC-122 block kinds** to record privileged supply actions
-  (`btype = "122mint"` and `btype = "122burn"`).
-- **Compliance reporting** through ICRC-10 methods.
-  
-
-
-This allows wallets, explorers, and auditors to:
-
-- Reliably distinguish privileged supply changes from user-initiated transfers.
-- Verify compliance with external requirements (e.g., MiCA).
-- Interoperate across ledgers that adopt the same API and block semantics.
+This allows wallets, explorers, and auditors to reliably distinguish privileged
+supply changes from user-initiated transfers, verify compliance with external
+requirements (e.g., MiCA), and interoperate across ledgers that adopt this standard.
 
 
 ## Dependencies
@@ -91,6 +68,12 @@ This standard inherits core conventions from **ICRC-3** (block log format, Value
   Resulting blocks for these APIs use `btype = "122mint"` and `btype = "122burn"` (per ICRC-122).  
   Standard metadata (e.g., `phash`, `ts`) follows ICRC-3.
 
+- **`reason` field**  
+  An optional human-readable explanation for the operation, encoded as `Text` in the block.  
+  Unlike `memo` in ICRC-1/2, which carries machine-readable bytes (e.g., an invoice number),  
+  `reason` is plain text intended for display in explorers and audit logs, with no structural  
+  constraint on its value.
+
 
 
 ## Methods
@@ -113,10 +96,13 @@ type MintArgs = record {
 };
 
 type MintError = variant {
-    Unauthorized : text;              // caller not permitted
-    InvalidAccount : text;             // target account invalid
-    Duplicate : record { duplicate_of : nat }; 
-    GenericError : record { error_code : nat; message : text };
+    Unauthorized        : text;        // caller not permitted; text is for diagnostics only
+    InvalidAccount      : text;        // target account invalid; text is for diagnostics only
+    InvalidAmount       : text;        // amount must be greater than zero
+    TooOld;
+    CreatedInFuture     : record { ledger_time : nat64 };
+    Duplicate           : record { duplicate_of : nat };
+    GenericError        : record { error_code : nat; message : text };
 };
 
 icrc152_mint : (MintArgs) -> (variant { Ok : nat; Err : MintError });
@@ -146,7 +132,10 @@ icrc152_mint : (MintArgs) -> (variant { Ok : nat; Err : MintError });
 **Error cases (normative)**  
 - `Unauthorized` — caller not permitted.  
 - `InvalidAccount` — malformed/invalid target account (e.g., minting account, anonymous principal, invalid subaccount bytes).  
-- `Duplicate { duplicate_of }` — a semantically identical transaction was already accepted.  
+- `InvalidAmount` — `amount` is zero.  
+- `TooOld` — `created_at_time` is before the ledger's deduplication window.  
+- `CreatedInFuture { ledger_time }` — `created_at_time` is ahead of the ledger's current time.  
+- `Duplicate { duplicate_of }` — an identical transaction was already accepted.  
 - `GenericError { error_code, message }` — any other failure preventing a valid `122mint` block.
 
 **Clarifications**  
@@ -176,6 +165,7 @@ This method allows a ledger controller (or other authorized principal) to burn
 tokens. It debits the specified account, decreases total supply, and records
 the action on-chain.
 
+#### Arguments
 ```
 type BurnArgs = record {
   from            : Account;
@@ -185,11 +175,14 @@ type BurnArgs = record {
 };
 
 type BurnError = variant {
-  Unauthorized : text;              // caller not permitted
-  InvalidAccount : text;             // source account invalid
+  Unauthorized        : text;        // caller not permitted; text is for diagnostics only
+  InvalidAccount      : text;        // source account invalid; text is for diagnostics only
+  InvalidAmount       : text;        // amount must be greater than zero
   InsufficientBalance : record { balance : nat };
-  Duplicate : record { duplicate_of : nat }; 
-  GenericError : record { error_code : nat; message : text };
+  TooOld;
+  CreatedInFuture     : record { ledger_time : nat64 };
+  Duplicate           : record { duplicate_of : nat };
+  GenericError        : record { error_code : nat; message : text };
 };
 
 icrc152_burn : (BurnArgs) -> (variant { Ok : nat; Err : BurnError });
@@ -197,45 +190,59 @@ icrc152_burn : (BurnArgs) -> (variant { Ok : nat; Err : BurnError });
 
 
 #### Semantics
-- **Debits** `amount` tokens from the `from` account.  
-- **Decreases** the total supply by `amount`.  
-- **Creates** a block of type `122burn`.  
-- On success, returns the **index of the created block**.  
-- On failure, returns an appropriate error.  
-- Semantics are consistent with the core transition already defined for `122burn` blocks.  
 
-#### Return Values
-On success, the method returns
+**Authorization**  
+- The method **MUST** be callable only by a **controller** of the ledger or other explicitly authorized principals.  
+- Unauthorized calls **MUST** fail with `Unauthorized`.
 
-- `variant { Ok : nat }`  
-  where the `nat` is the index of the block created in the ledger.  
+**Effect (on success, non-retroactive)**  
+- **Debit** `amount` from `from`.  
+- **Decrease** total supply by `amount`.  
+- **Append** a block with `btype = "122burn"`.  
+- The block's top-level `tx` **MUST** be constructed **exactly** as in **Canonical `tx` Mapping** (keys, types, encodings), and embedded in the block.
 
-On failure, the method returns
+**Return value**  
+- On success, **MUST** return `variant { Ok : nat }` where the `nat` is the index of the created block.  
+- On failure, **MUST** return `variant { Err : BurnError }`.
 
-- `variant { Err : BurnError }`  
-  describing the reason for rejection.  
+**Deduplication & idempotency**  
+- The ledger **MUST** perform deduplication (e.g., using `created_at_time` and any implementation-defined inputs).  
+- If a duplicate is detected, the ledger **MUST NOT** append a new block and **MUST** return `Err(Duplicate { duplicate_of = <index> })`.
+
+**Error cases (normative)**  
+- `Unauthorized` — caller not permitted.  
+- `InvalidAccount` — malformed/invalid source account (e.g., anonymous principal, invalid subaccount bytes).  
+- `InvalidAmount` — `amount` is zero.  
+- `InsufficientBalance { balance }` — the `from` account holds fewer tokens than `amount`.  
+- `TooOld` — `created_at_time` is before the ledger's deduplication window.  
+- `CreatedInFuture { ledger_time }` — `created_at_time` is ahead of the ledger's current time.  
+- `Duplicate { duplicate_of }` — an identical transaction was already accepted.  
+- `GenericError { error_code, message }` — any other failure preventing a valid `122burn` block.
+
+**Clarifications**  
+- Optional fields **MUST be omitted** from `tx` if not supplied in the call (no null placeholders).  
+- Representation-independent hashing (ICRC-3) applies; field presence and values matter, not map ordering.
 
 
-#### Canonical `tx` Mapping
-A successful call to `icrc152_burn` produces a block of type `122burn`.  
+#### Canonical `tx` Mapping (normative)
+A successful call to `icrc152_burn` produces a block of type `122burn`.
 The `tx` field is derived deterministically as follows:
 
-- `mthd   = "152burn"`  
-- `from   = BurnArgs.from`  
-- `amt    = BurnArgs.amount`  
-- `ts     = BurnArgs.created_at_time`  
-- `caller = caller_principal (as Blob)`  
-- `reason = BurnArgs.reason` (if provided)  
-
-Optional fields (`reason`) MUST be omitted from `tx` if not supplied in the call.  
+| Field             | Type (ICRC-3 `Value`) | Source / Encoding Rule                                                      |
+|-------------------|------------------------|-----------------------------------------------------------------------------|
+| `mthd`            | `Text`                 | **Constant** `"152burn"`.                                                   |
+| `from`            | `Array` (Account)      | From `BurnArgs.from`, encoded as ICRC-3 Account.                            |
+| `amt`             | `Nat`                  | From `BurnArgs.amount`.                                                     |
+| `ts`              | `Nat`                  | From `BurnArgs.created_at_time` (ns since Unix epoch; **MUST** fit `nat64`). |
+| `caller`          | `Blob`                 | Principal of the caller (raw bytes).                                        |
+| `reason`          | `Text` *(optional)*    | From `BurnArgs.reason` if provided; **omit** if absent.                     |
 
 ### Reporting Compliance
 
 #### Supported Standards
 
 Ledgers implementing ICRC-152 MUST indicate compliance through the
-`icrc1_supported_standards` and `icrc10_supported_standards` methods, by
-including in the output of these methods:
+`icrc10_supported_standards` method by including in its output:
 
 ```
 vec {
@@ -245,6 +252,9 @@ vec {
     }
 }
 ```
+
+Ledgers that also implement ICRC-1 MUST additionally include this entry in
+the output of `icrc1_supported_standards`.
 
 #### Supported Block Types
 
@@ -291,7 +301,7 @@ variant {
             "to";
             variant {
               Array = vec {
-                variant { Blob = blob "\d3\e2\95\d8\63\bc\ef\0d\02" }
+                variant { Blob = blob "\00\00\00\00\00\00\00\02\01\01" }
               }
             };
           };
@@ -309,8 +319,8 @@ variant {
 
 
 
-The block records the method (`mthd = "152mint"`), the recipient account (`to`), 
-the minted amount (`amt`), the timestamp supplied by the caller (`ts`), the caller’s 
+The block records the method (`mthd = "152mint"`), the recipient account (`to`),
+the minted amount (`amt`), the timestamp supplied by the caller (`ts`), the caller’s
 principal (`caller`), and the optional `reason`.  
 
 In the method call example above, the recipient is specified as a Candid `Account`
@@ -343,7 +353,7 @@ variant {
     record {
       "phash";
       variant {
-        Blob = blob "\7f\89\42\a5\be\4d\af\50\3b\6e\2a\8e\9c\c7\dd\f1\c9\e8\24\f0\98\bb\d7\af\ae\d2\90\10\67\df\1e\c1\0a"
+        Blob = blob "\7f\89\42\a5\be\4d\af\50\3b\6e\2a\8e\9c\c7\dd\f1\c9\e8\24\f0\98\bb\d7\af\ae\d2\90\10\67\df\1e\c1"
       };
     };
     record { "ts"; variant { Nat = 1_753_344_740_500_000_000 } };
@@ -356,7 +366,7 @@ variant {
             "from";
             variant {
               Array = vec {
-                variant { Blob = blob "\b4\a7\c6\39\5e\e3\69\fa\02" }
+                variant { Blob = blob "\00\00\00\00\02\10\00\01\01\01" }
               }
             };
           };
@@ -373,11 +383,16 @@ variant {
 
 ```
 
-Here, the block records the method (`mthd = "152burn"`), the account being debited (`from`), 
-the burned amount (`amt`), the caller-provided timestamp (`ts`), the caller’s principal (`caller`), 
-and the optional `reason`.  
+Here, the block records the method (`mthd = "152burn"`), the account being debited (`from`),
+the burned amount (`amt`), the caller-provided timestamp (`ts`), the caller’s principal (`caller`),
+and the optional `reason`.
+
+The block contains two `ts` fields. The top-level `ts` (`1_753_344_740_500_000_000`) is the
+ledger’s consensus timestamp, assigned when the block is committed to the log. The `tx.ts`
+(`1_753_344_740_000_000_000`) is the caller-supplied `created_at_time` copied from `BurnArgs`.
+These will generally differ.
 
 In the method call example, the account is specified as a Candid `Account` record.
 In the resulting block, the account is encoded as an ICRC-3 `Array` containing the
-principal's raw bytes as a `Blob`, as defined by ICRC-3.
+principal’s raw bytes as a `Blob`, as defined by ICRC-3.
 
