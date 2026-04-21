@@ -394,9 +394,14 @@ All results reflect the ledger’s state **at the time the query is executed**. 
 
 ### `icrc153_list_frozen_accounts`
 
-Lexicographically paginated listing of accounts whose most recent **account-level** action was a freeze.
+Lexicographically paginated listing of accounts that are **currently effectively frozen at the account level** — i.e., an account `acc` is listed iff both of the following hold:
 
-> ⚠️ **Not exhaustive of effectively frozen accounts.** This method only returns accounts frozen by `123freezeaccount`/`123unfreezeaccount` blocks. Accounts that are effectively frozen solely because their owner principal is frozen (via `123freezeprincipal`) are **not** listed here. To determine whether a specific account is effectively frozen (considering both account- and principal-level freezes), use `icrc153_is_frozen_account`. To enumerate principal-level freezes, use `icrc153_list_frozen_principals`. See **Effective Freeze Model** below.
+1. The most recent `123freezeaccount`/`123unfreezeaccount` block targeting `acc` is a freeze, and
+2. No `123unfreezeprincipal` block on `acc.owner` is more recent than the account-level freeze identified in (1).
+
+Every account returned by this method **MUST** satisfy `icrc153_is_frozen_account(acc) = true`.
+
+> ⚠️ **Not exhaustive of effectively frozen accounts.** Accounts that are effectively frozen *solely* because their owner principal is frozen (via `123freezeprincipal`, with no account-level freeze) are **not** listed here. To enumerate principal-level freezes, use `icrc153_list_frozen_principals`. To check whether a specific account is effectively frozen, use `icrc153_is_frozen_account`. See **Effective Freeze Model** below.
 
 #### Arguments
 ```
@@ -524,10 +529,13 @@ ICRC-153 adopts the **latest-action-wins** rule defined in ICRC-123:
 ### Implications for Queries
 
 - `icrc153_list_frozen_accounts`
-  Returns accounts whose most recent **account-level** action was a freeze.
-  It does **not** expand principal-level freezes into per-account entries, nor
-  does it exclude accounts that have been effectively unfrozen by a later
-  principal-level unfreeze.
+  Returns accounts that are effectively frozen **by an account-level freeze**:
+  the most recent `123freezeaccount`/`123unfreezeaccount` block targeting the
+  account is a freeze, **and** no later `123unfreezeprincipal` on the owner
+  has superseded it. It does **not** expand principal-level freezes into
+  per-account entries (so accounts frozen only via a principal-level freeze
+  are excluded), but every returned account is guaranteed to satisfy
+  `icrc153_is_frozen_account = true`.
 
 - `icrc153_list_frozen_principals`
   Returns principals whose most recent **principal-level** action was a freeze.
@@ -545,9 +553,11 @@ To determine whether a given account is currently frozen, integrators SHOULD
 call `icrc153_is_frozen_account(account)`, which applies the full
 latest-action-wins rule.
 
-Alternatively, integrators can reconstruct the effective status from the
-listing endpoints, but they MUST compare the block indices of the most recent
-account-level and principal-level actions rather than applying a simple OR.
+To enumerate every effectively frozen account, integrators MUST take the
+union of `icrc153_list_frozen_accounts` with the accounts owned by each
+principal returned by `icrc153_list_frozen_principals`. Both listing
+endpoints are individually sound (each entry is effectively frozen), but
+principal-level freezes are not expanded into per-account entries.
 
 
 ## Example: Freeze and Unfreeze — method calls and resulting blocks
