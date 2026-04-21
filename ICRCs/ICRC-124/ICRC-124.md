@@ -1,7 +1,5 @@
 # ICRC-124:  Pause, Unpause & Deactivate Blocks
 
-## Status
-
 | Status |
 |:------:|
 | Draft  |
@@ -23,7 +21,7 @@ Ledger lifecycle management may require administrative actions like pausing for 
 This standard follows the conventions set by ICRC-3, inheriting key structural components:
 
 - **Principals** are represented using the ICRC-3 `Value` type as `variant { Blob = <principal_bytes> }`.
-- **Timestamps:** `ts` (and any optional `created_at_time`) are **nanoseconds since the Unix epoch**, encoded as `Nat` but **MUST fit into `nat64`**.
+- **Timestamps:** `ts` is **nanoseconds since the Unix epoch**, encoded as `Nat` but **MUST fit into `nat64`**.
 - **Parent hash:** `phash : Blob` **MUST** be present if the block has a parent (omit for the genesis block).
 
 ## Block Types & Schema
