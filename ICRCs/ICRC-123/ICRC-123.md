@@ -134,6 +134,7 @@ Implications:
   - `icrc2_approve` (granting approval): a RESTRICTED account MUST NOT grant approvals.  
   - `icrc2_approve` (receiving approval): policy-defined; even if granted, a RESTRICTED spender MUST NOT use it while restricted.  
   - `icrc2_transfer_from` (acting as spender): a RESTRICTED account MUST NOT act as spender.
+- **Authorized operations:** Privileged ledger operations performed by explicitly authorized principals (e.g., `icrc122_mint`, `icrc122_burn`) MUST NOT be blocked by the RESTRICTED status of the affected account. Freeze restrictions apply to user-initiated operations only.
 - Freeze/unfreeze blocks do not retroactively modify prior transactions; they apply to transactions attempted **at or after** their block height.
 - Freeze/unfreeze blocks MUST be permanently recorded and included in the hash chain.
 
