@@ -100,7 +100,8 @@ icrc153_freeze_account : (FreezeAccountArgs) -> (variant { Ok : nat; Err : Freez
 - On failure: `variant { Err : FreezeAccountError }`.
 
 **Deduplication & idempotency**  
-- The ledger **MUST** perform deduplication (e.g., using `created_at_time`).  
+- `created_at_time` is required (not optional) because deduplication is always mandatory for privileged operations — accidental duplicate freeze/unfreeze actions must be prevented regardless of caller intent.  
+- The ledger **MUST** perform deduplication using `created_at_time` and any implementation-defined inputs.  
 - If a duplicate is detected, **MUST NOT** append a new block and **MUST** return `Err(Duplicate { duplicate_of = <index> })`.
 
 **Error cases (normative)**  
@@ -172,7 +173,8 @@ icrc153_unfreeze_account : (UnfreezeAccountArgs) -> (variant { Ok : nat; Err : U
 - On failure: `variant { Err : UnfreezeAccountError }`.
 
 **Deduplication & idempotency**  
-- The ledger **MUST** perform deduplication (e.g., using `created_at_time`).  
+- `created_at_time` is required (not optional) because deduplication is always mandatory for privileged operations — accidental duplicate freeze/unfreeze actions must be prevented regardless of caller intent.  
+- The ledger **MUST** perform deduplication using `created_at_time` and any implementation-defined inputs.  
 - If a duplicate is detected, the ledger **MUST NOT** append a new block and **MUST** return `Err(Duplicate { duplicate_of = <index> })`.
 
 **Error cases (normative)**
@@ -243,7 +245,8 @@ icrc153_freeze_principal : (FreezePrincipalArgs) -> (variant { Ok : nat; Err : F
 - On failure: `variant { Err : FreezePrincipalError }`.
 
 **Deduplication & idempotency**  
-- The ledger **MUST** perform deduplication (e.g., using `created_at_time`).  
+- `created_at_time` is required (not optional) because deduplication is always mandatory for privileged operations — accidental duplicate freeze/unfreeze actions must be prevented regardless of caller intent.  
+- The ledger **MUST** perform deduplication using `created_at_time` and any implementation-defined inputs.  
 - If a duplicate is detected, the ledger **MUST NOT** append a new block and **MUST** return `Err(Duplicate { duplicate_of = <index> })`.
 
 **Error cases (normative)**  
@@ -315,7 +318,8 @@ icrc153_unfreeze_principal : (UnfreezePrincipalArgs) -> (variant { Ok : nat; Err
 - On failure: `variant { Err : UnfreezePrincipalError }`.
 
 **Deduplication & idempotency**  
-- The ledger **MUST** perform deduplication (e.g., using `created_at_time`).  
+- `created_at_time` is required (not optional) because deduplication is always mandatory for privileged operations — accidental duplicate freeze/unfreeze actions must be prevented regardless of caller intent.  
+- The ledger **MUST** perform deduplication using `created_at_time` and any implementation-defined inputs.  
 - If a duplicate is detected, the ledger **MUST NOT** append a new block and **MUST** return `Err(Duplicate { duplicate_of = <index> })`.
 
 **Error cases (normative)**
@@ -390,7 +394,9 @@ All results reflect the ledger’s state **at the time the query is executed**. 
 
 ### `icrc153_list_frozen_accounts`
 
-Lexicographically paginated listing of currently frozen **accounts**.
+Lexicographically paginated listing of accounts whose most recent **account-level** action was a freeze.
+
+> ⚠️ **Not exhaustive of effectively frozen accounts.** This method only returns accounts frozen by `123freezeaccount`/`123unfreezeaccount` blocks. Accounts that are effectively frozen solely because their owner principal is frozen (via `123freezeprincipal`) are **not** listed here. To determine whether a specific account is effectively frozen (considering both account- and principal-level freezes), use `icrc153_is_frozen_account`. To enumerate principal-level freezes, use `icrc153_list_frozen_principals`. See **Effective Freeze Model** below.
 
 #### Arguments
 ```
@@ -436,7 +442,9 @@ This matches the natural `Value::Array`/`Blob` bytewise ordering implied by ICRC
 
 ### `icrc153_list_frozen_principals`
 
-Lexicographically paginated listing of currently frozen **principals**.
+Lexicographically paginated listing of principals whose most recent **principal-level** action was a freeze.
+
+> ⚠️ **Returns principal-level freezes only.** This method does not enumerate accounts that are effectively frozen because of a principal-level freeze; it returns the principals themselves. To check whether a specific principal is effectively frozen, use `icrc153_is_frozen_principal`. See **Effective Freeze Model** below.
 
 #### Arguments
 ```
