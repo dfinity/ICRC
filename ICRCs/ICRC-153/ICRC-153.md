@@ -442,9 +442,7 @@ This matches the natural `Value::Array`/`Blob` bytewise ordering implied by ICRC
 
 ### `icrc153_list_frozen_principals`
 
-Lexicographically paginated listing of principals whose most recent **principal-level** action was a freeze.
-
-> ⚠️ **Returns principal-level freezes only.** This method does not enumerate accounts that are effectively frozen because of a principal-level freeze; it returns the principals themselves. To check whether a specific principal is effectively frozen, use `icrc153_is_frozen_principal`. See **Effective Freeze Model** below.
+Lexicographically paginated listing of currently frozen **principals**.
 
 #### Arguments
 ```
