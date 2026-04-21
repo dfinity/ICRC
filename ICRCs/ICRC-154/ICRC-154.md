@@ -4,35 +4,16 @@
 |:------:|
 | Draft  |
 
-## Introduction & Motivation
+## Introduction
 
-For operational safety, incident response, and regulatory compliance, ledgers often need a way to **pause** (temporarily disable critical state transitions) or **deactivate** (enter a long-lived/terminal safe state) the system. Without a standard interface and canonical on-chain recording, integrators cannot reliably determine the current operational state or attribute transitions to authorized actors.
+For operational safety, incident response, and regulatory compliance, ledgers often need a way to **pause** (temporarily disable critical state transitions) or **deactivate** (enter a terminal safe state) the system. Without a standard interface and canonical on-chain recording, integrators cannot reliably determine the current operational state or attribute transitions to authorized actors.
 
-**ICRC-154** standardizes three privileged methods—`pause`, `unpause`, and `deactivate`—and defines the canonical mapping from method inputs to the `tx` field of the corresponding typed blocks (as defined in **ICRC-124**). It also includes lightweight query methods for current status.
+ICRC-154 standardizes three privileged methods and their canonical block mappings (using **ICRC-124** block kinds):
 
-- Privileged methods (authorized principals only):
-  - `icrc154_pause`, `icrc154_unpause`, `icrc154_deactivate`
-- Canonical `tx` mapping with namespaced `mthd` values (`"154..."`), caller identity, and optional human-readable `reason`.
-- Recording uses **ICRC-124** block kinds (this standard **does not** add new block types).
-- Read-only queries: `icrc154_is_paused`, `icrc154_is_deactivated`.
-
-## Overview
-
-ICRC-154 standardizes privileged **pause/unpause/deactivate** controls for ICRC ledgers.
-
-Specifically, it defines:
-
-- **APIs** to pause, unpause, and deactivate the ledger (privileged only).
-- **Canonical `tx` mapping** rules ensuring deterministic, auditable block content.
-- **Use of ICRC-124 block kinds** to record these actions:
-  - `btype = "124pause"`, `btype = "124unpause"`, `btype = "124deactivate"`
-- **Status queries** for quick integration.
-
-This enables wallets, explorers, and auditors to:
-
-- Determine, on-chain, whether the ledger is currently **paused** or **deactivated**.
-- Attribute actions to a specific authorized caller with an optional `reason`.
-- Interoperate across ledgers that implement the same API and block semantics.
+- `icrc154_pause` — temporarily halt state-changing operations.
+- `icrc154_unpause` — resume normal operation after a pause.
+- `icrc154_deactivate` — permanently deactivate the ledger (terminal state).
+- `icrc154_is_paused`, `icrc154_is_deactivated` — read-only status queries.
 
 ## Dependencies
 
@@ -88,11 +69,13 @@ type PauseArgs = record {
 };
 
 type PauseError = variant {
-  Unauthorized : text;                // caller not permitted
-  AlreadyPaused : text;               // ledger is already paused
+  Unauthorized       : text;          // caller not permitted
+  AlreadyPaused      : text;          // ledger is already paused
   AlreadyDeactivated : text;          // cannot pause when deactivated
-  Duplicate : record { duplicate_of : nat };
-  GenericError : record { error_code : nat; message : text };
+  TooOld;
+  CreatedInFuture    : record { ledger_time : nat64 };
+  Duplicate          : record { duplicate_of : nat };
+  GenericError       : record { error_code : nat; message : text };
 };
 
 icrc154_pause : (PauseArgs) -> (variant { Ok : nat; Err : PauseError });
@@ -128,7 +111,9 @@ icrc154_pause : (PauseArgs) -> (variant { Ok : nat; Err : PauseError });
 - `Unauthorized` — caller not permitted.  
 - `AlreadyPaused` — ledger already paused.  
 - `AlreadyDeactivated` — cannot pause when deactivated.  
-- `Duplicate { duplicate_of }` — duplicate transaction detected.  
+- `TooOld` — `created_at_time` is before the ledger's deduplication window.  
+- `CreatedInFuture { ledger_time }` — `created_at_time` is ahead of the ledger's current time.  
+- `Duplicate { duplicate_of }` — identical transaction previously accepted.  
 - `GenericError { error_code, message }` — any other failure.
 
 **Clarifications**  
@@ -161,11 +146,13 @@ type UnpauseArgs = record {
 };
 
 type UnpauseError = variant {
-  Unauthorized : text;
-  NotPaused : text;                   // ledger is not currently paused
+  Unauthorized       : text;
+  NotPaused          : text;          // ledger is not currently paused
   AlreadyDeactivated : text;          // cannot unpause when deactivated
-  Duplicate : record { duplicate_of : nat };
-  GenericError : record { error_code : nat; message : text };
+  TooOld;
+  CreatedInFuture    : record { ledger_time : nat64 };
+  Duplicate          : record { duplicate_of : nat };
+  GenericError       : record { error_code : nat; message : text };
 };
 
 icrc154_unpause : (UnpauseArgs) -> (variant { Ok : nat; Err : UnpauseError });
@@ -199,7 +186,9 @@ icrc154_unpause : (UnpauseArgs) -> (variant { Ok : nat; Err : UnpauseError });
 - `Unauthorized` — caller not permitted.  
 - `NotPaused` — ledger is not currently paused.  
 - `AlreadyDeactivated` — cannot unpause when deactivated.  
-- `Duplicate { duplicate_of }` — semantically identical transaction already accepted.  
+- `TooOld` — `created_at_time` is before the ledger's deduplication window.  
+- `CreatedInFuture { ledger_time }` — `created_at_time` is ahead of the ledger's current time.  
+- `Duplicate { duplicate_of }` — identical transaction previously accepted.  
 - `GenericError { error_code, message }` — any other failure preventing a valid block.
 
 **Clarifications**  
@@ -229,10 +218,12 @@ type DeactivateArgs = record {
 };
 
 type DeactivateError = variant {
-  Unauthorized : text;
+  Unauthorized       : text;
   AlreadyDeactivated : text;          // ledger already deactivated
-  Duplicate : record { duplicate_of : nat };
-  GenericError : record { error_code : nat; message : text };
+  TooOld;
+  CreatedInFuture    : record { ledger_time : nat64 };
+  Duplicate          : record { duplicate_of : nat };
+  GenericError       : record { error_code : nat; message : text };
 };
 
 icrc154_deactivate : (DeactivateArgs) -> (variant { Ok : nat; Err : DeactivateError });
@@ -265,7 +256,9 @@ icrc154_deactivate : (DeactivateArgs) -> (variant { Ok : nat; Err : DeactivateEr
 **Error cases (normative)**  
 - `Unauthorized` — caller not permitted.  
 - `AlreadyDeactivated` — ledger is already deactivated.  
-- `Duplicate { duplicate_of }` — semantically identical transaction already accepted.  
+- `TooOld` — `created_at_time` is before the ledger's deduplication window.  
+- `CreatedInFuture { ledger_time }` — `created_at_time` is ahead of the ledger's current time.  
+- `Duplicate { duplicate_of }` — identical transaction previously accepted.  
 - `GenericError { error_code, message }` — any other failure preventing a valid block.
 
 **Clarifications**  
@@ -318,15 +311,10 @@ icrc154_is_deactivated : () -> (bool) query;
 
 ### Supported Standards
 
-Ledgers implementing ICRC-154 MUST indicate compliance through the
-`icrc1_supported_standards` and `icrc10_supported_standards` methods by including:
-```
-variant { Vec = vec {
-  record {
-    "name"; variant { Text = "ICRC-154" };
-    "url";  variant { Text = "https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-154.md" };
-  }
-}};
+Ledgers implementing ICRC-154 MUST indicate compliance via `icrc10_supported_standards`, and via `icrc1_supported_standards` if ICRC-1 is also implemented, by including:
+
+```candid
+record { name = "ICRC-154"; url = "https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-154/ICRC-154.md" }
 ```
 ### Supported Block Types
 
@@ -352,13 +340,13 @@ icrc154_pause({
   Map = vec {
     record { "btype"; variant { Text = "124pause" } };
     record { "phash"; variant { Blob = blob "\aa\bb\cc\dd\ee\ff\00\11\22\33\44\55\66\77\88\99\01\23\45\67\89\ab\cd\ef\10\32\54\76\98\ba\dc\fe" } }; // illustrative
-    record { "ts";    variant { Nat = 1_753_700_001_000_000_000 : Nat } };
+    record { "ts";    variant { Nat = 1_753_700_001_000_000_000 : nat } };
     record {
       "tx";
       variant {
         Map = vec {
           record { "mthd";   variant { Text = "154pause" } };
-          record { "ts";     variant { Nat  = 1_753_700_000_000_000_000 : Nat } };
+          record { "ts";     variant { Nat  = 1_753_700_000_000_000_000 : nat } };
           record { "caller"; variant { Blob = blob "\00\00\00\00\02\30\02\17\01\01" } };
           record { "reason"; variant { Text = "System maintenance window" } };
         }
@@ -387,13 +375,13 @@ variant {
   Map = vec {
     record { "btype"; variant { Text = "124unpause" } };
     record { "phash"; variant { Blob = blob "\aa\bb\cc\dd\ee\ff\00\11\22\33\44\55\66\77\88\99\01\23\45\67\89\ab\cd\ef\10\32\54\76\98\ba\dc\fe" } }; // illustrative
-    record { "ts";    variant { Nat = 1_753_700_501_000_000_000 : Nat } };
+    record { "ts";    variant { Nat = 1_753_700_501_000_000_000 : nat } };
     record {
       "tx";
       variant {
         Map = vec {
           record { "mthd";   variant { Text = "154unpause" } };
-          record { "ts";     variant { Nat  = 1_753_700_500_000_000_000 : Nat } };
+          record { "ts";     variant { Nat  = 1_753_700_500_000_000_000 : nat } };
           record { "caller"; variant { Blob = blob "\00\00\00\00\02\30\02\17\01\01" } };
           record { "reason"; variant { Text = "Maintenance completed" } };
         }
@@ -420,13 +408,13 @@ variant {
   Map = vec {
     record { "btype"; variant { Text = "124deactivate" } };
     record { "phash"; variant { Blob = blob "\2d\86\7f\34\c7\2d\1e\2d\00\84\10\a4\00\b0\b6\4c\3e\02\96\c9\e8\55\6f\dd\72\68\e8\df\8d\8e\8a\ee" } }; // illustrative
-    record { "ts";    variant { Nat = 1_753_800_001_000_000_000 : Nat } };
+    record { "ts";    variant { Nat = 1_753_800_001_000_000_000 : nat } };
     record {
       "tx";
       variant {
         Map = vec {
           record { "mthd";   variant { Text = "154deactivate" } };
-          record { "ts";     variant { Nat  = 1_753_800_000_000_000_000 : Nat } };
+          record { "ts";     variant { Nat  = 1_753_800_000_000_000_000 : nat } };
           record { "caller"; variant { Blob = blob "\00\00\00\00\02\30\02\17\01\01" } };
           record { "reason"; variant { Text = "Regulatory directive" } };
         }
