@@ -113,8 +113,6 @@ Each operation is shown in two forms:
 These examples are intended to guide implementers and tool builders in interpreting both the essential and optional elements of ICRC-122 blocks.
 
 
-### 122burn Example
-
 ### 122burn (Minimal Example)  
 The following block shows the minimal `122burn` structure with only the required `from` and `amt` fields inside the `tx` map.  
 
@@ -218,21 +216,19 @@ produce a `122mint` block on-chain. A possible encoding is shown below:
 
 ```
 variant { Map = vec {
-record { "btype"; variant { Text = "122mint" }};
-record { "ts"; variant { Nat = 1_747_900_000_000_000_000 : nat }};
-record { "phash"; variant { Blob = blob "\aa\bb\cc\dd\ee\ff\00\11\22\33\44\55\66\77\88\99" }};
-record { "tx"; variant { Map = vec {
-// Namespaced op from the method-defining standard (ICRC-145)
-record { "mthd"; variant { Text = "145mint" }};
-// Optional provenance (non-semantic)
-record { "caller"; variant { Blob = blob "\00\00\00\00\00\00\f0\0d\01\02" }};
-record { "to"; variant { Array = vec {
-variant { Blob = blob "\00\00\00\00\02\00\01\0d\01\01" };
-variant { Blob = blob "\06\ec\cd\3a\97\fb\a8\5f\bc\8d\a3\3e\5d\ba\bc\2f\38\69\60\5d\c7\a1\c9\53\1f\70\a3\66\c5\a7\e4\21" };
-}}};
-record { "amt"; variant { Nat = 1_000_000 : nat }};
-record { "reason"; variant { Text = "Community treasury distribution" }};
-}}};
+    record { "btype"; variant { Text = "122mint" }};
+    record { "ts"; variant { Nat = 1_747_900_000_000_000_000 : nat }};
+    record { "phash"; variant { Blob = blob "\aa\bb\cc\dd\ee\ff\00\11\22\33\44\55\66\77\88\99\aa\bb\cc\dd\ee\ff\00\11\22\33\44\55\66\77\88\99" }};
+    record { "tx"; variant { Map = vec {
+        record { "mthd";   variant { Text = "145mint" }};
+        record { "caller"; variant { Blob = blob "\00\00\00\00\00\00\f0\0d\01\01" }};
+        record { "to";     variant { Array = vec {
+            variant { Blob = blob "\00\00\00\00\02\00\01\0d\01\01" };
+            variant { Blob = blob "\06\ec\cd\3a\97\fb\a8\5f\bc\8d\a3\3e\5d\ba\bc\2f\38\69\60\5d\c7\a1\c9\53\1f\70\a3\66\c5\a7\e4\21" };
+        }}};
+        record { "amt";    variant { Nat = 1_000_000 : nat }};
+        record { "reason"; variant { Text = "Community treasury distribution" }};
+    }}};
 }}
 ```
 
