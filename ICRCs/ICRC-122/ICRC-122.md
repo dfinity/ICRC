@@ -90,16 +90,9 @@ Ledgers implementing this standard MUST return the following response to `icrc3_
 
 ```candid
 vec {
-    variant { Record = vec {
-        record { "btype"; variant { Text = "122burn" }};
-        record { "url"; variant { Text = "https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-122.md" }}; // Placeholder URL
-    }};
-    variant { Record = vec {
-        record { "btype"; variant { Text = "122mint" }};
-        record { "url"; variant { Text = "https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-122.md" }}; // Placeholder URL
-    }};
+    record { block_type = "122burn"; url = "https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-122/ICRC-122.md" };
+    record { block_type = "122mint"; url = "https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-122/ICRC-122.md" };
 }
-
 ```
 
 ## Example Blocks
