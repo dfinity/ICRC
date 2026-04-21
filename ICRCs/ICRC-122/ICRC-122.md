@@ -4,7 +4,12 @@
 |:------:|
 | Draft  |
 
-ICRC-122 introduces new block types for recording token minting and burning events in ICRC-compliant ledgers. These blocks provide a standardized way to document authorized supply modifications, ensuring transparent tracking of token issuance and removal. The `122burn` block records token reductions, while the `122mint` block tracks token increases. 
+ICRC-122 defines two block types for recording authorized token supply changes in ICRC-compliant ledgers:
+
+- **`122mint`** — records a token issuance, crediting a specified account.
+- **`122burn`** — records a token removal, debiting a specified account.
+
+These blocks provide a standardized, auditable representation of privileged supply modifications, distinct from the indirect mint/burn mechanism used by ICRC-1.
 
 ## Dependencies
 
