@@ -126,7 +126,8 @@ icrc152_mint : (MintArgs) -> (variant { Ok : nat; Err : MintError });
 - On failure, **MUST** return `variant { Err : MintError }`.
 
 **Deduplication & idempotency**  
-- The ledger **MUST** perform deduplication (e.g., using `created_at_time` and any implementation-defined inputs).  
+- `created_at_time` is required (not optional) because deduplication is always mandatory for privileged operations — accidental duplicate supply changes must be prevented regardless of caller intent.  
+- The ledger **MUST** perform deduplication using `created_at_time` and any implementation-defined inputs.  
 - If a duplicate is detected, the ledger **MUST NOT** append a new block and **MUST** return `Err(Duplicate { duplicate_of = <index> })`.
 
 **Error cases (normative)**  
@@ -206,7 +207,8 @@ icrc152_burn : (BurnArgs) -> (variant { Ok : nat; Err : BurnError });
 - On failure, **MUST** return `variant { Err : BurnError }`.
 
 **Deduplication & idempotency**  
-- The ledger **MUST** perform deduplication (e.g., using `created_at_time` and any implementation-defined inputs).  
+- `created_at_time` is required (not optional) because deduplication is always mandatory for privileged operations — accidental duplicate supply changes must be prevented regardless of caller intent.  
+- The ledger **MUST** perform deduplication using `created_at_time` and any implementation-defined inputs.  
 - If a duplicate is detected, the ledger **MUST NOT** append a new block and **MUST** return `Err(Duplicate { duplicate_of = <index> })`.
 
 **Error cases (normative)**  
