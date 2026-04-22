@@ -239,9 +239,16 @@ The `tx` field is derived deterministically as follows:
 | `caller`          | `Blob`                 | Principal of the caller (raw bytes).                                        |
 | `reason`          | `Text` *(optional)*    | From `BurnArgs.reason` if provided; **omit** if absent.                     |
 
-### Reporting Compliance
+## Notes on Semantics & Scope
 
-#### Supported Standards
+- **Authorizations**: Each method is privileged; ledgers MUST restrict these calls to authorized principals (policy/RBAC is ledger-defined or standardized separately).
+- **Deduplication**: `created_at_time` is used for replay protection/deduplication (as in ICRC-1). Duplicate calls MUST return `Duplicate { duplicate_of = <block_index> }` and MUST NOT produce a new block.
+- **Effect on supply and balances**: The precise effects of mint/burn on balances, total supply, and block structure are entirely defined by ICRC-122. ICRC-152 only defines the privileged API and canonical `tx` mapping.
+- **No fees**: ICRC-152 calls do not involve fees; ledgers MUST NOT include a top-level `fee` field for these blocks.
+
+## Compliance Reporting
+
+### Supported Standards
 
 Ledgers implementing ICRC-152 MUST indicate compliance through the
 `icrc10_supported_standards` method by including in its output:
@@ -258,12 +265,14 @@ vec {
 Ledgers that also implement ICRC-1 MUST additionally include this entry in
 the output of `icrc1_supported_standards`.
 
-#### Supported Block Types
+### Supported Block Types
 
 ICRC-152 extends ICRC-122 and does not introduce any new block kinds.
 Accordingly, ledgers implementing ICRC-152 MUST already advertise support
 for `122mint` and `122burn` as required by ICRC-122.
 No additional block types need to be reported.
+
+## Examples
 
 ### Example mint call and resulting block
 
