@@ -79,6 +79,13 @@ These fields MUST NOT affect semantics or verification. Verifiers MUST ignore th
   - Query calls retrieving historical data MUST remain available.
 - The deactivated state is irreversible.
 
+### Querying Ledger State
+
+Ledgers implementing this standard SHOULD expose queries (e.g., `is_paused() : bool`,
+`is_deactivated() : bool`) that return the ledger's current operational state
+per the rules above. These are a convenience and do not replace auditing from
+history. See **ICRC-154** for a standardized API.
+
 ---
 
 ## Guidance for Standards That Define Methods
