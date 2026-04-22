@@ -66,6 +66,7 @@ These fields MUST NOT affect semantics or verification. Verifiers MUST ignore th
 - When a `124pause` block is recorded, the ledger MUST enter a "paused" state.
 - While paused, the ledger MUST reject all state-changing operations except those required for governance or recovery (e.g., `124unpause`, optionally `124deactivate`, and operations like freeze/unfreeze if permitted by governance policy).
 - Query calls SHOULD remain operational.
+- A `124pause` block has no effect if the ledger is already paused or if it is in a terminal state due to deactivation.
 
 ### Unpause Ledger (`124unpause`)
 - When a `124unpause` block is recorded, the ledger MUST exit the "paused" state and resume normal operation, unless it is already in the terminal state due to deactivation.
