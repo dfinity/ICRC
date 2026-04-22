@@ -4,10 +4,6 @@
 |:------:|
 | Draft  |
 
-## Dependencies
-
-- **ICRC-3** — Provides the block log format, Value encoding, hashing, certification, and the canonical `tx` mapping rules that this standard extends.
-
 ## Introduction
 
 Ledger lifecycle management may require administrative actions like pausing for upgrades, unpausing after checks, or deactivating at the end of a token's useful life. ICRC-124 provides explicit block types to record these ledger-wide state transitions transparently on-chain:
@@ -15,6 +11,10 @@ Ledger lifecycle management may require administrative actions like pausing for 
 - **`124pause`** — temporarily halt all state-changing operations (e.g., for maintenance).
 - **`124unpause`** — resume normal operation after a pause.
 - **`124deactivate`** — permanently deactivate the ledger (terminal state).
+
+## Dependencies
+
+- **ICRC-3** — Provides the block log format, Value encoding, hashing, certification, and the canonical `tx` mapping rules that this standard extends.
 
 ## Common Elements
 
@@ -114,26 +114,16 @@ vec {
 
 ```candid
 variant { Map = vec {
-    // Block type identifier
     record { "btype"; variant { Text = "124pause" }};
-
-    // Timestamp when the block was recorded (nanoseconds since epoch)
-    record { "ts"; variant { Nat = 1_747_774_560_000_000_000 : nat }}; // Example: 2025-05-19T12:56:00Z
-
-    // Hash of the previous block in the ledger chain
+    record { "ts"; variant { Nat = 1_747_774_560_000_000_000 : nat }};
     record { "phash"; variant {
         Blob = blob "\de\ad\be\ef\00\11\22\33\44\55\66\77\88\99\aa\bb\cc\dd\ee\ff\10\20\30\40\50\60\70\80\90\a0\b0\c0"
     }};
-
-    // Pause transaction details
     record { "tx"; variant { Map = vec {
-        // The principal that invoked the pause_ledger operation
-        record { "caller"; variant { Blob = blob "\00\00\00\00\00\00\f0\0d\01\01" }}; // Example caller principal (e.g., a governance canister)
-        // Optional reason
+        record { "caller"; variant { Blob = blob "\00\00\00\00\00\00\f0\0d\01\01" }};
         record { "reason"; variant { Text = "DAO vote #78: pause for scheduled maintenance." }};
     }}};
 }};
-
 ```
 
 ### 124unpause Example
@@ -141,15 +131,12 @@ variant { Map = vec {
 ```candid
 variant { Map = vec {
     record { "btype"; variant { Text = "124unpause" }};
-    record { "ts"; variant { Nat = 1_747_778_160_000_000_000 : nat }}; // Example: 2025-05-19T13:56:00Z
+    record { "ts"; variant { Nat = 1_747_778_160_000_000_000 : nat }};
     record { "phash"; variant {
         Blob = blob "\be\ba\fe\ca\01\02\03\04\05\06\07\08\09\0a\0b\0c\0d\0e\0f\10\11\12\13\14\15\16\17\18\19\1a\1b"
     }};
-    // Unpause transaction details
     record { "tx"; variant { Map = vec {
-        // The principal that invoked the unpause_ledger operation
-        record { "caller"; variant { Blob = blob "\00\00\00\00\00\00\f0\0d\01\01" }}; // Example caller principal
-        // Optional reason
+        record { "caller"; variant { Blob = blob "\00\00\00\00\00\00\f0\0d\01\01" }};
         record { "reason"; variant { Text = "Ledger resumes after maintenance window (DAO vote #79)." }};
     }}};
 }};
@@ -160,19 +147,15 @@ variant { Map = vec {
 ```candid
 variant { Map = vec {
     record { "btype"; variant { Text = "124deactivate" }};
-    record { "ts"; variant { Nat = 1_747_864_560_000_000_000 : nat }}; // Example: 2025-05-20T12:56:00Z
+    record { "ts"; variant { Nat = 1_747_864_560_000_000_000 : nat }};
     record { "phash"; variant {
         Blob = blob "\c0\ff\ee\00\10\20\30\40\50\60\70\80\90\a0\b0\c0\d0\e0\f0\00\11\22\33\44\55\66\77\88\99\aa\bb\cc"
     }};
-    // Deactivate transaction details
     record { "tx"; variant { Map = vec {
-        // The principal that invoked the deactivate_ledger operation
-        record { "caller"; variant { Blob = blob "\00\00\00\00\00\00\f0\0d\01\01" }}; // Example caller (e.g., project multisig or final DAO vote)
-        // Optional reason
+        record { "caller"; variant { Blob = blob "\00\00\00\00\00\00\f0\0d\01\01" }};
         record { "reason"; variant { Text = "Token project sunset. Ledger permanently archived as per SNS DAO proposal #314." }};
     }}};
 }};
-
 ```
 
 ### Informative Example: Integration with a Standardized Method
