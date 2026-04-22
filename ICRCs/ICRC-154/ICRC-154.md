@@ -195,7 +195,7 @@ icrc154_unpause : (UnpauseArgs) -> (variant { Ok : nat; Err : UnpauseError });
 **Clarifications**  
 - The `tx` field uses **`ts`** for the caller-supplied timestamp (`created_at_time`).  
 - Optional fields **MUST** be omitted from `tx` if not supplied.  
-- Representation-independent hashing (ICRC-3)
+- Representation-independent hashing (ICRC-3) applies; field presence and value determine the hash, not field order.
 
 #### Canonical `tx` Mapping (normative)
 
