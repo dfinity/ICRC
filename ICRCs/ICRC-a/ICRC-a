@@ -1,0 +1,75 @@
+|ICRC|Title|Author|Discussions|Status|Type|Category|Created|
+|:----:|:----:|:----:|:----:|:----:|:----:|:----:|:----:|
+|FIX a|ICP Network Registry|Dieter Sommer (@dietersommer), Thomas Gladdines (@sea-snake), Austin Fatheree (@skilesare)||[]()|Standards Track||2025-01|
+
+# ICRC-a: ICP Network Registry
+
+## Abstract
+
+This document defines the ICP Network Registry which assigns names to networks based on the ICP protocol stack. Networks based on the ICP protocol stack are ICP mainnet, public ICP testnets if such are deployed in the future, and private deployments of ICP networks using the UTOPIA protocol stack. The purpose of the Registry is to have short names of networks that can be used in (CAIP chain-agnostic) network identifiers, token ledger identifiers, or token identifiers, to name just a few prominent examples of use cases.
+
+## Introduction
+
+Most blockchain ecosystems, e.g., Ethereum, Cosmos, or Bitcoin, have identifiers for networks built on the respective technology that are tracked in a public registry. This allows for obtaining short and simple identifiers for networks, e.g., a mainnet or a testnet in a given ecosystem, without requiring longer and random identifiers like such derived from an inherent property of the respective network, e.g., its genesis block or public key. This ICRC standard defines the ICP Network Registry which defines normative identifiers for
+
+* all public networks belonging to the ICP ecosystem, private deployments of the ICP technology stack;
+* selected private deployments of the ICP technology stack using the UTOPIA technology stack, if the governing entity of the deployment agrees with a listing of their network in the Registry; and
+* classes of local deployments of the ICP network (most prominently deployments created by the dfx tool for development and testing purposes).
+
+## Specification
+
+### Terminology
+
+We first define terminology that is slightly different to other ecosystems for reasons given below. In most (or all) other blockchain ecosystems, what we are discussing in this ICRC is referred to as *chain identifier* or *chain id*. This clashes in two ways with the efforts of this and other related ICRC standards:
+
+* In the ICP ecosystem, a network, such as ICP mainnet, can be, and typically is, comprised of multiple (or many) subnetworks, each of which is technically speaking its own blockchain. However, we want to refer to a whole network, not only a subnet, with the names defined in this ICRC. Thus, the term *chain* does not well capture our intentions. For this reason, we use the term *network*.
+* Most other ecosystems talk about *id* or *identifier* in this context. This clashes with the use of *network identifier* as the full network identifier (e.g., `icp:1` for ICP mainnet) as specified through ICRC-b. Thus, we establish the term *network name* in the current ICRC to differentiate between the two. In other ecosystems, this differentiation is not made, which may lead to confusion.
+
+Our established terminology matches precisely with our intentions and is more precise, also across multiple ICRC standards.
+
+### Definition
+
+Network names are natural decimal numbers starting with `1` with at most 31 digits. This makes the largest possible number usable network number `9999999999999999999999999999999`. Practically, the number of existing and registered networks will be much smaller, but the large namespace provides for flexibility in assigning names to different classes of networks.
+
+### Syntax
+
+A network name is defined through the following syntax, using (Augmented BNF) ABNF as defined in RFC 5234 [CO08]:
+
+```
+network_name = 1*1( digit_non_zero ) 0*30( digit )
+digit = "0" / "1" / "2" / "3" / "4" / "5" / "6" / "7" / "8" / "9"
+digit_non_zero = "1" / "2" / "3" / "4" / "5" / "6" / "7" / "8" / "9"
+```
+
+This syntax definition makes a network name a number ranging from `1` to `9999999999999999999999999999999` inclusive, a number with 31 `9`s, which is the maximum chain number.
+
+### Semantics
+
+A single network name refers to at least one network, but can refer to a large number of (ephemeral) networks. The further is the case for any public ICP network and private UTOPIA network, the latter is the case for dfx development networks which are spun up and torn down in large numbers by ICP developers around the world.
+
+Not every ICP-based network needs to be assigned a name through this registry. For example, the governing entity behind a private ICP deployment may prefer to not have a name assigned to their network. A reason for this may be that the network is only used privately and there is no need for a short and simple name of the network.
+
+### Governance
+
+The ICP Network Name Registry is a document that can be updated via a defined governance process. The following governance approaches are currently defined:
+
+* The further partitioning of existing sub-namespaces is governed by the NNS.
+* The network name sub-namespace from `1` to `890` exclusive is governed by the NNS.
+* The network name namespace from `890` to `1000` exclusive is governed by the NNS.
+* The network name namespace from `1000` is governed by the NNS.
+
+#### Rationale of the Defined Governance Structure
+
+Having the NNS govern the above-defined name classes makes sense as the NNS would with high probability be closely involved in launching further public networks such as public testnets. Also, the NNS is the right decision making entity for private development networks, such as the ones created through the dfx tool. For private ICP deployments using UTOPIA, there is no other suitable entity available to make such decision, thus the NNS retains this responsibility as well for now. Note that the governance structure may change in the future, which may make most sense for the third name class.
+
+## Registry
+
+This section comprises the normative ICP Network Name Registry. This section is updated through NNS votes for changes to the Registry.
+
+| Network name | Network |
+--------------------------
+| 1 | ICP mainnet |
+| 890 | All local DFX development networks (ephemeral networks) |
+
+
+[CO08] D. Crocker, Ed., P. Overell: Augmented BNF for Syntax Specifications: ABNF. 2008, https://datatracker.ietf.org/doc/html/rfc5234
